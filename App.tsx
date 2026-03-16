@@ -302,18 +302,30 @@ const App: React.FC = () => {
                 }
                 const html = await response.text();
                 
-                // Extrair texto do HTML de forma simples para não estourar o limite de tokens
+                if (!html || html.trim() === '') {
+                    return `Erro: O site ${args.url} retornou uma página vazia. Pode haver um bloqueio de segurança.`;
+                }
+
+                // Extrair texto do HTML de forma mais robusta
                 const parser = new DOMParser();
                 const doc = parser.parseFromString(html, 'text/html');
                 
-                // Remover scripts e styles
-                const scripts = doc.querySelectorAll('script, style, noscript, iframe, svg');
-                scripts.forEach(s => s.remove());
+                // Remover elementos que não contêm texto útil para leitura
+                const elementsToRemove = doc.querySelectorAll('script, style, noscript, iframe, svg, nav, footer');
+                elementsToRemove.forEach(s => s.remove());
                 
-                const textContent = doc.body ? doc.body.textContent || '' : html;
-                const cleanText = textContent.replace(/\s+/g, ' ').trim();
+                // Tentar focar no conteúdo principal primeiro
+                const mainContent = doc.querySelector('main') || doc.querySelector('article') || doc.querySelector('#content') || doc.body;
+                const textContent = mainContent ? mainContent.textContent || '' : html;
                 
-                // Limitar a 8000 caracteres para evitar sobrecarga
+                let cleanText = textContent.replace(/\s+/g, ' ').trim();
+                
+                // Se por algum motivo o texto ficar vazio, fazemos um fallback agressivo tirando as tags HTML na força bruta
+                if (cleanText.length === 0) {
+                    cleanText = html.replace(/<[^>]*>?/gm, ' ').replace(/\s+/g, ' ').trim();
+                }
+                
+                // Limitar a 8000 caracteres para evitar sobrecarga de tokens no Gemini
                 const truncated = cleanText.length > 8000 ? cleanText.substring(0, 8000) + '... [Conteúdo truncado]' : cleanText;
                 
                 return `Conteúdo da página ${args.url}:\n\n${truncated}`;
