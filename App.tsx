@@ -292,6 +292,35 @@ const App: React.FC = () => {
                 return `Erro ao escrever arquivo: ${err.message}`;
             }
         }
+
+        if (tool === 'navegarSite') {
+            addLogEntry(`Navegador Soberano acessando: ${args.url}`, 'Navegador');
+            try {
+                const response = await fetch(`/api/scraper?url=${encodeURIComponent(args.url)}`);
+                if (!response.ok) {
+                    throw new Error(`Erro HTTP: ${response.status}`);
+                }
+                const html = await response.text();
+                
+                // Extrair texto do HTML de forma simples para não estourar o limite de tokens
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(html, 'text/html');
+                
+                // Remover scripts e styles
+                const scripts = doc.querySelectorAll('script, style, noscript, iframe, svg');
+                scripts.forEach(s => s.remove());
+                
+                const textContent = doc.body ? doc.body.textContent || '' : html;
+                const cleanText = textContent.replace(/\s+/g, ' ').trim();
+                
+                // Limitar a 8000 caracteres para evitar sobrecarga
+                const truncated = cleanText.length > 8000 ? cleanText.substring(0, 8000) + '... [Conteúdo truncado]' : cleanText;
+                
+                return `Conteúdo da página ${args.url}:\n\n${truncated}`;
+            } catch (err: any) {
+                return `Falha ao navegar no site: ${err.message}`;
+            }
+        }
     }, [encyclopediaEntries, essenceFiles, alchemyState, accumulatedDust, satelliteData, sovereignRouterState, addLogEntry]);
 
     const renderActiveTab = () => {

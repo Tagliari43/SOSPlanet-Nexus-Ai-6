@@ -13,6 +13,34 @@ async function startServer() {
     res.json({ status: "ok" });
   });
 
+  // Navegador Soberano (ScraperAPI Proxy)
+  app.get("/api/scraper", async (req, res) => {
+    try {
+      const targetUrl = req.query.url as string;
+      if (!targetUrl) {
+        return res.status(400).json({ error: "URL is required" });
+      }
+
+      const scraperApiKey = process.env.SCRAPER_API_KEY;
+      if (!scraperApiKey) {
+        return res.status(500).json({ error: "SCRAPER_API_KEY is not configured" });
+      }
+
+      const scraperUrl = `http://api.scraperapi.com?api_key=${scraperApiKey}&url=${encodeURIComponent(targetUrl)}`;
+      
+      const response = await fetch(scraperUrl);
+      if (!response.ok) {
+        throw new Error(`ScraperAPI error: ${response.status} ${response.statusText}`);
+      }
+
+      const html = await response.text();
+      res.send(html);
+    } catch (error: any) {
+      console.error("ScraperAPI Proxy Error:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   // Binance Proxy Route (Para o ambiente de desenvolvimento local / AI Studio)
   app.post("/api/binance/balance", async (req, res) => {
     try {

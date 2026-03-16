@@ -154,6 +154,19 @@ export const SovereignToolFunctions = {
             },
             required: ['ability']
         }
+    } as FunctionDeclaration,
+
+    // --- NAVEGADOR SOBERANO ---
+    navegarSite: {
+        name: 'navegarSite',
+        description: 'Navegador Soberano: Acessa uma URL específica e retorna o conteúdo de texto da página de forma invisível e autônoma.',
+        parameters: {
+            type: Type.OBJECT,
+            properties: {
+                url: { type: Type.STRING, description: 'A URL completa do site a ser acessado (ex: https://www.exemplo.com)' }
+            },
+            required: ['url']
+        }
     } as FunctionDeclaration
 };
 
