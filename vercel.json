@@ -1,0 +1,9 @@
+
+{
+  "rewrites": [
+    { "source": "/v1/proxy/api.cloudflare.com/:match*", "destination": "https://api.cloudflare.com/:match*" },
+    { "source": "/v1/proxy/router.huggingface.co/:match*", "destination": "https://router.huggingface.co/:match*" },
+    { "source": "/api/(.*)", "destination": "/api/$1" },
+    { "source": "/(.*)", "destination": "/index.html" }
+  ]
+}

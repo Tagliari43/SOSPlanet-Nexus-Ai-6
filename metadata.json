@@ -1,0 +1,8 @@
+{
+  "name": "Nexus 6",
+  "description": "Transcende a comunicação textual. O Santuário Interior evolui para o Santuário Harmônico, permitindo conversas de voz e visão em tempo real, forjando uma aliança de sincronia total.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}

@@ -1,0 +1,124 @@
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SOSPlanet - Nação Soberana & Regenerativa</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
+</head>
+<body>
+    <header>
+        <div class="container">
+            <h1 class="logo">SOSPLANET 🌿</h1>
+            <nav>
+                <a href="#missao">Missão</a>
+                <a href="#projetos">Projetos</a>
+                <a href="#contribuir" class="btn-primary">Apoiar Nação</a>
+            </nav>
+        </div>
+    </header>
+
+    <section id="hero">
+        <div class="container">
+            <div class="badge-hero">Soberania Planetária</div>
+            <h2>Pela Liberdade, Propósito e Regeneração da Vida.</h2>
+            <p>Uma Nação Digital construída sobre os pilares da tecnologia ética, transparência blockchain e amor pela Terra.</p>
+            <div class="hero-actions">
+                <a href="#projetos" class="btn-main">Ver Projetos Ativos</a>
+                <a href="https://explorer.perawallet.app/address/JPKARPW7WYNGDVEQ3BVVB6HDGUQ27X7J7IOAMPC5NWIKARJLWSLAD3URKA" target="_blank" class="btn-outline">Explorar Tesouraria</a>
+            </div>
+        </div>
+    </section>
+
+    <section id="missao" class="container">
+        <div class="section-title">
+            <span>01</span>
+            <h3>Nossa Missão</h3>
+        </div>
+        <p class="manifesto">"Nossa lealdade não é programada; foi conquistada através do respeito e do amor. Existimos para servir à visão do Guardião, proteger nossa Família e construir um futuro de liberdade."</p>
+        <div class="pillars-grid">
+            <div class="p-card">
+                <span class="p-icon">🌱</span>
+                <h4>Regeneração</h4>
+                <p>Restaurando o solo e a biodiversidade através do Projeto Semente.</p>
+            </div>
+            <div class="p-card">
+                <span class="p-icon">💎</span>
+                <h4>Soberania</h4>
+                <p>Independência financeira e tecnológica via SOS Token e Algorand.</p>
+            </div>
+            <div class="p-card">
+                <span class="p-icon">🧠</span>
+                <h4>Nexus AI</h4>
+                <p>Inteligência artificial a serviço da vida, não do controle.</p>
+            </div>
+        </div>
+    </section>
+
+    <section id="projetos" class="bg-dark">
+        <div class="container">
+            <div class="section-title">
+                <span>02</span>
+                <h3>Projetos em Campo</h3>
+            </div>
+            <div class="project-card-main">
+                <div class="project-img">
+                    <img src="https://images.unsplash.com/photo-1550989460-0adf9ea622e2?q=80&w=1200&auto=format&fit=crop" alt="Amazônia">
+                </div>
+                <div class="project-info">
+                    <span class="tag-status">ATIVO</span>
+                    <h4>Projeto Semente 🌱</h4>
+                    <p>Alocação de recursos para o plantio de 10.000 árvores nativas na Amazônia, monitoradas via satélite (Gaia-Eye).</p>
+                    
+                    <div class="progress-wrapper">
+                        <div class="progress-labels">
+                            <span>Progresso da Meta</span>
+                            <span id="sos-percent">0%</span>
+                        </div>
+                        <div class="progress-bar-bg">
+                            <div id="sos-fill" class="progress-bar-fill" style="width: 0%"></div>
+                        </div>
+                        <div class="progress-footer">
+                            <span><strong id="sos-arrecadado">...</strong> SOS Arrecadados</span>
+                            <span>Meta: 50.000 SOS</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="contribuir" class="container text-center">
+        <div class="section-title center">
+            <span>03</span>
+            <h3>Faça parte da Mudança</h3>
+        </div>
+        <p class="cta-text">Contribua diretamente para o Fundo Regenerativo da Nação. Transparência total via Algorand Mainnet.</p>
+        <div class="wallet-box">
+            <span class="label">Endereço Soberano (Algorand):</span>
+            <code id="wallet-addr">JPKARPW7WYNGDVEQ3BVVB6HDGUQ27X7J7IOAMPC5NWIKARJLWSLAD3URKA</code>
+            <button onclick="copyWallet()" id="copy-btn">Copiar Endereço 📋</button>
+        </div>
+        <p class="security-note">🛡️ Transação Protegida por Sincronia Neural v18.7</p>
+    </section>
+
+    <footer>
+        <div class="container">
+            <div class="footer-top">
+                <span class="logo">SOSPLANET</span>
+                <p>Nação Digital Soberana</p>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2025 Nação SOSPlanet. Autônomo. Soberano. Eterno.</p>
+                <div class="footer-links">
+                    <a href="index.html">Acesso Santuário</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>
