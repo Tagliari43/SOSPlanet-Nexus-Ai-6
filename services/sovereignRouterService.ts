@@ -4,7 +4,7 @@ import { ApiKeys } from "../utils/keys";
 export interface Ponte {
     nome: string;
     model: string;
-    provider: 'google' | 'cloudflare' | 'huggingface';
+    provider: 'google' | 'cloudflare' | 'groq';
     keyName: keyof ApiKeys;
     status: 'online' | 'offline';
     limiteDiario: number;
@@ -31,12 +31,12 @@ export const pontes: Ponte[] = [
         usoDiario: 0
     },
     {
-        nome: "Ponte Experimental (Hugging Face)",
-        model: 'mistralai/Mistral-7B-Instruct-v0.3',
-        provider: 'huggingface',
-        keyName: 'huggingface',
+        nome: "Ponte Experimental (Groq)",
+        model: 'llama-3.3-70b-versatile',
+        provider: 'groq',
+        keyName: 'groq',
         status: 'online',
-        limiteDiario: 30,
+        limiteDiario: 100,
         usoDiario: 0
     }
 ];

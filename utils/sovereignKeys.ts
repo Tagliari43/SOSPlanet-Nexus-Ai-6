@@ -8,5 +8,5 @@ export const sovereignKeys: ApiKeys = {
     cloudflare: {
         apiToken: "o1fOItjjpjCnZ2QVGrx2gw2Wt3SMEKRyBpBi96ak" 
     },
-    huggingface: "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" // Nova Chave forjada pelo Guardião
+    groq: "" // Chave do Groq (a ser preenchida pelo usuário)
 };

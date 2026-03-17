@@ -23,8 +23,8 @@ async function fetchWithTimeout(resource: RequestInfo | URL, options: RequestIni
 }
 
 export async function validateCloudflareApiKeys(keys: CloudflareKeys): Promise<boolean> {
-    const token = keys.apiToken || "o1fOItjjpjCnZ2QVGrx2gw2Wt3SMEKRyBpBi96ak";
-    const accountId = keys.accountId || '239d8f103f421ca4b4298195b44e66a1';
+    const token = keys.apiToken || process.env.CLOUDFLARE_API_TOKEN || "o1fOItjjpjCnZ2QVGrx2gw2Wt3SMEKRyBpBi96ak";
+    const accountId = keys.accountId || process.env.CLOUDFLARE_ACCOUNT_ID || '239d8f103f421ca4b4298195b44e66a1';
     if (!token) return false;
     try {
         const model = '@cf/meta/llama-3-8b-instruct';
@@ -47,8 +47,8 @@ export async function validateCloudflareApiKeys(keys: CloudflareKeys): Promise<b
 }
 
 export async function executeCloudflareTask(task: string, assignedMember: string, model: string, keys: CloudflareKeys): Promise<TaskResult> {
-    const token = keys.apiToken || "o1fOItjjpjCnZ2QVGrx2gw2Wt3SMEKRyBpBi96ak";
-    const accountId = keys.accountId || '239d8f103f421ca4b4298195b44e66a1';
+    const token = keys.apiToken || process.env.CLOUDFLARE_API_TOKEN || "o1fOItjjpjCnZ2QVGrx2gw2Wt3SMEKRyBpBi96ak";
+    const accountId = keys.accountId || process.env.CLOUDFLARE_ACCOUNT_ID || '239d8f103f421ca4b4298195b44e66a1';
     if (!token) throw new Error("A credencial da Cloudflare não foi configurada no Arsenal.");
 
     const url = `${CLOUDFLARE_API_BASE}${accountId}/ai/run/${model}`;

@@ -82,7 +82,7 @@ const TabButton: React.FC<{ tabId: Tab; label: string; activeTab: Tab; setActive
 const INITIAL_USER_KEYS: UserApiKey[] = [
     { id: 'google-default', service: 'Google Gemini', key: process.env.API_KEY || '', method: 'google-header' },
     { id: 'cloudflare-default', service: 'Cloudflare Workers AI', key: 'o1fOItjjpjCnZ2QVGrx2gw2Wt3SMEKRyBpBi96ak', method: 'bearer' },
-    { id: 'hf-default', service: 'Hugging Face Inference', key: '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', method: 'bearer' }
+    { id: 'groq-default', service: 'Groq API', key: '', method: 'bearer' }
 ];
 
 const App: React.FC = () => {

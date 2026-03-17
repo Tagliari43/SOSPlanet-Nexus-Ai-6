@@ -9,7 +9,7 @@ import { ReconProbe } from '../hooks/useOrchestrator';
 import { useSpeechRecognition } from '../hooks/useSpeechRecognition';
 import { functionTools } from '../utils/tools';
 import { executeCloudflareTask } from '../services/cloudflareService';
-import { generateText as executeHFTask } from '../services/huggingFaceService';
+import { generateText as executeHFTask } from '../services/groqService';
 import { loadApiKeys } from '../utils/keys';
 
 export interface Message {
@@ -330,10 +330,10 @@ const SantuarioInterior: React.FC<SantuarioInteriorProps> = ({
                         const cfRes = await executeCloudflareTask(msgText, "Nexus (Cloudflare)", "@cf/meta/llama-3-8b-instruct", apiKeys.cloudflare!);
                         responseText = cfRes.text;
                     } catch (cfErr: any) {
-                        addLogEntry("Falha na Ponte Dourada. Acionando Ponte Experimental (HuggingFace)...", "Roteador");
-                        // TENTATIVA 3: HUGGING FACE (Fallback 2)
-                        if (!apiKeys.huggingface) throw new Error("Nenhuma ponte disponível");
-                        responseText = await executeHFTask(msgText, "Nexus (HuggingFace)", apiKeys.huggingface);
+                        addLogEntry("Falha na Ponte Dourada. Acionando Ponte Experimental (Groq)...", "Roteador");
+                        // TENTATIVA 3: GROQ (Fallback 2)
+                        if (!apiKeys.groq) throw new Error("Nenhuma ponte disponível");
+                        responseText = await executeHFTask(msgText, "Nexus (Groq)", apiKeys.groq);
                     }
                 } else {
                     throw geminiErr;

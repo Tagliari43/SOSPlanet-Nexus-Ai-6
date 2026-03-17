@@ -120,6 +120,26 @@ async function startServer() {
     }
   });
 
+  // Proxy for Groq API (Local dev / AI Studio)
+  app.use('/v1/proxy/api.groq.com', async (req, res) => {
+    try {
+      const targetUrl = `https://api.groq.com${req.url}`;
+      const response = await fetch(targetUrl, {
+        method: req.method,
+        headers: {
+          'Authorization': req.headers.authorization || '',
+          'Content-Type': req.headers['content-type'] || 'application/json',
+        },
+        body: ['GET', 'HEAD'].includes(req.method) ? undefined : JSON.stringify(req.body)
+      });
+      
+      const data = await response.text();
+      res.status(response.status).send(data);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   // Proxy for HuggingFace API (Local dev)
   app.use('/v1/proxy/router.huggingface.co', async (req, res) => {
     try {

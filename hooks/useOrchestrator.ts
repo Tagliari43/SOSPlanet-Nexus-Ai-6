@@ -2,7 +2,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { executeTask as executeGeminiTask, generateExecutionPlan, runDeepProbeAnalysis, TaskResult } from '../services/geminiService';
 import { executeCloudflareTask } from '../services/cloudflareService';
-import { generateText as executeHFTask } from '../services/huggingFaceService';
+import { generateText as executeHFTask } from '../services/groqService';
 import { pontes as pontesConfig, Ponte } from '../services/sovereignRouterService';
 import { loadFromStorage, saveToStorage } from '../utils/storage';
 import { loadApiKeys } from '../utils/keys';
@@ -143,9 +143,9 @@ export const useSovereignRouter = (
                     setActiveMember(sub.assignedTo);
 
                     let success = false;
-                    // HIERARQUIA RIGOROSA: 1. Google -> 2. Cloudflare -> 3. HuggingFace
+                    // HIERARQUIA RIGOROSA: 1. Google -> 2. Cloudflare -> 3. Groq
                     const sortedBridges = [...pontes].sort((a, b) => {
-                        const order: Record<string, number> = { 'google': 0, 'cloudflare': 1, 'huggingface': 2 };
+                        const order: Record<string, number> = { 'google': 0, 'cloudflare': 1, 'groq': 2 };
                         return (order[a.provider] ?? 9) - (order[b.provider] ?? 9);
                     });
 
@@ -161,9 +161,9 @@ export const useSovereignRouter = (
                                 if (!apiKeys.cloudflare?.apiToken) throw new Error("Chave Cloudflare ausente");
                                 const res = await executeCloudflareTask(sub.description, sub.assignedTo, bridge.model, apiKeys.cloudflare);
                                 text = res.text;
-                            } else if (bridge.provider === 'huggingface') {
-                                if (!apiKeys.huggingface) throw new Error("Chave HF ausente");
-                                text = await executeHFTask(sub.description, sub.assignedTo, apiKeys.huggingface);
+                            } else if (bridge.provider === 'groq') {
+                                if (!apiKeys.groq) throw new Error("Chave Groq ausente");
+                                text = await executeHFTask(sub.description, sub.assignedTo, apiKeys.groq);
                             }
 
                             if (!text) throw new Error("Resposta vazia da ponte");
