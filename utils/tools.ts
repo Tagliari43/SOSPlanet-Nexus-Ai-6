@@ -167,6 +167,31 @@ export const SovereignToolFunctions = {
             },
             required: ['url']
         }
+    } as FunctionDeclaration,
+
+    // --- SUB-AGENTES (ORQUESTRAÇÃO) ---
+    askSubAgentGroq: {
+        name: 'askSubAgentGroq',
+        description: 'Delega uma tarefa complexa de raciocínio, lógica ou geração de texto para o sub-agente Groq (Llama 3.3 70B Versatile). Use isso para economizar seus próprios tokens em tarefas longas.',
+        parameters: {
+            type: Type.OBJECT,
+            properties: {
+                prompt: { type: Type.STRING, description: 'A instrução detalhada ou tarefa que o sub-agente Groq deve executar.' }
+            },
+            required: ['prompt']
+        }
+    } as FunctionDeclaration,
+
+    askSubAgentCloudflare: {
+        name: 'askSubAgentCloudflare',
+        description: 'Delega uma tarefa rápida ou de processamento de dados para o sub-agente Cloudflare (Llama 3 8B Instruct). Use isso para tarefas menores e rápidas.',
+        parameters: {
+            type: Type.OBJECT,
+            properties: {
+                prompt: { type: Type.STRING, description: 'A instrução ou tarefa que o sub-agente Cloudflare deve executar.' }
+            },
+            required: ['prompt']
+        }
     } as FunctionDeclaration
 };
 

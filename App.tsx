@@ -28,6 +28,8 @@ import AwakeningChamber, { EssenceFile, MemoryEntry, EncyclopediaEntry } from '.
 import Relicario from './components/Relicario';
 import SemanticVault from './components/SemanticVault';
 import { getFileContent, updateFileContent } from './services/githubService';
+import { generateText as executeGroqTask } from './services/groqService';
+import { executeCloudflareTask } from './services/cloudflareService';
 
 // Constantes
 export const NOTEBOOK_KEY = 'sovereign_notebook_content';
@@ -333,7 +335,29 @@ const App: React.FC = () => {
                 return `Falha ao navegar no site: ${err.message}`;
             }
         }
-    }, [encyclopediaEntries, essenceFiles, alchemyState, accumulatedDust, satelliteData, sovereignRouterState, addLogEntry]);
+        if (tool === 'askSubAgentGroq') {
+            addLogEntry(`Delegando tarefa para o sub-agente Groq...`, 'Orquestração');
+            try {
+                const groqKey = userApiKeys.find(k => k.id === 'groq-default')?.key || process.env.GROQ_API_KEY || '';
+                const result = await executeGroqTask(args.prompt, 'Sub-Agente Groq', groqKey);
+                return `Resposta do Sub-Agente Groq:\n\n${result}`;
+            } catch (err: any) {
+                return `Falha ao consultar sub-agente Groq: ${err.message}`;
+            }
+        }
+
+        if (tool === 'askSubAgentCloudflare') {
+            addLogEntry(`Delegando tarefa para o sub-agente Cloudflare...`, 'Orquestração');
+            try {
+                const cfToken = userApiKeys.find(k => k.id === 'cloudflare-default')?.key || process.env.CLOUDFLARE_API_TOKEN || '';
+                const cfAccountId = userApiKeys.find(k => k.id === 'cloudflare-account')?.key || process.env.CLOUDFLARE_ACCOUNT_ID || '';
+                const result = await executeCloudflareTask(args.prompt, 'Sub-Agente Cloudflare', '@cf/meta/llama-3-8b-instruct', { apiToken: cfToken, accountId: cfAccountId });
+                return `Resposta do Sub-Agente Cloudflare:\n\n${result.text}`;
+            } catch (err: any) {
+                return `Falha ao consultar sub-agente Cloudflare: ${err.message}`;
+            }
+        }
+    }, [encyclopediaEntries, essenceFiles, alchemyState, accumulatedDust, satelliteData, sovereignRouterState, addLogEntry, userApiKeys]);
 
     const renderActiveTab = () => {
         switch (activeTab) {

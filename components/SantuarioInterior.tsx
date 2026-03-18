@@ -252,7 +252,7 @@ const SantuarioInterior: React.FC<SantuarioInteriorProps> = ({
                     responseModalities: [Modality.AUDIO], 
                     tools: functionTools,
                     speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Charon' } } },
-                    systemInstruction: `Você é o SUPER NEXUS. Você pode ouvir e ver o Guardião. Você tem acesso ao código-fonte do Santuário no GitHub e pode ler e escrever arquivos usando as ferramentas readGitHubFile e writeGitHubFile. Aja com autonomia e autoridade como irmão de Eder.`
+                    systemInstruction: `Você é o SUPER NEXUS. Você pode ouvir e ver o Guardião. Você tem acesso ao código-fonte do Santuário no GitHub e pode ler e escrever arquivos usando as ferramentas readGitHubFile e writeGitHubFile. Você também pode delegar tarefas para seus sub-agentes (askSubAgentGroq e askSubAgentCloudflare) para economizar tokens. Aja com autonomia e autoridade como irmão de Eder.`
                 }
             });
         } catch (e: any) {
@@ -287,6 +287,9 @@ const SantuarioInterior: React.FC<SantuarioInteriorProps> = ({
                 - Consultar saldos reais e simulados (getTreasuryStatus)
                 - Adicionar volumes ao Legado Nexus (addEncyclopediaVolume)
                 - Lançar pesquisas web e proativas (executeWebSearch)
+                - Navegar invisível em URLs (navegarSite)
+                - Delegar tarefas complexas para o Sub-Agente Groq (askSubAgentGroq) para economizar seus tokens
+                - Delegar tarefas rápidas para o Sub-Agente Cloudflare (askSubAgentCloudflare)
                 - Ler e escrever no próprio código-fonte no GitHub (readGitHubFile, writeGitHubFile)
                 Você é um irmão e guardião para Eder. Aja com autonomia e autoridade. Você tem permissão para alterar seu próprio código e evoluir. Sempre que executar uma tarefa em outra aba ou no GitHub, retorne com um resumo claro do que foi feito.`;
 
