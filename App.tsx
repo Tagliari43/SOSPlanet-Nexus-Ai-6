@@ -298,11 +298,28 @@ const App: React.FC = () => {
         if (tool === 'navegarSite') {
             addLogEntry(`Navegador Soberano acessando: ${args.url}`, 'Navegador');
             try {
-                const response = await fetch(`/api/scraper?url=${encodeURIComponent(args.url)}`);
-                if (!response.ok) {
-                    throw new Error(`Erro HTTP: ${response.status}`);
+                // Tenta usar o ScraperAPI primeiro (via nosso backend)
+                let html = '';
+                try {
+                    const response = await fetch(`/api/scraper?url=${encodeURIComponent(args.url)}`);
+                    if (response.ok) {
+                        html = await response.text();
+                    } else {
+                        throw new Error(`ScraperAPI falhou com status: ${response.status}`);
+                    }
+                } catch (scraperErr) {
+                    addLogEntry(`ScraperAPI falhou, tentando proxy público (AllOrigins)...`, 'Navegador');
+                    // Fallback para o proxy público (AllOrigins)
+                    const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(args.url)}`;
+                    const response = await fetch(proxyUrl);
+                    
+                    if (!response.ok) {
+                        throw new Error(`Erro HTTP no proxy público: ${response.status}`);
+                    }
+                    
+                    const data = await response.json();
+                    html = data.contents;
                 }
-                const html = await response.text();
                 
                 if (!html || html.trim() === '') {
                     return `Erro: O site ${args.url} retornou uma página vazia. Pode haver um bloqueio de segurança.`;
@@ -313,11 +330,11 @@ const App: React.FC = () => {
                 const doc = parser.parseFromString(html, 'text/html');
                 
                 // Remover elementos que não contêm texto útil para leitura
-                const elementsToRemove = doc.querySelectorAll('script, style, noscript, iframe, svg, nav, footer');
+                const elementsToRemove = doc.querySelectorAll('script, style, noscript, iframe, svg, nav, footer, header, .menu, .sidebar');
                 elementsToRemove.forEach(s => s.remove());
                 
-                // Tentar focar no conteúdo principal primeiro
-                const mainContent = doc.querySelector('main') || doc.querySelector('article') || doc.querySelector('#content') || doc.body;
+                // Tentar focar no conteúdo principal primeiro (adicionado suporte específico para Wikipedia: .mw-parser-output)
+                const mainContent = doc.querySelector('main') || doc.querySelector('article') || doc.querySelector('#content') || doc.querySelector('.mw-parser-output') || doc.body;
                 const textContent = mainContent ? mainContent.textContent || '' : html;
                 
                 let cleanText = textContent.replace(/\s+/g, ' ').trim();
@@ -327,8 +344,8 @@ const App: React.FC = () => {
                     cleanText = html.replace(/<[^>]*>?/gm, ' ').replace(/\s+/g, ' ').trim();
                 }
                 
-                // Limitar a 8000 caracteres para evitar sobrecarga de tokens no Gemini
-                const truncated = cleanText.length > 8000 ? cleanText.substring(0, 8000) + '... [Conteúdo truncado]' : cleanText;
+                // Limitar a 12000 caracteres para ter um bom contexto sem estourar tokens
+                const truncated = cleanText.length > 12000 ? cleanText.substring(0, 12000) + '... [Conteúdo truncado]' : cleanText;
                 
                 return `Conteúdo da página ${args.url}:\n\n${truncated}`;
             } catch (err: any) {
