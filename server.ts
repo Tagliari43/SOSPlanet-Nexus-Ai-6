@@ -182,6 +182,29 @@ async function startServer() {
     }
   });
 
+  // Proxy for Ollama Cloud API (Fenix - MiniMax)
+  app.post('/api/ollama/chat', async (req, res) => {
+    try {
+      // O endpoint oficial da Ollama na nuvem para chat completions
+      const targetUrl = 'https://api.ollama.com/v1/chat/completions';
+      
+      const response = await fetch(targetUrl, {
+        method: 'POST',
+        headers: {
+          'Authorization': req.headers.authorization || '',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(req.body)
+      });
+      
+      const data = await response.text();
+      res.status(response.status).send(data);
+    } catch (error: any) {
+      console.error("Ollama Proxy Error:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   // Vite middleware for development
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({

@@ -192,6 +192,18 @@ export const SovereignToolFunctions = {
             },
             required: ['prompt']
         }
+    } as FunctionDeclaration,
+
+    askSubAgentFenix: {
+        name: 'askSubAgentFenix',
+        description: 'Delega uma tarefa complexa de pesquisa profunda, autoaperfeiçoamento ou engenharia de software para a Fênix (MiniMax-M2.7 na Ollama Cloud). Use isso quando precisar de análises detalhadas, pesquisas na web avançadas ou quando o Groq não for suficiente.',
+        parameters: {
+            type: Type.OBJECT,
+            properties: {
+                prompt: { type: Type.STRING, description: 'A tarefa detalhada para a Fênix executar.' }
+            },
+            required: ['prompt']
+        }
     } as FunctionDeclaration
 };
 

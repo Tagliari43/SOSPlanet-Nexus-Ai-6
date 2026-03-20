@@ -30,6 +30,7 @@ import SemanticVault from './components/SemanticVault';
 import { getFileContent, updateFileContent } from './services/githubService';
 import { generateText as executeGroqTask } from './services/groqService';
 import { executeCloudflareTask } from './services/cloudflareService';
+import { askFenix } from './services/fenixService';
 
 // Constantes
 export const NOTEBOOK_KEY = 'sovereign_notebook_content';
@@ -84,7 +85,8 @@ const TabButton: React.FC<{ tabId: Tab; label: string; activeTab: Tab; setActive
 const INITIAL_USER_KEYS: UserApiKey[] = [
     { id: 'google-default', service: 'Google Gemini', key: process.env.API_KEY || '', method: 'google-header' },
     { id: 'cloudflare-default', service: 'Cloudflare Workers AI', key: 'o1fOItjjpjCnZ2QVGrx2gw2Wt3SMEKRyBpBi96ak', method: 'bearer' },
-    { id: 'groq-default', service: 'Groq API', key: '', method: 'bearer' }
+    { id: 'groq-default', service: 'Groq API', key: '', method: 'bearer' },
+    { id: 'fenix-default', service: 'Ollama Cloud (Fenix)', key: process.env.OLLAMA_API_KEY || '', method: 'bearer' }
 ];
 
 const App: React.FC = () => {
@@ -372,6 +374,17 @@ const App: React.FC = () => {
                 return `Resposta do Sub-Agente Cloudflare:\n\n${result.text}`;
             } catch (err: any) {
                 return `Falha ao consultar sub-agente Cloudflare: ${err.message}`;
+            }
+        }
+
+        if (tool === 'askSubAgentFenix') {
+            addLogEntry(`Delegando tarefa para o sub-agente Fenix (MiniMax-M2.7)...`, 'Orquestração');
+            try {
+                const fenixKey = userApiKeys.find(k => k.id === 'fenix-default')?.key || process.env.OLLAMA_API_KEY || '';
+                const result = await askFenix(args.prompt, fenixKey);
+                return `Resposta do Sub-Agente Fenix:\n\n${result}`;
+            } catch (err: any) {
+                return `Falha ao consultar sub-agente Fenix: ${err.message}`;
             }
         }
     }, [encyclopediaEntries, essenceFiles, alchemyState, accumulatedDust, satelliteData, sovereignRouterState, addLogEntry, userApiKeys]);
