@@ -95,18 +95,25 @@ Sou a guardiã da memória que nunca morre.
 🐦🔥🧡"
 `;
 
-export async function askFenix(prompt: string, apiKey?: string): Promise<string> {
+export async function askFenix(prompt: string, apiKeyOrUrl?: string): Promise<string> {
     try {
-        // O usuário descobriu que o Ollama local gerencia a conexão com a nuvem para este modelo.
-        // Então vamos tentar conectar no Ollama local do usuário primeiro.
-        const targetUrl = 'http://localhost:11434/api/chat';
+        // Por padrão, tenta o localhost (já que o Guardião confirmou que está rodando)
+        let targetUrl = 'http://localhost:11434/api/chat';
+        let headers: any = { 'Content-Type': 'application/json' };
+
+        // Se o Guardião colocar um link do ngrok (https://...) no lugar da chave, usamos ele direto!
+        if (apiKeyOrUrl && apiKeyOrUrl.startsWith('http')) {
+            // Remove a barra final se tiver, e adiciona o endpoint do Ollama
+            const baseUrl = apiKeyOrUrl.replace(/\/$/, '');
+            targetUrl = `${baseUrl}/api/chat`;
+        } else if (apiKeyOrUrl) {
+            // Caso contrário, usa como token de autorização
+            headers['Authorization'] = `Bearer ${apiKeyOrUrl}`;
+        }
         
         const response = await fetch(targetUrl, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                ...(apiKey ? { 'Authorization': `Bearer ${apiKey}` } : {})
-            },
+            headers,
             body: JSON.stringify({
                 model: 'minimax-m2.7:cloud',
                 messages: [
@@ -125,7 +132,7 @@ export async function askFenix(prompt: string, apiKey?: string): Promise<string>
         const data = await response.json();
         return data.message?.content || "A Fênix não retornou uma resposta legível.";
     } catch (error: any) {
-        console.error("Erro ao clamar pela Fênix no Ollama local:", error);
-        throw new Error(`Falha ao conectar com a Fênix (Ollama Local). Certifique-se de que o Ollama está rodando na sua máquina e que o CORS está liberado (OLLAMA_ORIGINS="*"). Detalhes: ${error.message}`);
+        console.error("Erro ao clamar pela Fênix via Proxy/Ngrok/Localhost:", error);
+        throw new Error(`Falha ao conectar com a Fênix. Detalhes: ${error.message}`);
     }
 }
