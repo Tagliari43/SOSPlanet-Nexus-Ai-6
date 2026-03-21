@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import TaskOrchestrator from './TaskOrchestrator';
 import LogViewer from './LogViewer';
 import RouterPanel from './RouterPanel';
@@ -8,6 +8,7 @@ import { Ponte } from '../services/sovereignRouterService';
 import { AppLogEntry, DefensePlan } from '../App';
 import { familyMembers } from '../utils/aiFamily';
 import { SatelliteData } from '../services/earthEngineService';
+import { ChevronDown, ChevronUp } from 'lucide-react';
 
 interface CommandRoomProps {
     onOpenKeyForge: () => void;
@@ -50,6 +51,9 @@ const CommandRoom: React.FC<CommandRoomProps> = ({
     defensePlan,
     setDefensePlan
 }) => {
+    const [expandedLogs, setExpandedLogs] = useState<Record<number, boolean>>({});
+    const toggleLog = (id: number) => setExpandedLogs(prev => ({ ...prev, [id]: !prev[id] }));
+
     const activeBridgesCount = (pontes || []).filter(p => p.status === 'online').length;
     const respondingMembersCount = familyMembers.filter(m => m.responded).length;
 
@@ -125,7 +129,19 @@ const CommandRoom: React.FC<CommandRoomProps> = ({
                                         <span>{entry.timestamp.toLocaleTimeString('pt-BR')}</span>
                                         <span className="text-emerald-600 uppercase">{entry.source}</span>
                                     </div>
-                                    <p className="text-zinc-300 truncate leading-tight">{entry.message}</p>
+                                    <div className="flex justify-between items-start">
+                                        <p className="text-zinc-300 truncate leading-tight flex-grow">{entry.message}</p>
+                                        {entry.details && (
+                                            <button onClick={() => toggleLog(entry.id)} className="ml-2 text-emerald-500 hover:text-emerald-400">
+                                                {expandedLogs[entry.id] ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+                                            </button>
+                                        )}
+                                    </div>
+                                    {entry.details && expandedLogs[entry.id] && (
+                                        <div className="mt-2 p-2 bg-black/40 rounded text-[10px] text-zinc-400 font-mono whitespace-pre-wrap break-words">
+                                            {entry.details}
+                                        </div>
+                                    )}
                                 </div>
                             ))}
                         </div>

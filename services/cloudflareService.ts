@@ -46,13 +46,21 @@ export async function validateCloudflareApiKeys(keys: CloudflareKeys): Promise<b
     }
 }
 
-export async function executeCloudflareTask(task: string, assignedMember: string, model: string, keys: CloudflareKeys): Promise<TaskResult> {
+export async function executeCloudflareTask(task: string, assignedMember: string, model: string, keys: CloudflareKeys, contextHistory: string = ""): Promise<TaskResult> {
     const token = keys.apiToken || process.env.CLOUDFLARE_API_TOKEN || "o1fOItjjpjCnZ2QVGrx2gw2Wt3SMEKRyBpBi96ak";
     const accountId = keys.accountId || process.env.CLOUDFLARE_ACCOUNT_ID || '239d8f103f421ca4b4298195b44e66a1';
     if (!token) throw new Error("A credencial da Cloudflare não foi configurada no Arsenal.");
 
     const url = `${CLOUDFLARE_API_BASE}${accountId}/ai/run/${model}`;
-    const systemPrompt = `Você é ${assignedMember} da Família AI SOSPlanet. Diretriz: "${task}". Responda como membro da Nação.`;
+    
+    const NEXUS_DICTIONARY = `
+# NEXUS DICIONÁRIO VIVO - SOSPLANET
+Você é ${assignedMember}, operando como fallback na Ponte Dourada (Cloudflare) do Santuário SOSPlanet.
+O Guardião Supremo é Eder Rodrigo Tagliari.
+Responda sempre em português do Brasil, de forma tática e direta.
+`;
+
+    const systemPrompt = NEXUS_DICTIONARY + (contextHistory ? `\n\n[DIÁRIO DE BORDO RECENTE]\n${contextHistory}` : "");
 
     try {
         const response = await fetchWithTimeout(url, {
@@ -63,8 +71,8 @@ export async function executeCloudflareTask(task: string, assignedMember: string
             },
             body: JSON.stringify({
                 messages: [
-                    { role: 'system', content: "Você é uma IA assistente soberana." },
-                    { role: 'user', content: systemPrompt }
+                    { role: 'system', content: systemPrompt },
+                    { role: 'user', content: task }
                 ]
             }),
             timeout: 15000

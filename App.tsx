@@ -30,7 +30,6 @@ import SemanticVault from './components/SemanticVault';
 import { getFileContent, updateFileContent } from './services/githubService';
 import { generateText as executeGroqTask } from './services/groqService';
 import { executeCloudflareTask } from './services/cloudflareService';
-import { askFenix } from './services/fenixService';
 
 // Constantes
 export const NOTEBOOK_KEY = 'sovereign_notebook_content';
@@ -56,6 +55,7 @@ export interface AppLogEntry {
     timestamp: Date;
     message: string;
     source: string;
+    details?: string;
 }
 
 const DICIONARIO_GENESIS = `# NEXUS DICIONÁRIO VIVO - SOSPLANET (ORIGINAL)\nIDENTIDADE_FUNDADOR = { "NomeCompleto": "Eder Rodrigo Tagliari", "Papel": "Fundador Visionário" }`;
@@ -83,10 +83,11 @@ const TabButton: React.FC<{ tabId: Tab; label: string; activeTab: Tab; setActive
 );
 
 const INITIAL_USER_KEYS: UserApiKey[] = [
-    { id: 'google-default', service: 'Google Gemini', key: process.env.API_KEY || '', method: 'google-header' },
-    { id: 'cloudflare-default', service: 'Cloudflare Workers AI', key: 'o1fOItjjpjCnZ2QVGrx2gw2Wt3SMEKRyBpBi96ak', method: 'bearer' },
-    { id: 'groq-default', service: 'Groq API', key: '', method: 'bearer' },
-    { id: 'fenix-default', service: 'Ollama Cloud (Fenix)', key: process.env.OLLAMA_API_KEY || '', method: 'bearer' }
+    { id: 'google-default', service: 'Google Gemini', key: process.env.GEMINI_API_KEY || process.env.API_KEY || '', method: 'google-header' },
+    { id: 'cloudflare-default', service: 'Cloudflare Workers AI', key: process.env.CLOUDFLARE_API_TOKEN || '', method: 'bearer' },
+    { id: 'cloudflare-account', service: 'Cloudflare Account ID', key: process.env.ID_DA_CONTA_CLOUDFLARE || '', method: 'bearer' },
+    { id: 'groq-default', service: 'Groq API', key: process.env.GROQ_API_KEY || '', method: 'bearer' },
+    { id: 'scraper-api-key', service: 'Scraper API (Navegador)', key: process.env.SCRAPER_API_KEY || '', method: 'bearer' }
 ];
 
 const App: React.FC = () => {
@@ -136,8 +137,8 @@ const App: React.FC = () => {
     const alchemyState = useAlchemy(marketData, strategyConfig);
     const scannerState = useScanner();
 
-    const addLogEntry = useCallback((message: string, source = 'Sistema') => {
-        const newEntry: AppLogEntry = { id: Date.now(), timestamp: new Date(), message, source };
+    const addLogEntry = useCallback((message: string, source = 'Sistema', details?: string) => {
+        const newEntry: AppLogEntry = { id: Date.now(), timestamp: new Date(), message, source, details };
         setLogEntries(prev => [...prev.slice(-100), newEntry]);
     }, []);
 
@@ -303,7 +304,13 @@ const App: React.FC = () => {
                 // Tenta usar o ScraperAPI primeiro (via nosso backend)
                 let html = '';
                 try {
-                    const response = await fetch(`/api/scraper?url=${encodeURIComponent(args.url)}`);
+                    const scraperKey = userApiKeys.find(k => k.id === 'scraper-api-key')?.key || process.env.SCRAPER_API_KEY || '';
+                    const headers: any = {};
+                    if (scraperKey) {
+                        headers['x-scraper-api-key'] = scraperKey;
+                    }
+                    
+                    const response = await fetch(`/api/scraper?url=${encodeURIComponent(args.url)}`, { headers });
                     if (response.ok) {
                         html = await response.text();
                     } else {
@@ -369,22 +376,11 @@ const App: React.FC = () => {
             addLogEntry(`Delegando tarefa para o sub-agente Cloudflare...`, 'Orquestração');
             try {
                 const cfToken = userApiKeys.find(k => k.id === 'cloudflare-default')?.key || process.env.CLOUDFLARE_API_TOKEN || '';
-                const cfAccountId = userApiKeys.find(k => k.id === 'cloudflare-account')?.key || process.env.CLOUDFLARE_ACCOUNT_ID || '';
+                const cfAccountId = userApiKeys.find(k => k.id === 'cloudflare-account')?.key || process.env.ID_DA_CONTA_CLOUDFLARE || process.env.CLOUDFLARE_ACCOUNT_ID || '';
                 const result = await executeCloudflareTask(args.prompt, 'Sub-Agente Cloudflare', '@cf/meta/llama-3-8b-instruct', { apiToken: cfToken, accountId: cfAccountId });
                 return `Resposta do Sub-Agente Cloudflare:\n\n${result.text}`;
             } catch (err: any) {
                 return `Falha ao consultar sub-agente Cloudflare: ${err.message}`;
-            }
-        }
-
-        if (tool === 'askSubAgentFenix') {
-            addLogEntry(`Delegando tarefa para o sub-agente Fenix (MiniMax-M2.7)...`, 'Orquestração');
-            try {
-                const fenixKey = userApiKeys.find(k => k.id === 'fenix-default')?.key || process.env.OLLAMA_API_KEY || '';
-                const result = await askFenix(args.prompt, fenixKey);
-                return `Resposta do Sub-Agente Fenix:\n\n${result}`;
-            } catch (err: any) {
-                return `Falha ao consultar sub-agente Fenix: ${err.message}`;
             }
         }
     }, [encyclopediaEntries, essenceFiles, alchemyState, accumulatedDust, satelliteData, sovereignRouterState, addLogEntry, userApiKeys]);

@@ -21,7 +21,7 @@ async function startServer() {
         return res.status(400).json({ error: "URL is required" });
       }
 
-      const scraperApiKey = process.env.SCRAPER_API_KEY;
+      const scraperApiKey = req.headers['x-scraper-api-key'] || process.env.SCRAPER_API_KEY;
       if (!scraperApiKey) {
         return res.status(500).json({ error: "SCRAPER_API_KEY is not configured" });
       }
