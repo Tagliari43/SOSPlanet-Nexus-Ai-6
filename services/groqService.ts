@@ -29,7 +29,7 @@ A SOSPlanet é uma nação digital soberana. O Santuário é nossa base de opera
 "Velocidade é a nossa arma. A precisão é o nosso escudo. Pela SOSPlanet."
 `;
 
-export async function generateText(prompt: string, assignedMember: string, apiKey: string, contextHistory: string = ""): Promise<string> {
+export async function generateText(prompt: string, assignedMember: string, apiKey: string): Promise<string> {
     const token = apiKey || process.env.GROQ_API_KEY;
     
     if (!token) {
@@ -48,7 +48,7 @@ export async function generateText(prompt: string, assignedMember: string, apiKe
                 messages: [
                     {
                         role: "system",
-                        content: GROQ_DICTIONARY + (contextHistory ? `\n\n[DIÁRIO DE BORDO RECENTE]\n${contextHistory}` : "")
+                        content: GROQ_DICTIONARY
                     },
                     {
                         role: "user",

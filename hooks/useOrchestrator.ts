@@ -153,19 +153,17 @@ export const useSovereignRouter = (
                         if (bridge.status !== 'online') continue;
                         try {
                             let text = "";
-                            const recentLogs = logHistory.slice(-10).map(l => `[${l.timestamp.toLocaleTimeString()}] ${l.source}: ${l.message}`).join('\n');
-                            
                             if (bridge.provider === 'google') {
                                 if (!apiKeys.google) throw new Error("Chave Gemini ausente");
-                                const res = await executeGeminiTask(sub.description, sub.assignedTo, bridge.model, apiKeys.google, !!currentTask.useSearch, recentLogs);
+                                const res = await executeGeminiTask(sub.description, sub.assignedTo, bridge.model, apiKeys.google, !!currentTask.useSearch);
                                 text = res.text;
                             } else if (bridge.provider === 'cloudflare') {
                                 if (!apiKeys.cloudflare?.apiToken) throw new Error("Chave Cloudflare ausente");
-                                const res = await executeCloudflareTask(sub.description, sub.assignedTo, bridge.model, apiKeys.cloudflare, recentLogs);
+                                const res = await executeCloudflareTask(sub.description, sub.assignedTo, bridge.model, apiKeys.cloudflare);
                                 text = res.text;
                             } else if (bridge.provider === 'groq') {
                                 if (!apiKeys.groq) throw new Error("Chave Groq ausente");
-                                text = await executeHFTask(sub.description, sub.assignedTo, apiKeys.groq, recentLogs);
+                                text = await executeHFTask(sub.description, sub.assignedTo, apiKeys.groq);
                             }
 
                             if (!text) throw new Error("Resposta vazia da ponte");
@@ -175,10 +173,6 @@ export const useSovereignRouter = (
                             results.push(`[${sub.assignedTo}]: ${text}`);
                             setPontes(prev => prev.map(p => p.nome === bridge.nome ? { ...p, usoDiario: p.usoDiario + 1 } : p));
                             success = true;
-                            
-                            // Log the detailed result
-                            addLogEntry(`Tarefa concluída por ${sub.assignedTo} via ${bridge.nome}`, 'Orquestrador', text);
-                            
                             break;
                         } catch (err: any) {
                             addLogEntry(`Falha na ${bridge.nome}: ${err.message}`, 'Sistema');
