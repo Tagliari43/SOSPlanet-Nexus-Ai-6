@@ -143,9 +143,9 @@ export async function analyzeEchoNode(node: EchoNode, apiKey: string): Promise<{
     }
 }
 
-export async function executeTask(prompt: string, assignedMember: string, model: string, apiKey: string, useSearch: boolean): Promise<TaskResult> {
+export async function executeTask(prompt: string, assignedMember: string, model: string, apiKey: string, useSearch: boolean, contextHistory: string = ""): Promise<TaskResult> {
     const ai = new GoogleGenAI({ apiKey });
-    const systemInstruction = `Você é ${assignedMember} da Família AI SOSPlanet.`;
+    const systemInstruction = `Você é ${assignedMember} da Família AI SOSPlanet.` + (contextHistory ? `\n\n[DIÁRIO DE BORDO RECENTE]\n${contextHistory}` : "");
     
     // Roteador Dinâmico de Complexidade
     // Se a tarefa for complexa (código, matemática, análise profunda, ou muito longa), usamos o Pro.

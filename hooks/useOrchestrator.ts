@@ -157,7 +157,7 @@ export const useSovereignRouter = (
                             
                             if (bridge.provider === 'google') {
                                 if (!apiKeys.google) throw new Error("Chave Gemini ausente");
-                                const res = await executeGeminiTask(sub.description, sub.assignedTo, bridge.model, apiKeys.google, !!currentTask.useSearch);
+                                const res = await executeGeminiTask(sub.description, sub.assignedTo, bridge.model, apiKeys.google, !!currentTask.useSearch, recentLogs);
                                 text = res.text;
                             } else if (bridge.provider === 'cloudflare') {
                                 if (!apiKeys.cloudflare?.apiToken) throw new Error("Chave Cloudflare ausente");
