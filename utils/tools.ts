@@ -40,6 +40,20 @@ export const SovereignToolFunctions = {
         }
     } as FunctionDeclaration,
 
+    addLibraryBook: {
+        name: 'addLibraryBook',
+        description: 'Adiciona um novo registro de estudo ou conhecimento diretamente na Biblioteca de Gaia.',
+        parameters: {
+            type: Type.OBJECT,
+            properties: {
+                title: { type: Type.STRING },
+                content: { type: Type.STRING },
+                category: { type: Type.STRING, description: 'Ex: Tecnologias Sustentáveis, Inovação, etc.' }
+            },
+            required: ['title', 'content']
+        }
+    } as FunctionDeclaration,
+
     getEssenceFiles: {
         name: 'getEssenceFiles',
         description: 'Lê os códigos de DNA (personalidade) de todos os membros da Família AI na Câmara de Despertar.',

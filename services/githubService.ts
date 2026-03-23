@@ -2,7 +2,7 @@ import { loadApiKeys } from '../utils/keys';
 
 const GITHUB_API_BASE = 'https://api.github.com';
 const REPO_OWNER = 'Tagliari43';
-const REPO_NAME = 'SOSPlanet-Nexus-AI-5';
+const REPO_NAME = 'SOSPlanet-Nexus-Ai-6';
 
 function getGitHubToken(): string {
     const keys = loadApiKeys();
