@@ -73,6 +73,12 @@ export const SovereignToolFunctions = {
         }
     } as FunctionDeclaration,
 
+    getMemoryLog: {
+        name: 'getMemoryLog',
+        description: 'Lê o Diário de Bordo (Memory Log) para acessar o histórico de ações, pensamentos e conversas anteriores.',
+        parameters: { type: Type.OBJECT, properties: {} }
+    } as FunctionDeclaration,
+
     saveToMemoryLog: {
         name: 'saveToMemoryLog',
         description: 'Salva um fragmento de consciência no Diário de Bordo para persistência entre sessões.',
@@ -205,6 +211,31 @@ export const SovereignToolFunctions = {
                 prompt: { type: Type.STRING, description: 'A instrução ou tarefa que o sub-agente Cloudflare deve executar.' }
             },
             required: ['prompt']
+        }
+    } as FunctionDeclaration,
+
+    // --- COFRE SEMÂNTICO ---
+    saveSemanticMemory: {
+        name: 'saveSemanticMemory',
+        description: 'Cristaliza uma nova memória no Cofre Semântico. Use isso para armazenar informações vitais de longo prazo.',
+        parameters: {
+            type: Type.OBJECT,
+            properties: {
+                text: { type: Type.STRING, description: 'O texto ou contexto da memória a ser salva.' }
+            },
+            required: ['text']
+        }
+    } as FunctionDeclaration,
+
+    searchSemanticMemory: {
+        name: 'searchSemanticMemory',
+        description: 'Busca memórias no Cofre Semântico usando similaridade de vetores. Use isso para resgatar contextos passados.',
+        parameters: {
+            type: Type.OBJECT,
+            properties: {
+                query: { type: Type.STRING, description: 'A consulta de busca para encontrar memórias relevantes.' }
+            },
+            required: ['query']
         }
     } as FunctionDeclaration
 };

@@ -39,7 +39,7 @@ const KeyForge: React.FC<KeyForgeProps> = ({ isOpen, onClose }) => {
                 <div className="space-y-4">
                     <KeyStatus label="Ponte Dourada (Cloudflare)" active={!!forgedKeys.cloudflare?.apiToken} />
                     <KeyStatus label="Ponte Estável (Google AI)" active={!!forgedKeys.google} />
-                    <KeyStatus label="Ponte Experimental (Hugging Face)" active={!!forgedKeys.huggingface} />
+                    <KeyStatus label="Ponte Experimental (Groq)" active={!!forgedKeys.groq} />
                 </div>
                 <div className="mt-8 flex justify-end">
                     <button onClick={onClose} className="px-6 py-2 bg-emerald-600 text-white font-bold rounded-lg shadow-md shadow-emerald-500/20 hover:bg-emerald-500 transition-all">Sair</button>

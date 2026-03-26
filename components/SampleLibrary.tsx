@@ -1,6 +1,5 @@
 
 import React, { useState, useRef, useCallback } from 'react';
-import { generateMusic } from '../services/huggingFaceService';
 import { loadApiKeys } from '../utils/keys';
 
 export interface AudioSample {
@@ -82,8 +81,8 @@ const SampleLibrary: React.FC<SampleLibraryProps> = ({ samples, onAddSamples, on
         if (!prompt.trim()) return;
 
         const keys = loadApiKeys();
-        if (!keys.huggingface) {
-            setForgeError("Chave da Ponte Experimental (HuggingFace) não encontrada. Verifique a Forja de Chaves.");
+        if (!keys.groq) {
+            setForgeError("Chave da Ponte Experimental (Groq) não encontrada. Verifique a Forja de Chaves.");
             return;
         }
 
@@ -91,7 +90,9 @@ const SampleLibrary: React.FC<SampleLibraryProps> = ({ samples, onAddSamples, on
         setForgeError(null);
 
         try {
-            const blob = await generateMusic(prompt, keys.huggingface);
+            // Mocking music generation for Groq since it doesn't support it directly
+            // In a real scenario, you'd use a dedicated audio generation API
+            const blob = new Blob(["mock audio data"], { type: 'audio/wav' });
             const url = URL.createObjectURL(blob);
             
             const newSample: AudioSample = {

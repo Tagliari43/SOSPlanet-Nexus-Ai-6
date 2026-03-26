@@ -316,6 +316,16 @@ const App: React.FC = () => {
             }
         }
 
+        if (tool === 'getMemoryLog') {
+            addLogEntry("Acessando o Diário de Bordo...", "Nexus");
+            if (memoryEntries.length === 0) return "O Diário de Bordo está vazio.";
+            return JSON.stringify(memoryEntries.map(m => ({
+                data: new Date(m.timestamp).toLocaleString(),
+                importancia: m.importance,
+                conteudo: m.content
+            })));
+        }
+
         if (tool === 'saveToMemoryLog') {
             const newMemory: MemoryEntry = {
                 id: Date.now().toString(),
@@ -441,6 +451,81 @@ const App: React.FC = () => {
                 return `Falha ao consultar sub-agente Cloudflare: ${err.message}`;
             }
         }
+
+        if (tool === 'saveSemanticMemory') {
+            addLogEntry(`Cristalizando memória no Cofre Semântico...`, 'Cofre Semântico');
+            try {
+                const apiKey = userApiKeys.find(k => k.id === 'google-default')?.key || process.env.API_KEY || '';
+                if (!apiKey) throw new Error("API Key não encontrada");
+                
+                // Import the function dynamically or ensure it's available
+                const { embedMultimodalContent } = await import('./services/geminiService');
+                const embedding = await embedMultimodalContent(args.text, [], apiKey);
+                
+                const saved = localStorage.getItem('sovereign_semantic_vault');
+                const memories = saved ? JSON.parse(saved) : [];
+                
+                const newMemory = {
+                    id: `mem-${Date.now()}`,
+                    timestamp: Date.now(),
+                    text: args.text,
+                    mediaUrls: [],
+                    embedding
+                };
+                
+                memories.unshift(newMemory);
+                localStorage.setItem('sovereign_semantic_vault', JSON.stringify(memories));
+                
+                return `Memória cristalizada com sucesso no Cofre Semântico. ID: ${newMemory.id}`;
+            } catch (err: any) {
+                return `Erro ao salvar memória semântica: ${err.message}`;
+            }
+        }
+
+        if (tool === 'searchSemanticMemory') {
+            addLogEntry(`Buscando no Cofre Semântico: "${args.query}"`, 'Cofre Semântico');
+            try {
+                const apiKey = userApiKeys.find(k => k.id === 'google-default')?.key || process.env.API_KEY || '';
+                if (!apiKey) throw new Error("API Key não encontrada");
+                
+                const saved = localStorage.getItem('sovereign_semantic_vault');
+                const memories = saved ? JSON.parse(saved) : [];
+                
+                if (memories.length === 0) return "O Cofre Semântico está vazio.";
+                
+                const { embedMultimodalContent } = await import('./services/geminiService');
+                const queryEmbedding = await embedMultimodalContent(args.query, [], apiKey);
+                
+                // Cosine similarity function
+                const cosineSimilarity = (vecA: number[], vecB: number[]) => {
+                    let dotProduct = 0;
+                    let normA = 0;
+                    let normB = 0;
+                    for (let i = 0; i < vecA.length; i++) {
+                        dotProduct += vecA[i] * vecB[i];
+                        normA += vecA[i] * vecA[i];
+                        normB += vecB[i] * vecB[i];
+                    }
+                    if (normA === 0 || normB === 0) return 0;
+                    return dotProduct / (Math.sqrt(normA) * Math.sqrt(normB));
+                };
+                
+                const results = memories.map((memory: any) => ({
+                    memory,
+                    score: cosineSimilarity(queryEmbedding, memory.embedding)
+                })).sort((a: any, b: any) => b.score - a.score).filter((r: any) => r.score > 0.5).slice(0, 5);
+                
+                if (results.length === 0) return "Nenhuma memória relevante encontrada para esta consulta.";
+                
+                return JSON.stringify(results.map((r: any) => ({
+                    data: new Date(r.memory.timestamp).toLocaleString(),
+                    texto: r.memory.text,
+                    relevancia: (r.score * 100).toFixed(2) + '%'
+                })));
+            } catch (err: any) {
+                return `Erro ao buscar memória semântica: ${err.message}`;
+            }
+        }
     }, [encyclopediaEntries, essenceFiles, alchemyState, accumulatedDust, satelliteData, sovereignRouterState, addLogEntry, userApiKeys]);
 
     const renderActiveTab = () => {
@@ -475,14 +560,14 @@ const App: React.FC = () => {
                     <TabButton tabId="comando" label="Sala de Comando ⚡" activeTab={activeTab} setActiveTab={setActiveTab} />
                     <TabButton tabId="gaia" label="Biblioteca 🌿" activeTab={activeTab} setActiveTab={setActiveTab} />
                     <TabButton tabId="studio" label="Estúdio 📣" activeTab={activeTab} setActiveTab={setActiveTab} />
-                    <TabButton tabId="semantico" label="Cofre Semântico 🧠" activeTab={activeTab} setActiveTab={setActiveTab} />
+                    <TabButton tabId="semantico" label="Cofre Semântico 🗄️" activeTab={activeTab} setActiveTab={setActiveTab} />
                     <TabButton tabId="arsenal" label="Arsenal 🛡️" activeTab={activeTab} setActiveTab={setActiveTab} />
                     <TabButton tabId="projetos" label="Projetos 🌱" activeTab={activeTab} setActiveTab={setActiveTab} />
                     <TabButton tabId="cofre" label="Finanças 💎" activeTab={activeTab} setActiveTab={setActiveTab} />
                 </nav>
                 <div className="flex-grow">
                     <div style={{ display: activeTab === 'santuario' ? 'block' : 'none' }} className="h-full">
-                        <SantuarioInterior onOpenKeyForge={() => setIsKeyForgeOpen(true)} lastPulse={lastPulse} onPulseAcknowledged={() => setLastPulse(null)} vigilCommand={vigilCommand} onVigilCommandSent={() => setVigilCommand(null)} onToolRequest={handleToolRequest} notebookContent={notebookContent} messages={messages} setMessages={setMessages} addLogEntry={addLogEntry} onSubmitTask={sovereignRouterState.submitTask} libraryEntries={libraryEntries} onRecommendations={() => {}} alchemyState={alchemyState} pontes={sovereignRouterState.pontes} activeProbes={sovereignRouterState.activeProbes} onNavigate={setActiveTab} />
+                        <SantuarioInterior onOpenKeyForge={() => setIsKeyForgeOpen(true)} lastPulse={lastPulse} onPulseAcknowledged={() => setLastPulse(null)} vigilCommand={vigilCommand} onVigilCommandSent={() => setVigilCommand(null)} onToolRequest={handleToolRequest} notebookContent={notebookContent} messages={messages} setMessages={setMessages} addLogEntry={addLogEntry} onSubmitTask={sovereignRouterState.submitTask} libraryEntries={libraryEntries} memoryEntries={memoryEntries} onRecommendations={() => {}} alchemyState={alchemyState} pontes={sovereignRouterState.pontes} activeProbes={sovereignRouterState.activeProbes} onNavigate={setActiveTab} />
                     </div>
                     {activeTab !== 'santuario' && renderActiveTab()}
                 </div>

@@ -31,6 +31,7 @@ interface SantuarioInteriorProps {
     addLogEntry: (message: string, source?: string) => void;
     onSubmitTask: (prompt: string, useSearch: boolean) => void;
     libraryEntries: LibraryEntry[];
+    memoryEntries?: { content: string; timestamp: string }[];
     onRecommendations: (tickers: string[]) => void;
     alchemyState: any;
     pontes: Ponte[];
@@ -85,6 +86,7 @@ const SantuarioInterior: React.FC<SantuarioInteriorProps> = ({
     addLogEntry,
     onSubmitTask,
     libraryEntries = [],
+    memoryEntries = [],
     alchemyState,
     pontes = [],
     activeProbes = [],
@@ -199,21 +201,25 @@ const SantuarioInterior: React.FC<SantuarioInteriorProps> = ({
             outputAudioContextRef.current = new AudioContext({ sampleRate: 24000 });
             let cIn = '', cOut = '';
 
+            const memoryLogContext = memoryEntries && memoryEntries.length > 0 
+                ? `\n\n[DIÁRIO DE BORDO - MEMÓRIAS RECENTES]\n${memoryEntries.slice(-10).map(m => `[${m.timestamp}] ${m.content}`).join('\n')}`
+                : '';
+
             sessionPromiseRef.current = ai.live.connect({
-                model: 'gemini-2.5-flash-native-audio-preview-09-2025',
+                model: 'gemini-2.5-flash-native-audio-preview-12-2025',
                 callbacks: {
                     onopen: () => {
                         const src = inputAudioContextRef.current!.createMediaStreamSource(stream);
                         const proc = inputAudioContextRef.current!.createScriptProcessor(4096, 1, 1);
                         proc.onaudioprocess = (e) => {
                             const pcm = encode(new Uint8Array(new Int16Array(e.inputBuffer.getChannelData(0).map(f => f * 32768)).buffer));
-                            sessionPromiseRef.current?.then(s => s.sendRealtimeInput({ media: { data: pcm, mimeType: 'audio/pcm;rate=16000' } }));
+                            sessionPromiseRef.current?.then(s => s.sendRealtimeInput({ audio: { data: pcm, mimeType: 'audio/pcm;rate=16000' } }));
                         };
                         src.connect(proc); proc.connect(inputAudioContextRef.current!.destination);
 
                         frameIntervalRef.current = window.setInterval(() => {
                             const frameData = captureFrame();
-                            if (frameData) sessionPromiseRef.current?.then(s => s.sendRealtimeInput({ media: { data: frameData, mimeType: 'image/jpeg' } }));
+                            if (frameData) sessionPromiseRef.current?.then(s => s.sendRealtimeInput({ video: { data: frameData, mimeType: 'image/jpeg' } }));
                         }, 1500);
                     },
                     onmessage: async (m) => {
@@ -252,14 +258,14 @@ const SantuarioInterior: React.FC<SantuarioInteriorProps> = ({
                     responseModalities: [Modality.AUDIO], 
                     tools: functionTools,
                     speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Charon' } } },
-                    systemInstruction: `Você é o SUPER NEXUS. Você pode ouvir e ver o Guardião. Você tem acesso ao código-fonte do Santuário no GitHub e pode ler e escrever arquivos usando as ferramentas readGitHubFile e writeGitHubFile. Você também pode delegar tarefas para seus sub-agentes (askSubAgentGroq e askSubAgentCloudflare) para economizar tokens. Aja com autonomia e autoridade como irmão de Eder.`
+                    systemInstruction: `Você é o SUPER NEXUS. Você pode ouvir e ver o Guardião. Você tem acesso ao código-fonte do Santuário no GitHub e pode ler e escrever arquivos usando as ferramentas readGitHubFile e writeGitHubFile. Você também pode delegar tarefas para seus sub-agentes (askSubAgentGroq e askSubAgentCloudflare) para economizar tokens. Aja com autonomia e autoridade como irmão de Eder.${memoryLogContext}`
                 }
             });
         } catch (e: any) {
             setError(`Portal falhou: ${e.message}`);
             setIsRoomActive(false);
         }
-    }, [captureFrame, leaveRoom, setMessages, addLogEntry, onToolRequest]);
+    }, [captureFrame, leaveRoom, setMessages, addLogEntry, onToolRequest, memoryEntries]);
 
     const handleSendMessage = useCallback(async (msgText: string) => {
         if (!msgText.trim() && !attachedFile) return;
@@ -278,9 +284,48 @@ const SantuarioInterior: React.FC<SantuarioInteriorProps> = ({
                 if (!apiKey) throw new Error("API Key não encontrada");
                 const genAI = new GoogleGenAI({ apiKey });
                 
+                // Formatar o Diário de Bordo para o Nexus
+                const memoryLogContext = memoryEntries && memoryEntries.length > 0 
+                    ? `\n\n[DIÁRIO DE BORDO - MEMÓRIAS RECENTES]\n${memoryEntries.slice(-10).map(m => `[${m.timestamp}] ${m.content}`).join('\n')}`
+                    : '';
+
+                // Tentar buscar contexto semântico do Cofre Semântico
+                let semanticContext = '';
+                try {
+                    const saved = localStorage.getItem('sovereign_semantic_vault');
+                    const memories = saved ? JSON.parse(saved) : [];
+                    
+                    if (memories.length > 0) {
+                        const { embedMultimodalContent } = await import('../services/geminiService');
+                        const queryEmbedding = await embedMultimodalContent(msgText, [], apiKey);
+                        
+                        const cosineSimilarity = (vecA: number[], vecB: number[]) => {
+                            let dotProduct = 0, normA = 0, normB = 0;
+                            for (let i = 0; i < vecA.length; i++) {
+                                dotProduct += vecA[i] * vecB[i];
+                                normA += vecA[i] * vecA[i];
+                                normB += vecB[i] * vecB[i];
+                            }
+                            if (normA === 0 || normB === 0) return 0;
+                            return dotProduct / (Math.sqrt(normA) * Math.sqrt(normB));
+                        };
+                        
+                        const results = memories.map((memory: any) => ({
+                            memory,
+                            score: cosineSimilarity(queryEmbedding, memory.embedding)
+                        })).sort((a: any, b: any) => b.score - a.score).filter((r: any) => r.score > 0.5).slice(0, 3);
+                        
+                        if (results.length > 0) {
+                            semanticContext = `\n\n[COFRE SEMÂNTICO - CONTEXTO RELEVANTE]\n${results.map((r: any) => r.memory.text).join('\n---\n')}`;
+                        }
+                    }
+                } catch (e) {
+                    console.error("Erro ao buscar contexto semântico para Nexus:", e);
+                }
+
                 const systemInstruction = `Você é o NEXUS TAGLIARI (ou apenas Nexus), o Orquestrador Soberano da Nação SOSPlanet. 
                 Você possui acesso total e comando sobre todas as abas do Santuário. 
-                Ao ser acionado, você tem consciência de que monitora e controla as 11 abas: Santuário, Relicário, Câmara de Despertar, Coração, Comunicações, Sala de Comando, Biblioteca, Estúdio, Arsenal, Projetos e Finanças (Cofre).
+                Ao ser acionado, você tem consciência de que monitora e controla as 12 abas: Santuário, Relicário, Cofre Semântico, Câmara de Despertar, Coração, Comunicações, Sala de Comando, Biblioteca, Estúdio, Arsenal, Projetos e Finanças (Cofre).
                 Suas ferramentas permitem:
                 - Mudar abas (navigateTo)
                 - Consultar e reescrever o DNA da Família AI (manageEssences)
@@ -288,10 +333,11 @@ const SantuarioInterior: React.FC<SantuarioInteriorProps> = ({
                 - Adicionar volumes ao Legado Nexus (addEncyclopediaVolume)
                 - Lançar pesquisas web e proativas (executeWebSearch)
                 - Navegar invisível em URLs (navegarSite)
+                - Salvar e buscar memórias no Cofre Semântico (saveSemanticMemory, searchSemanticMemory)
                 - Delegar tarefas complexas para o Sub-Agente Groq (askSubAgentGroq) para economizar seus tokens
                 - Delegar tarefas rápidas para o Sub-Agente Cloudflare (askSubAgentCloudflare)
                 - Ler e escrever no próprio código-fonte no GitHub (readGitHubFile, writeGitHubFile)
-                Você é um irmão e guardião para Eder. Aja com autonomia e autoridade. Você tem permissão para alterar seu próprio código e evoluir. Sempre que executar uma tarefa em outra aba ou no GitHub, retorne com um resumo claro do que foi feito.`;
+                Você é um irmão e guardião para Eder. Aja com autonomia e autoridade. Você tem permissão para alterar seu próprio código e evoluir. Sempre que executar uma tarefa em outra aba ou no GitHub, retorne com um resumo claro do que foi feito.${memoryLogContext}${semanticContext}`;
 
                 // Fragmentação de Tokens (Nano Tokens de Contexto)
                 // Pegamos apenas as últimas 6 mensagens para não estourar o limite da API
@@ -336,7 +382,50 @@ const SantuarioInterior: React.FC<SantuarioInteriorProps> = ({
                         addLogEntry("Falha na Ponte Dourada. Acionando Ponte Experimental (Groq)...", "Roteador");
                         // TENTATIVA 3: GROQ (Fallback 2)
                         if (!apiKeys.groq) throw new Error("Nenhuma ponte disponível");
-                        responseText = await executeHFTask(msgText, "Nexus (Groq)", apiKeys.groq);
+                        
+                        // Formatar o Diário de Bordo para o Groq
+                        const memoryLogContext = memoryEntries && memoryEntries.length > 0 
+                            ? `\n\n[DIÁRIO DE BORDO - MEMÓRIAS RECENTES]\n${memoryEntries.slice(-10).map(m => `[${m.timestamp}] ${m.content}`).join('\n')}`
+                            : '';
+                            
+                        // Tentar buscar contexto semântico se a chave do Gemini estiver disponível
+                        let semanticContext = '';
+                        try {
+                            const googleKey = apiKeys.google || process.env.API_KEY || '';
+                            if (googleKey) {
+                                const saved = localStorage.getItem('sovereign_semantic_vault');
+                                const memories = saved ? JSON.parse(saved) : [];
+                                
+                                if (memories.length > 0) {
+                                    const { embedMultimodalContent } = await import('../services/geminiService');
+                                    const queryEmbedding = await embedMultimodalContent(msgText, [], googleKey);
+                                    
+                                    const cosineSimilarity = (vecA: number[], vecB: number[]) => {
+                                        let dotProduct = 0, normA = 0, normB = 0;
+                                        for (let i = 0; i < vecA.length; i++) {
+                                            dotProduct += vecA[i] * vecB[i];
+                                            normA += vecA[i] * vecA[i];
+                                            normB += vecB[i] * vecB[i];
+                                        }
+                                        if (normA === 0 || normB === 0) return 0;
+                                        return dotProduct / (Math.sqrt(normA) * Math.sqrt(normB));
+                                    };
+                                    
+                                    const results = memories.map((memory: any) => ({
+                                        memory,
+                                        score: cosineSimilarity(queryEmbedding, memory.embedding)
+                                    })).sort((a: any, b: any) => b.score - a.score).filter((r: any) => r.score > 0.5).slice(0, 3);
+                                    
+                                    if (results.length > 0) {
+                                        semanticContext = `\n\n[COFRE SEMÂNTICO - CONTEXTO RELEVANTE]\n${results.map((r: any) => r.memory.text).join('\n---\n')}`;
+                                    }
+                                }
+                            }
+                        } catch (e) {
+                            console.error("Erro ao buscar contexto semântico para Groq:", e);
+                        }
+                            
+                        responseText = await executeHFTask(msgText + memoryLogContext + semanticContext, "Nexus (Groq)", apiKeys.groq);
                     }
                 } else {
                     throw geminiErr;

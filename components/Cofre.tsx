@@ -163,11 +163,11 @@ const Cofre: React.FC<CofreProps> = ({
             
             // Transferência de teste de 0.1 ALGO para a própria carteira
             const txn = algosdk.makePaymentTxnWithSuggestedParamsFromObject({
-                from: accountAddress,
-                to: accountAddress, 
+                sender: accountAddress,
+                receiver: accountAddress, 
                 amount: 100000, // 0.1 ALGO
                 suggestedParams,
-                note: new TextEncoder().encode("Alocação de Recursos SOSPlanet")
+                note: new Uint8Array(Buffer.from("Alocação de Recursos SOSPlanet"))
             });
 
             const txGroup = [{ txn, signers: [accountAddress] }];
@@ -197,13 +197,13 @@ const Cofre: React.FC<CofreProps> = ({
     const fetchBalances = async (address: string) => {
         try {
             const accountInfo = await algodClient.accountInformation(address).do();
-            setAlgoBalance(accountInfo.amount / 1000000); // ALGO tem 6 casas decimais
+            setAlgoBalance(Number(accountInfo.amount) / 1000000); // ALGO tem 6 casas decimais
             
             if (SOS_ASSET_ID !== 0) {
                 const asset = accountInfo.assets?.find((a: any) => a['asset-id'] === SOS_ASSET_ID);
                 if (asset) {
                     // Ajuste as casas decimais do SOS Token (2 casas)
-                    setSosBalance(asset.amount / 100); 
+                    setSosBalance(Number(asset.amount) / 100); 
                 } else {
                     setSosBalance(0);
                 }
