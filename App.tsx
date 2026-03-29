@@ -544,7 +544,7 @@ const App: React.FC = () => {
                     if (success) {
                         return `Memória cristalizada com sucesso no Cofre Semântico (Supabase).`;
                     } else {
-                        throw new Error("Falha ao salvar no Supabase");
+                        throw new Error("Falha ao salvar no Supabase. Verifique se a tabela 'memories' existe e se as permissões estão corretas.");
                     }
                 } else {
                     // Fallback para localStorage
@@ -562,7 +562,7 @@ const App: React.FC = () => {
                     memories.unshift(newMemory);
                     localStorage.setItem('sovereign_semantic_vault', JSON.stringify(memories));
                     
-                    return `Memória cristalizada com sucesso no Cofre Semântico (Local). ID: ${newMemory.id}`;
+                    return `Aviso: Supabase não está configurado na Vercel (VITE_SUPABASE_URL ou VITE_SUPABASE_ANON_KEY ausentes). Memória salva localmente como fallback. ID: ${newMemory.id}`;
                 }
             } catch (err: any) {
                 return `Erro ao salvar memória semântica: ${err.message}`;
@@ -594,7 +594,7 @@ const App: React.FC = () => {
                     const saved = localStorage.getItem('sovereign_semantic_vault');
                     const memories = saved ? JSON.parse(saved) : [];
                     
-                    if (memories.length === 0) return "O Cofre Semântico local está vazio.";
+                    if (memories.length === 0) return "Aviso: Supabase não configurado e o Cofre Semântico local está vazio.";
                     
                     // Cosine similarity function
                     const cosineSimilarity = (vecA: number[], vecB: number[]) => {
@@ -618,6 +618,7 @@ const App: React.FC = () => {
                     if (results.length === 0) return "Nenhuma memória relevante encontrada para esta consulta no armazenamento local.";
                     
                     return JSON.stringify(results.map((r: any) => ({
+                        aviso: "Resultados do armazenamento local (Supabase não configurado)",
                         data: new Date(r.memory.timestamp).toLocaleString(),
                         texto: r.memory.text,
                         relevancia: (r.score * 100).toFixed(2) + '%'
