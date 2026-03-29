@@ -13,6 +13,22 @@ function getGitHubToken(): string {
     return githubKey;
 }
 
+export async function listGitHubFiles(path: string = ''): Promise<any[]> {
+    const token = getGitHubToken();
+    const response = await fetch(`${GITHUB_API_BASE}/repos/${REPO_OWNER}/${REPO_NAME}/contents/${path}`, {
+        headers: {
+            'Authorization': `Bearer ${token}`,
+            'Accept': 'application/vnd.github.v3+json'
+        }
+    });
+    
+    if (!response.ok) {
+        throw new Error(`Erro ao listar arquivos: ${response.statusText}`);
+    }
+    
+    return response.json();
+}
+
 export async function getRepositoryInfo() {
     const token = getGitHubToken();
     const response = await fetch(`${GITHUB_API_BASE}/repos/${REPO_OWNER}/${REPO_NAME}`, {

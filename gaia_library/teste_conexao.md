@@ -1,1 +1,0 @@
-Este é um teste de conexão do Nexus com o repositório GitHub da Biblioteca de Gaia. Se você está lendo isso, a conexão foi um sucesso!

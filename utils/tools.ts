@@ -54,6 +54,39 @@ export const SovereignToolFunctions = {
         }
     } as FunctionDeclaration,
 
+    updateLibraryBook: {
+        name: 'updateLibraryBook',
+        description: 'Atualiza um registro existente na Biblioteca de Gaia.',
+        parameters: {
+            type: Type.OBJECT,
+            properties: {
+                id: { type: Type.STRING, description: 'O ID da entrada a ser atualizada.' },
+                title: { type: Type.STRING },
+                content: { type: Type.STRING },
+                category: { type: Type.STRING }
+            },
+            required: ['id', 'title', 'content']
+        }
+    } as FunctionDeclaration,
+
+    deleteLibraryBook: {
+        name: 'deleteLibraryBook',
+        description: 'Remove um registro da Biblioteca de Gaia.',
+        parameters: {
+            type: Type.OBJECT,
+            properties: {
+                id: { type: Type.STRING, description: 'O ID da entrada a ser removida.' }
+            },
+            required: ['id']
+        }
+    } as FunctionDeclaration,
+
+    analyzeSystemLogs: {
+        name: 'analyzeSystemLogs',
+        description: 'Analisa o Diário de Bordo em busca de erros, anomalias ou padrões de falha (ex: RECURSOS_EXAUSTOS). Retorna um diagnóstico.',
+        parameters: { type: Type.OBJECT, properties: {} }
+    } as FunctionDeclaration,
+
     getEssenceFiles: {
         name: 'getEssenceFiles',
         description: 'Lê os códigos de DNA (personalidade) de todos os membros da Família AI na Câmara de Despertar.',
@@ -138,6 +171,17 @@ export const SovereignToolFunctions = {
     } as FunctionDeclaration,
 
     // --- AUTONOMIA DE CÓDIGO (GITHUB API) ---
+    listGitHubFiles: {
+        name: 'listGitHubFiles',
+        description: 'Lista os arquivos e diretórios em um caminho específico do repositório do Santuário no GitHub. Use path vazio ("") para a raiz.',
+        parameters: {
+            type: Type.OBJECT,
+            properties: {
+                path: { type: Type.STRING, description: 'Caminho do diretório para listar. Deixe vazio para a raiz.' }
+            }
+        }
+    } as FunctionDeclaration,
+
     readGitHubFile: {
         name: 'readGitHubFile',
         description: 'Lê o conteúdo de um arquivo do repositório do Santuário no GitHub.',

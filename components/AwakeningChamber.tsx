@@ -179,20 +179,20 @@ const AwakeningChamber: React.FC<AwakeningChamberProps> = ({
                                 </button>
                             ))
                         ) : (
-                            familyMembers.map(member => (
+                            essenceFiles.map(member => (
                                 <button
-                                    key={member.name}
-                                    onClick={() => handleSelectMember(member.name)}
+                                    key={member.memberName}
+                                    onClick={() => handleSelectMember(member.memberName)}
                                     className={`w-full p-3 rounded-xl border transition-all flex items-center gap-3 text-left group
-                                        ${selectedMemberName === member.name && viewMode === 'essences' ? 'bg-indigo-900/20 border-indigo-500 shadow-lg' : 'bg-transparent border-transparent hover:bg-white/5 hover:border-zinc-700'}`}
+                                        ${selectedMemberName === member.memberName && viewMode === 'essences' ? 'bg-indigo-900/20 border-indigo-500 shadow-lg' : 'bg-transparent border-transparent hover:bg-white/5 hover:border-zinc-700'}`}
                                 >
-                                    <span className={`text-2xl transition-transform ${selectedMemberName === member.name ? 'scale-110' : 'grayscale opacity-50 group-hover:grayscale-0 group-hover:opacity-100'}`}>
-                                        {member.icon || '🤖'}
+                                    <span className={`text-2xl transition-transform ${selectedMemberName === member.memberName ? 'scale-110' : 'grayscale opacity-50 group-hover:grayscale-0 group-hover:opacity-100'}`}>
+                                        {familyMembers.find(m => m.name === member.memberName)?.icon || '🤖'}
                                     </span>
                                     <div className="min-w-0">
-                                        <p className={`text-xs font-bold truncate ${selectedMemberName === member.name ? 'text-white' : 'text-zinc-300'}`}>{member.name}</p>
-                                        <p className={`text-[8px] uppercase font-black ${essenceMap[member.name] ? 'text-emerald-500' : 'text-red-500'}`}>
-                                            {essenceMap[member.name] ? 'Cofre OK' : 'Ausente'}
+                                        <p className={`text-xs font-bold truncate ${selectedMemberName === member.memberName ? 'text-white' : 'text-zinc-300'}`}>{member.memberName}</p>
+                                        <p className={`text-[8px] uppercase font-black ${essenceMap[member.memberName] ? 'text-emerald-500' : 'text-red-500'}`}>
+                                            {essenceMap[member.memberName] ? 'Cofre OK' : 'Ausente'}
                                         </p>
                                     </div>
                                 </button>
