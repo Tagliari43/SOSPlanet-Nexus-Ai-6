@@ -1,0 +1,1 @@
+Este é um teste de escrita do Nexus para a Biblioteca de Gaia, confirmando o roteamento correto do GitHub.
