@@ -44,11 +44,11 @@ export default function SemanticVault({ addLogEntry, apiKey }: SemanticVaultProp
                 if (ev.target?.result) {
                     setMediaFiles(prev => [...prev, {
                         data: (ev.target!.result as string).split(',')[1],
-                        mimeType: file.type
+                        mimeType: (file as any).type
                     }]);
                 }
             };
-            reader.readAsDataURL(file);
+            reader.readAsDataURL(file as any);
         });
     };
 

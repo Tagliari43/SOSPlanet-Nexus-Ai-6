@@ -176,7 +176,7 @@ const Cofre: React.FC<CofreProps> = ({
             const signedTxns = await peraWallet.signTransaction([txGroup]);
             
             setTransactionStatus('Enviando para a rede...');
-            const { txId } = await algodClient.sendRawTransaction(signedTxns).do();
+            const { txId } = await algodClient.sendRawTransaction(signedTxns).do() as { txId: string };
             
             setTransactionStatus(`Transação enviada! TXID: ${txId.substring(0, 8)}...`);
             if (addLogEntry) addLogEntry(`Recursos alocados com sucesso. TXID: ${txId}`, 'Cofre Real');

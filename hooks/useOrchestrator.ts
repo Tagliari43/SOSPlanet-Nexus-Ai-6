@@ -7,7 +7,7 @@ import { pontes as pontesConfig, Ponte } from '../services/sovereignRouterServic
 import { loadFromStorage, saveToStorage } from '../utils/storage';
 import { loadApiKeys } from '../utils/keys';
 import { SovereignTool } from '../components/Arsenal';
-import { LibraryEntry } from './BibliotecaGaia';
+import { LibraryEntry } from '../components/BibliotecaGaia';
 import { AppLogEntry } from '../App';
 
 export interface SubTask {
