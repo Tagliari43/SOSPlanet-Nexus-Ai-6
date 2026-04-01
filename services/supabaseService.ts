@@ -19,10 +19,9 @@ export interface MemoryRecord {
 /**
  * Salva uma nova memória no Cofre Semântico (Supabase)
  */
-export async function saveMemoryToSupabase(content: string, embedding: number[], metadata: Record<string, any> = {}): Promise<boolean> {
+export async function saveMemoryToSupabase(content: string, embedding: number[], metadata: Record<string, any> = {}): Promise<{success: boolean, error?: string}> {
     if (!supabase) {
-        console.warn("Supabase não inicializado. Chaves ausentes.");
-        return false;
+        return { success: false, error: "Supabase não inicializado. Chaves ausentes." };
     }
 
     try {
@@ -38,13 +37,13 @@ export async function saveMemoryToSupabase(content: string, embedding: number[],
 
         if (error) {
             console.error("Erro ao salvar memória no Supabase:", error);
-            return false;
+            return { success: false, error: error.message || JSON.stringify(error) };
         }
 
-        return true;
-    } catch (err) {
+        return { success: true };
+    } catch (err: any) {
         console.error("Falha crítica ao salvar memória:", err);
-        return false;
+        return { success: false, error: err.message || String(err) };
     }
 }
 

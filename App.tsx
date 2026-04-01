@@ -547,11 +547,11 @@ const App: React.FC = () => {
                 const embedding = await embedMultimodalContent(args.text, [], apiKey);
                 
                 if (supabase) {
-                    const success = await saveMemoryToSupabase(args.text, embedding, { source: 'nexus_tool', timestamp: Date.now() });
-                    if (success) {
+                    const result = await saveMemoryToSupabase(args.text, embedding, { source: 'nexus_tool', timestamp: Date.now() });
+                    if (result.success) {
                         return `Memória cristalizada com sucesso no Cofre Semântico (Supabase).`;
                     } else {
-                        throw new Error("Falha ao salvar no Supabase. Verifique se a tabela 'memories' existe e se as permissões estão corretas.");
+                        throw new Error(`Falha ao salvar no Supabase. Detalhe do erro: ${result.error}`);
                     }
                 } else {
                     // Fallback para localStorage
