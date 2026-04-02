@@ -66,6 +66,17 @@ export const useSovereignRouter = (
     const [pontes, setPontes] = useState<Ponte[]>(() => loadFromStorage<Ponte[]>(PONTES_KEY, pontesConfig));
     const [activeProbes, setActiveProbes] = useState<ReconProbe[]>(() => loadFromStorage<ReconProbe[]>(PROBES_KEY, []));
 
+    // Migration to remove old Hugging Face pontes from local storage
+    useEffect(() => {
+        setPontes(prevPontes => {
+            const hasOldPonte = prevPontes.some(p => p.nome.includes('Hugging Face') || (p as any).provider === 'huggingface');
+            if (hasOldPonte) {
+                return pontesConfig;
+            }
+            return prevPontes;
+        });
+    }, []);
+
     useEffect(() => { saveToStorage(COMPLETED_TASKS_KEY, completedTasks); }, [completedTasks]);
     useEffect(() => { saveToStorage(CACHE_KEY, cache); }, [cache]);
     useEffect(() => { saveToStorage(PONTES_KEY, pontes); }, [pontes]);

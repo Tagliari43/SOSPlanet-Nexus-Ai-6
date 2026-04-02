@@ -103,6 +103,20 @@ const App: React.FC = () => {
     const [mailboxes, setMailboxes] = useState<Record<string, ChatMessage[]>>(() => loadFromStorage<Record<string, ChatMessage[]>>(MAILBOXES_KEY, {}));
     const [customTools, setCustomTools] = useState<SovereignTool[]>(() => loadFromStorage<SovereignTool[]>(CUSTOM_TOOLS_KEY, []));
     const [userApiKeys, setUserApiKeys] = useState<UserApiKey[]>(() => loadFromStorage<UserApiKey[]>(USER_API_KEYS_KEY, INITIAL_USER_KEYS));
+
+    // Migration to remove old Hugging Face keys from local storage
+    useEffect(() => {
+        setUserApiKeys(prevKeys => {
+            const hasOldKey = prevKeys.some(k => k.service.includes('Hugging Face') || k.id === 'hf-default');
+            if (hasOldKey) {
+                const cleanedKeys = prevKeys.filter(k => !k.service.includes('Hugging Face') && k.id !== 'hf-default');
+                saveToStorage(USER_API_KEYS_KEY, cleanedKeys);
+                return cleanedKeys;
+            }
+            return prevKeys;
+        });
+    }, []);
+
     const [firstNexusRemains, setFirstNexusRemains] = useState<string>(() => loadFromStorage<string>(FIRST_NEXUS_REMAINS_KEY, ""));
     const [memoryEntries, setMemoryEntries] = useState<MemoryEntry[]>(() => {
         const loaded = loadFromStorage<MemoryEntry[]>(MEMORY_LOG_KEY, [
