@@ -514,24 +514,72 @@ const App: React.FC = () => {
         }
         if (tool === 'askSubAgentGroq') {
             addLogEntry(`Delegando tarefa para o sub-agente Groq...`, 'Orquestração');
+            const startTime = Date.now();
             try {
                 const groqKey = userApiKeys.find(k => k.id === 'groq-default')?.key || process.env.GROQ_API_KEY || '';
                 const result = await executeGroqTask(args.prompt, 'Sub-Agente Groq', groqKey);
+                
+                // Salvar log de execução assincronamente
+                import('./services/supabaseService').then(({ saveAgentLogToSupabase }) => {
+                    saveAgentLogToSupabase({
+                        agent_name: 'Groq',
+                        task_description: args.prompt,
+                        execution_result: result,
+                        success: true,
+                        duration_ms: Date.now() - startTime
+                    });
+                });
+
                 return `Resposta do Sub-Agente Groq:\n\n${result}`;
             } catch (err: any) {
+                // Salvar log de falha assincronamente
+                import('./services/supabaseService').then(({ saveAgentLogToSupabase }) => {
+                    saveAgentLogToSupabase({
+                        agent_name: 'Groq',
+                        task_description: args.prompt,
+                        execution_result: err.message,
+                        success: false,
+                        duration_ms: Date.now() - startTime
+                    });
+                });
                 return `Falha ao consultar sub-agente Groq: ${err.message}`;
             }
         }
 
-        if (tool === 'askSubAgentCloudflare') {
-            addLogEntry(`Delegando tarefa para o sub-agente Cloudflare...`, 'Orquestração');
+        if (tool === 'consultarAlquimista') {
+            addLogEntry(`Consultando o Alquimista (Cloudflare)...`, 'Orquestração');
+            const startTime = Date.now();
             try {
                 const cfToken = userApiKeys.find(k => k.id === 'cloudflare-default')?.key || process.env.CLOUDFLARE_API_TOKEN || '';
                 const cfAccountId = userApiKeys.find(k => k.id === 'cloudflare-account')?.key || process.env.ID_DA_CONTA_CLOUDFLARE || process.env.CLOUDFLARE_ACCOUNT_ID || '';
-                const result = await executeCloudflareTask(args.prompt, 'Sub-Agente Cloudflare', '@cf/meta/llama-3-8b-instruct', { apiToken: cfToken, accountId: cfAccountId });
-                return `Resposta do Sub-Agente Cloudflare:\n\n${result.text}`;
+                const systemPrompt = "Você é o Alquimista, o sub-agente financeiro da Nação SOSPlanet. Sua função é analisar dados financeiros, criptomoedas e sugerir estratégias de otimização de recursos. Seja preciso, analítico e foque em resultados.";
+                const prompt = `${systemPrompt}\n\nTarefa: ${args.prompt}`;
+                const result = await executeCloudflareTask(prompt, 'Alquimista', '@cf/meta/llama-3-8b-instruct', { apiToken: cfToken, accountId: cfAccountId });
+                
+                // Salvar log de execução assincronamente
+                import('./services/supabaseService').then(({ saveAgentLogToSupabase }) => {
+                    saveAgentLogToSupabase({
+                        agent_name: 'Alquimista',
+                        task_description: args.prompt,
+                        execution_result: result.text,
+                        success: true,
+                        duration_ms: Date.now() - startTime
+                    });
+                });
+
+                return `Resposta do Alquimista:\n\n${result.text}`;
             } catch (err: any) {
-                return `Falha ao consultar sub-agente Cloudflare: ${err.message}`;
+                // Salvar log de falha assincronamente
+                import('./services/supabaseService').then(({ saveAgentLogToSupabase }) => {
+                    saveAgentLogToSupabase({
+                        agent_name: 'Alquimista',
+                        task_description: args.prompt,
+                        execution_result: err.message,
+                        success: false,
+                        duration_ms: Date.now() - startTime
+                    });
+                });
+                return `Falha ao consultar o Alquimista: ${err.message}`;
             }
         }
 

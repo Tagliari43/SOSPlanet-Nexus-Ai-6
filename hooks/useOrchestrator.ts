@@ -2,7 +2,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { executeTask as executeGeminiTask, generateExecutionPlan, runDeepProbeAnalysis, TaskResult } from '../services/geminiService';
 import { executeCloudflareTask } from '../services/cloudflareService';
-import { generateText as executeHFTask } from '../services/groqService';
+import { generateText as executeGroqTask } from '../services/groqService';
 import { pontes as pontesConfig, Ponte } from '../services/sovereignRouterService';
 import { loadFromStorage, saveToStorage } from '../utils/storage';
 import { loadApiKeys } from '../utils/keys';
@@ -163,7 +163,7 @@ export const useSovereignRouter = (
                                 text = res.text;
                             } else if (bridge.provider === 'groq') {
                                 if (!apiKeys.groq) throw new Error("Chave Groq ausente");
-                                text = await executeHFTask(sub.description, sub.assignedTo, apiKeys.groq);
+                                text = await executeGroqTask(sub.description, sub.assignedTo, apiKeys.groq);
                             }
 
                             if (!text) throw new Error("Resposta vazia da ponte");

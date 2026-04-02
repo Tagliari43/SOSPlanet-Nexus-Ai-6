@@ -36,8 +36,8 @@ export function loadApiKeys(): ApiKeys {
     return {
         google: googleKey,
         cloudflare: {
-            apiToken: cloudflareKey || process.env.CLOUDFLARE_API_TOKEN || "o1fOItjjpjCnZ2QVGrx2gw2Wt3SMEKRyBpBi96ak",
-            accountId: cloudflareAccountId || process.env.ID_DA_CONTA_CLOUDFLARE || process.env.CLOUDFLARE_ACCOUNT_ID || '239d8f103f421ca4b4298195b44e66a1'
+            apiToken: cloudflareKey || process.env.CLOUDFLARE_API_TOKEN || "dVXYVt07gEIKwBfFjzh5LdMbZnXADXktCR9qli66",
+            accountId: cloudflareAccountId || process.env.ID_DA_CONTA_CLOUDFLARE || process.env.CLOUDFLARE_ACCOUNT_ID || 'dd68cbf6f5d435b9d8c4b558f97ddf03'
         },
         groq: groqKey,
         github: githubKey

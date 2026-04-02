@@ -246,13 +246,13 @@ export const SovereignToolFunctions = {
         }
     } as FunctionDeclaration,
 
-    askSubAgentCloudflare: {
-        name: 'askSubAgentCloudflare',
-        description: 'Delega uma tarefa rápida ou de processamento de dados para o sub-agente Cloudflare (Llama 3 8B Instruct). Use isso para tarefas menores e rápidas.',
+    consultarAlquimista: {
+        name: 'consultarAlquimista',
+        description: 'Delega uma tarefa de análise financeira, criptomoedas, custos de API ou otimização de recursos para o sub-agente Alquimista (motor Cloudflare).',
         parameters: {
             type: Type.OBJECT,
             properties: {
-                prompt: { type: Type.STRING, description: 'A instrução ou tarefa que o sub-agente Cloudflare deve executar.' }
+                prompt: { type: Type.STRING, description: 'A pergunta ou tarefa financeira para o Alquimista.' }
             },
             required: ['prompt']
         }
