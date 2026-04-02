@@ -547,9 +547,15 @@ const App: React.FC = () => {
                 const embedding = await embedMultimodalContent(args.text, [], apiKey);
                 
                 if (supabase) {
-                    const result = await saveMemoryToSupabase(args.text, embedding, { source: 'nexus_tool', timestamp: Date.now() });
+                    const result = await saveMemoryToSupabase(
+                        args.text, 
+                        embedding, 
+                        { source: 'nexus_tool', timestamp: Date.now() },
+                        args.type || 'conversa',
+                        args.importance || 0.5
+                    );
                     if (result.success) {
-                        return `Memória cristalizada com sucesso no Cofre Semântico (Supabase).`;
+                        return `Memória cristalizada com sucesso no Cofre Semântico (Supabase). Tipo: ${args.type || 'conversa'}, Importância: ${args.importance || 0.5}`;
                     } else {
                         throw new Error(`Falha ao salvar no Supabase. Detalhe do erro: ${result.error}`);
                     }

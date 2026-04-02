@@ -14,12 +14,14 @@ export interface MemoryRecord {
     embedding: number[];
     metadata?: Record<string, any>;
     created_at?: string;
+    type?: string;
+    importance?: number;
 }
 
 /**
  * Salva uma nova memória no Cofre Semântico (Supabase)
  */
-export async function saveMemoryToSupabase(content: string, embedding: number[], metadata: Record<string, any> = {}): Promise<{success: boolean, error?: string}> {
+export async function saveMemoryToSupabase(content: string, embedding: number[], metadata: Record<string, any> = {}, type: string = 'conversa', importance: number = 0.5): Promise<{success: boolean, error?: string}> {
     if (!supabase) {
         return { success: false, error: "Supabase não inicializado. Chaves ausentes." };
     }
@@ -31,7 +33,9 @@ export async function saveMemoryToSupabase(content: string, embedding: number[],
                 { 
                     content, 
                     embedding, 
-                    metadata 
+                    metadata,
+                    type,
+                    importance
                 }
             ]);
 
