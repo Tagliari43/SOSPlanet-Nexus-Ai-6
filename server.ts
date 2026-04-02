@@ -80,6 +80,35 @@ async function startServer() {
     }
   });
 
+  // Proxy for Cloudflare API (Unified for Vercel and Local)
+  app.post('/api/cloudflare', async (req, res) => {
+    try {
+      const { model, messages } = req.body;
+      const authHeader = req.headers.authorization;
+      const accountId = req.headers['x-account-id'];
+
+      if (!authHeader || !accountId) {
+        return res.status(401).json({ error: 'Credenciais ausentes' });
+      }
+
+      const targetUrl = `https://api.cloudflare.com/client/v4/accounts/${accountId}/ai/run/${model}`;
+      
+      const response = await fetch(targetUrl, {
+        method: 'POST',
+        headers: {
+          'Authorization': authHeader,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ messages })
+      });
+      
+      const data = await response.text();
+      res.status(response.status).send(data);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   // Proxy for Cloudflare API (Local dev)
   app.use('/v1/proxy/api.cloudflare.com', async (req, res) => {
     try {
