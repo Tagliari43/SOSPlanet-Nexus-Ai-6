@@ -33,6 +33,7 @@ export default defineConfig(({ mode }) => {
         'process.env.GROQ_API_KEY': JSON.stringify(env.GROQ_API_KEY),
         'process.env.SCRAPER_API_KEY': JSON.stringify(env.SCRAPER_API_KEY),
         'process.env.GITHUB_TOKEN': JSON.stringify(env.GITHUB_TOKEN),
+        'process.env.TAVILY_API_KEY': JSON.stringify(env.TAVILY_API_KEY),
         global: 'globalThis'
       },
       resolve: {

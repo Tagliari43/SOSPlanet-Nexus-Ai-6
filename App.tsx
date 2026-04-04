@@ -87,7 +87,8 @@ const INITIAL_USER_KEYS: UserApiKey[] = [
     { id: 'cloudflare-default', service: 'Cloudflare Workers AI', key: process.env.CLOUDFLARE_API_TOKEN || '', method: 'bearer' },
     { id: 'cloudflare-account', service: 'Cloudflare Account ID', key: process.env.ID_DA_CONTA_CLOUDFLARE || '', method: 'bearer' },
     { id: 'groq-default', service: 'Groq API', key: process.env.GROQ_API_KEY || '', method: 'bearer' },
-    { id: 'scraper-api-key', service: 'Scraper API (Navegador)', key: process.env.SCRAPER_API_KEY || '', method: 'bearer' }
+    { id: 'scraper-api-key', service: 'Scraper API (Navegador)', key: process.env.SCRAPER_API_KEY || '', method: 'bearer' },
+    { id: 'tavily-default', service: 'Tavily Search API', key: process.env.TAVILY_API_KEY || '', method: 'bearer' }
 ];
 
 const App: React.FC = () => {
