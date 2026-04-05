@@ -37,10 +37,8 @@ const KeyForge: React.FC<KeyForgeProps> = ({ isOpen, onClose }) => {
                 <h2 className="text-2xl font-bold text-emerald-400 mb-2 border-b-2 border-emerald-600/30 pb-2">Status das Pontes Soberanas 🔑</h2>
                 <p className="text-sm text-emerald-400 mb-6">As chaves soberanas estão permanentemente forjadas no núcleo. Este painel reflete seu status atual.</p>
                 <div className="space-y-4">
-                    <KeyStatus label="Ponte Dourada (Cloudflare)" active={!!forgedKeys.cloudflare?.apiToken} />
                     <KeyStatus label="Ponte Estável (Google AI)" active={!!forgedKeys.google} />
                     <KeyStatus label="Ponte Experimental (Groq)" active={!!forgedKeys.groq} />
-                    <KeyStatus label="Sonar Global (Tavily)" active={!!forgedKeys.tavily} />
                 </div>
                 <div className="mt-8 flex justify-end">
                     <button onClick={onClose} className="px-6 py-2 bg-emerald-600 text-white font-bold rounded-lg shadow-md shadow-emerald-500/20 hover:bg-emerald-500 transition-all">Sair</button>

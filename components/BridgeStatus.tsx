@@ -12,7 +12,6 @@ const BridgeStatus: React.FC = () => {
   const apiKeys = loadApiKeys();
 
   const bridges = [
-    { name: 'Ponte Dourada (Cloudflare)', key: 'cloudflare', active: !!apiKeys.cloudflare?.apiToken },
     { name: 'Ponte Estável (Google)', key: 'google', active: !!apiKeys.google },
     { name: 'Ponte Experimental (Groq)', key: 'groq', active: !!apiKeys.groq }
   ];

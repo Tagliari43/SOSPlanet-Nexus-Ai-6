@@ -248,7 +248,7 @@ export const SovereignToolFunctions = {
 
     consultarAlquimista: {
         name: 'consultarAlquimista',
-        description: 'Delega uma tarefa de análise financeira, criptomoedas, custos de API ou otimização de recursos para o sub-agente Alquimista (motor Cloudflare).',
+        description: 'Delega uma tarefa de análise financeira, criptomoedas, custos de API ou otimização de recursos para o sub-agente Alquimista (motor Groq).',
         parameters: {
             type: Type.OBJECT,
             properties: {

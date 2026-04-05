@@ -1,7 +1,6 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { executeTask as executeGeminiTask, generateExecutionPlan, runDeepProbeAnalysis, TaskResult } from '../services/geminiService';
-import { executeCloudflareTask } from '../services/cloudflareService';
 import { generateText as executeGroqTask } from '../services/groqService';
 import { pontes as pontesConfig, Ponte } from '../services/sovereignRouterService';
 import { loadFromStorage, saveToStorage } from '../utils/storage';
@@ -66,10 +65,15 @@ export const useSovereignRouter = (
     const [pontes, setPontes] = useState<Ponte[]>(() => loadFromStorage<Ponte[]>(PONTES_KEY, pontesConfig));
     const [activeProbes, setActiveProbes] = useState<ReconProbe[]>(() => loadFromStorage<ReconProbe[]>(PROBES_KEY, []));
 
-    // Migration to remove old Hugging Face pontes from local storage
+    // Migration to remove old pontes (Hugging Face, Cloudflare) from local storage
     useEffect(() => {
         setPontes(prevPontes => {
-            const hasOldPonte = prevPontes.some(p => p.nome.includes('Hugging Face') || (p as any).provider === 'huggingface');
+            const hasOldPonte = prevPontes.some(p => 
+                p.nome.includes('Hugging Face') || 
+                (p as any).provider === 'huggingface' ||
+                p.nome.includes('Cloudflare') ||
+                (p as any).provider === 'cloudflare'
+            );
             if (hasOldPonte) {
                 return pontesConfig;
             }
@@ -167,10 +171,6 @@ export const useSovereignRouter = (
                             if (bridge.provider === 'google') {
                                 if (!apiKeys.google) throw new Error("Chave Gemini ausente");
                                 const res = await executeGeminiTask(sub.description, sub.assignedTo, bridge.model, apiKeys.google, !!currentTask.useSearch);
-                                text = res.text;
-                            } else if (bridge.provider === 'cloudflare') {
-                                if (!apiKeys.cloudflare?.apiToken) throw new Error("Chave Cloudflare ausente");
-                                const res = await executeCloudflareTask(sub.description, sub.assignedTo, bridge.model, apiKeys.cloudflare);
                                 text = res.text;
                             } else if (bridge.provider === 'groq') {
                                 if (!apiKeys.groq) throw new Error("Chave Groq ausente");

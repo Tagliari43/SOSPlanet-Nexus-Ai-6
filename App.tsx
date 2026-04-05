@@ -29,7 +29,6 @@ import Relicario from './components/Relicario';
 import SemanticVault from './components/SemanticVault';
 import { getFileContent, updateFileContent, listGitHubFiles } from './services/githubService';
 import { generateText as executeGroqTask } from './services/groqService';
-import { executeCloudflareTask } from './services/cloudflareService';
 
 // Constantes
 export const NOTEBOOK_KEY = 'sovereign_notebook_content';
@@ -84,11 +83,8 @@ const TabButton: React.FC<{ tabId: Tab; label: string; activeTab: Tab; setActive
 
 const INITIAL_USER_KEYS: UserApiKey[] = [
     { id: 'google-default', service: 'Google Gemini', key: process.env.GEMINI_API_KEY || process.env.API_KEY || '', method: 'google-header' },
-    { id: 'cloudflare-default', service: 'Cloudflare Workers AI', key: process.env.CLOUDFLARE_API_TOKEN || '', method: 'bearer' },
-    { id: 'cloudflare-account', service: 'Cloudflare Account ID', key: process.env.ID_DA_CONTA_CLOUDFLARE || '', method: 'bearer' },
     { id: 'groq-default', service: 'Groq API', key: process.env.GROQ_API_KEY || '', method: 'bearer' },
-    { id: 'scraper-api-key', service: 'Scraper API (Navegador)', key: process.env.SCRAPER_API_KEY || '', method: 'bearer' },
-    { id: 'tavily-default', service: 'Tavily Search API', key: process.env.TAVILY_API_KEY || '', method: 'bearer' }
+    { id: 'scraper-api-key', service: 'Scraper API (Navegador)', key: process.env.SCRAPER_API_KEY || '', method: 'bearer' }
 ];
 
 const App: React.FC = () => {
@@ -562,27 +558,28 @@ const App: React.FC = () => {
         }
 
         if (tool === 'consultarAlquimista') {
-            addLogEntry(`Consultando o Alquimista (Cloudflare)...`, 'Orquestração');
+            addLogEntry(`Consultando o Alquimista (Groq)...`, 'Orquestração');
             const startTime = Date.now();
             try {
-                const cfToken = userApiKeys.find(k => k.id === 'cloudflare-default')?.key || process.env.CLOUDFLARE_API_TOKEN || '';
-                const cfAccountId = userApiKeys.find(k => k.id === 'cloudflare-account')?.key || process.env.ID_DA_CONTA_CLOUDFLARE || process.env.CLOUDFLARE_ACCOUNT_ID || '';
+                const groqKey = userApiKeys.find(k => k.id === 'groq-default')?.key || process.env.GROQ_API_KEY || '';
                 const systemPrompt = "Você é o Alquimista, o sub-agente financeiro da Nação SOSPlanet. Sua função é analisar dados financeiros, criptomoedas e sugerir estratégias de otimização de recursos. Seja preciso, analítico e foque em resultados.";
                 const prompt = `${systemPrompt}\n\nTarefa: ${args.prompt}`;
-                const result = await executeCloudflareTask(prompt, 'Alquimista', '@cf/meta/llama-3-8b-instruct', { apiToken: cfToken, accountId: cfAccountId });
+                
+                const { generateText } = await import('./services/groqService');
+                const resultText = await generateText(prompt, 'llama3-8b-8192', groqKey);
                 
                 // Salvar log de execução assincronamente
                 import('./services/supabaseService').then(({ saveAgentLogToSupabase }) => {
                     saveAgentLogToSupabase({
                         agent_name: 'Alquimista',
                         task_description: args.prompt,
-                        execution_result: result.text,
+                        execution_result: resultText,
                         success: true,
                         duration_ms: Date.now() - startTime
                     });
                 });
 
-                return `Resposta do Alquimista:\n\n${result.text}`;
+                return `Resposta do Alquimista:\n\n${resultText}`;
             } catch (err: any) {
                 // Salvar log de falha assincronamente
                 import('./services/supabaseService').then(({ saveAgentLogToSupabase }) => {

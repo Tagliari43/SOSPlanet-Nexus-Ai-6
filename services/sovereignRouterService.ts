@@ -4,7 +4,7 @@ import { ApiKeys } from "../utils/keys";
 export interface Ponte {
     nome: string;
     model: string;
-    provider: 'google' | 'cloudflare' | 'groq';
+    provider: 'google' | 'groq';
     keyName: keyof ApiKeys;
     status: 'online' | 'offline';
     limiteDiario: number;
@@ -19,15 +19,6 @@ export const pontes: Ponte[] = [
         keyName: 'google',
         status: 'online',
         limiteDiario: 150,
-        usoDiario: 0
-    },
-    {
-        nome: "Ponte Dourada (Cloudflare)",
-        model: '@cf/meta/llama-3-8b-instruct',
-        provider: 'cloudflare',
-        keyName: 'cloudflare',
-        status: 'online',
-        limiteDiario: 50,
         usoDiario: 0
     },
     {
