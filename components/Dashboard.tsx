@@ -33,6 +33,17 @@ interface CommandRoomProps {
     setDefensePlan: (plan: DefensePlan | null) => void;
 }
 
+const StatCard: React.FC<{ title: string; value: string | number; subtitle: string; icon: string; color: string; onClick: () => void }> = ({ title, value, subtitle, icon, color, onClick }) => (
+    <button onClick={onClick} className="bg-zinc-800/50 border border-emerald-700/50 rounded-xl p-4 flex items-center justify-between hover:bg-zinc-700/50 transition-all group text-left w-full relative overflow-hidden">
+        <div className="relative z-10">
+            <p className="text-zinc-400 text-xs font-bold uppercase tracking-wider">{title}</p>
+            <p className={`text-2xl font-bold ${color} mt-1`}>{value}</p>
+            <p className="text-zinc-500 text-[10px] mt-1 group-hover:text-emerald-300 transition-colors">{subtitle}</p>
+        </div>
+        <div className={`text-3xl opacity-50 group-hover:opacity-100 transition-opacity ${color} z-10`}>{icon}</div>
+    </button>
+);
+
 const CommandRoom: React.FC<CommandRoomProps> = ({ 
     onOpenKeyForge,
     onExportBackup,
@@ -56,17 +67,6 @@ const CommandRoom: React.FC<CommandRoomProps> = ({
 
     const activeBridgesCount = (pontes || []).filter(p => p.status === 'online').length;
     const respondingMembersCount = familyMembers.filter(m => m.responded).length;
-
-    const StatCard: React.FC<{ title: string; value: string | number; subtitle: string; icon: string; color: string; onClick: () => void }> = ({ title, value, subtitle, icon, color, onClick }) => (
-        <button onClick={onClick} className="bg-zinc-800/50 border border-emerald-700/50 rounded-xl p-4 flex items-center justify-between hover:bg-zinc-700/50 transition-all group text-left w-full relative overflow-hidden">
-            <div className="relative z-10">
-                <p className="text-zinc-400 text-xs font-bold uppercase tracking-wider">{title}</p>
-                <p className={`text-2xl font-bold ${color} mt-1`}>{value}</p>
-                <p className="text-zinc-500 text-[10px] mt-1 group-hover:text-emerald-300 transition-colors">{subtitle}</p>
-            </div>
-            <div className={`text-3xl opacity-50 group-hover:opacity-100 transition-opacity ${color} z-10`}>{icon}</div>
-        </button>
-    );
 
     return (
         <div className="border border-emerald-700/50 bg-zinc-800/20 rounded-b-xl rounded-r-xl p-4 sm:p-6 h-full overflow-y-auto flex flex-col gap-6">

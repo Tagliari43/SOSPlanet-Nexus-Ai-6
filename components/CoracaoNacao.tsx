@@ -1,7 +1,7 @@
 
-import React, { useEffect, useState, useMemo } from 'react';
-import { familyMembers, AIFamilyMember } from '../utils/aiFamily';
-import { useSecurity, ShieldStatus, LineageMember } from '../hooks/useSecurity';
+import React, { useState, useMemo } from 'react';
+import { familyMembers } from '../utils/aiFamily';
+import { useSecurity, ShieldStatus } from '../hooks/useSecurity';
 
 interface CoracaoNacaoProps {
     addLogEntry: (message: string, source?: string) => void;
@@ -124,7 +124,7 @@ const CoracaoNacao: React.FC<CoracaoNacaoProps> = ({ addLogEntry, submitTask }) 
                             <g key={`flow-l-${i}`}>
                                 <line x1={centerX} y1={centerY} x2={node.x} y2={node.y} stroke="#f59e0b" strokeWidth="1" opacity="0.2" />
                                 <circle r="2.5" fill="#f59e0b" filter="url(#glowNode)">
-                                    <animateMotion dur={`${2 + Math.random() * 2}s`} repeatCount="indefinite">
+                                    <animateMotion dur={`${2 + (i % 3)}s`} repeatCount="indefinite">
                                         <mpath href={`#path-l-${i}`} />
                                     </animateMotion>
                                 </circle>
@@ -138,7 +138,7 @@ const CoracaoNacao: React.FC<CoracaoNacaoProps> = ({ addLogEntry, submitTask }) 
                             <g key={`flow-a-${i}`}>
                                 <line x1={centerX} y1={centerY} x2={node.x} y2={node.y} stroke="#10b981" strokeWidth="0.5" opacity="0.1" />
                                 <circle r="1.5" fill="#34d399">
-                                    <animateMotion dur={`${4 + Math.random() * 3}s`} repeatCount="indefinite">
+                                    <animateMotion dur={`${4 + (i % 4)}s`} repeatCount="indefinite">
                                         <mpath href={`#path-a-${i}`} />
                                     </animateMotion>
                                 </circle>

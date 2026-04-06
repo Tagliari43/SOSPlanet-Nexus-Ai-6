@@ -3,6 +3,19 @@ import React, { useState, useEffect, useMemo } from 'react';
 
 type OperationMode = 'autoconsumo' | 'economia' | 'backup';
 
+const ModeButton = ({ targetMode, label, icon, currentMode, setMode }: { targetMode: OperationMode, label: string, icon: string, currentMode: OperationMode, setMode: (mode: OperationMode) => void }) => (
+    <button 
+        onClick={() => setMode(targetMode)}
+        className={`flex-1 py-3 px-2 rounded-lg border font-bold text-[10px] transition-all flex flex-col items-center gap-1
+            ${currentMode === targetMode 
+                ? 'bg-emerald-600 border-emerald-400 text-white shadow-[0_0_15px_rgba(16,185,129,0.3)] scale-105' 
+                : 'bg-zinc-800/50 border-zinc-700 text-zinc-500 hover:border-emerald-800'}`}
+    >
+        <span className="text-lg">{icon}</span>
+        {label}
+    </button>
+);
+
 const MicrogridDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     // Estados de Simulação
     const [generation, setGeneration] = useState(1.2);
@@ -115,19 +128,6 @@ const MicrogridDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
 
     const exportValue = flowDirections.hubToGrid !== 0 ? +(generation - consumption).toFixed(2) : 0;
 
-    const ModeButton = ({ targetMode, label, icon }: { targetMode: OperationMode, label: string, icon: string }) => (
-        <button 
-            onClick={() => setMode(targetMode)}
-            className={`flex-1 py-3 px-2 rounded-lg border font-bold text-[10px] transition-all flex flex-col items-center gap-1
-                ${mode === targetMode 
-                    ? 'bg-emerald-600 border-emerald-400 text-white shadow-[0_0_15px_rgba(16,185,129,0.3)] scale-105' 
-                    : 'bg-zinc-800/50 border-zinc-700 text-zinc-500 hover:border-emerald-800'}`}
-        >
-            <span className="text-lg">{icon}</span>
-            {label}
-        </button>
-    );
-
     return (
         <div className="flex flex-col h-full animate-fade-in text-slate-200">
             <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 border-b border-emerald-800/30 pb-4 gap-4">
@@ -140,9 +140,9 @@ const MicrogridDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                 </div>
 
                 <div className="flex gap-2 w-full sm:w-auto">
-                    <ModeButton targetMode="autoconsumo" label="AUTOCONSUMO" icon="🏠" />
-                    <ModeButton targetMode="economia" label="ECONOMIA" icon="💰" />
-                    <ModeButton targetMode="backup" label="BACKUP" icon="🛡️" />
+                    <ModeButton targetMode="autoconsumo" label="AUTOCONSUMO" icon="🏠" currentMode={mode} setMode={setMode} />
+                    <ModeButton targetMode="economia" label="ECONOMIA" icon="💰" currentMode={mode} setMode={setMode} />
+                    <ModeButton targetMode="backup" label="BACKUP" icon="🛡️" currentMode={mode} setMode={setMode} />
                 </div>
             </header>
 

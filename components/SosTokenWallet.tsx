@@ -1,6 +1,6 @@
 
-import React, { useState, useEffect, useCallback } from 'react';
-import { getRealBalances, AccountBalances, SOS_TOKEN_ID, NATION_TREASURY_ADDRESS } from '../services/blockchainService';
+import React, { useState, useEffect } from 'react';
+import { getRealBalances, AccountBalances, NATION_TREASURY_ADDRESS } from '../services/blockchainService';
 import { useSosToken } from '../hooks/useSosToken';
 import QuantumShield from './QuantumShield';
 import MultisigSetup from './MultisigSetup';
@@ -16,23 +16,29 @@ const SosTokenWallet: React.FC<SosTokenWalletProps> = ({ addLogEntry }) => {
     const [showQuantumShield, setShowQuantumShield] = useState(false);
     const [showMultisigSetup, setShowMultisigSetup] = useState(false);
     const [walletSecurityType, setWalletSecurityType] = useState<'simple' | 'multisig'>(() => {
-        return (localStorage.getItem('sovereign_wallet_security') as any) || 'simple';
+        const stored = localStorage.getItem('sovereign_wallet_security');
+        return (stored === 'multisig' || stored === 'simple') ? stored : 'simple';
     });
     
-    const { balance: sovereignBalance, transactions = [] } = useSosToken();
-
-    const refreshData = useCallback(async () => {
-        setIsLoading(true);
-        const data = await getRealBalances(NATION_TREASURY_ADDRESS);
-        setBalances(data);
-        setIsLoading(false);
-    }, []);
+    const { balance: sovereignBalance } = useSosToken();
 
     useEffect(() => {
-        refreshData();
-        const interval = setInterval(refreshData, 60000);
-        return () => clearInterval(interval);
-    }, [refreshData]);
+        let mounted = true;
+        const doFetch = async () => {
+            setIsLoading(true);
+            const data = await getRealBalances(NATION_TREASURY_ADDRESS);
+            if (mounted) {
+                setBalances(data);
+                setIsLoading(false);
+            }
+        };
+        doFetch();
+        const interval = setInterval(doFetch, 60000);
+        return () => {
+            mounted = false;
+            clearInterval(interval);
+        };
+    }, []);
 
     const copyAddress = () => {
         navigator.clipboard.writeText(NATION_TREASURY_ADDRESS);

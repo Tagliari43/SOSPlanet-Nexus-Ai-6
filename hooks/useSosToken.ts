@@ -41,7 +41,7 @@ export const useSosToken = () => {
         saveToStorage(PROJECT_CONTRIBUTIONS_KEY, projectContributions);
     }, [projectContributions]);
 
-    const claimRewards = useCallback((reason: string = "Atividade na Nação") => {
+    const claimRewards = useCallback(() => {
         const rewardAmount = 10;
         const newTx: SosTransaction = {
             id: `tx-${Date.now()}`,

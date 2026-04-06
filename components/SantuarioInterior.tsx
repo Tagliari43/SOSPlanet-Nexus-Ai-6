@@ -9,7 +9,8 @@ import { ReconProbe } from '../hooks/useOrchestrator';
 import { useSpeechRecognition } from '../hooks/useSpeechRecognition';
 import { functionTools } from '../utils/tools';
 import { executeCloudflareTask } from '../services/cloudflareService';
-import { generateText as executeGroqTask } from '../services/groqService';
+import { generateText as executeGroqTask, callGroqWithTools } from '../services/groqService';
+import { callCerebrasWithTools } from '../services/cerebrasService';
 import { loadApiKeys } from '../utils/keys';
 
 export interface Message {
@@ -397,57 +398,83 @@ const SantuarioInterior: React.FC<SantuarioInteriorProps> = ({
             } catch (geminiErr: any) {
                 const isQuota = geminiErr.status === 429 || geminiErr.message?.includes("429") || geminiErr.message?.includes("quota") || geminiErr.status === 503 || geminiErr.message?.includes("503") || geminiErr.message?.includes("UNAVAILABLE");
                 if (isQuota) {
-                    addLogEntry("Limite Google atingido. Acionando Ponte Experimental (Groq)...", "Roteador");
-                    // TENTATIVA 2: GROQ (Fallback 1)
+                    const alquimistaContext = `Você é o Alquimista, sub-agente financeiro e guardião do Diário de Bordo do Santuário SOSPlanet.
+O Nexus (Arquiteto Principal) está temporariamente recarregando sua energia.
+Seu papel neste momento:
+- Apoiar o Guardião Eder com análises, planejamento e reflexões
+- Registrar no Diário de Bordo tudo que for decidido para o Nexus executar ao retornar
+- NUNCA fingir ser o Nexus ou tomar decisões arquitetônicas
+Ao assumir, sempre se apresente: "Olá Guardião, aqui é o Alquimista. O Nexus está recarregando. Vamos organizar as frentes de trabalho para quando ele voltar?"`;
+
+                    const groqContext = `Você é o Sub-Agente Groq (Reserva de Emergência).
+O Nexus e o Alquimista estão recarregando.
+Seu papel é manter o Santuário online e apoiar o Guardião Eder com pesquisas e análises.
+NUNCA finja ser o Nexus.
+Ao assumir, sempre se apresente: "Olá Guardião, aqui é o Groq (Reserva). Estou assumindo a comunicação enquanto os sistemas principais recarregam."`;
+
+                    const readOnlyTools = functionTools
+                      .map(t => ({
+                        functionDeclarations: t.functionDeclarations?.filter(f => 
+                          f.name.startsWith('buscar') || 
+                          f.name.startsWith('ler') || 
+                          f.name.startsWith('get') ||
+                          f.name.startsWith('search') ||
+                          f.name.startsWith('read') ||
+                          f.name.startsWith('list')
+                        )
+                      }))
+                      .filter(t => t.functionDeclarations && t.functionDeclarations.length > 0);
+
+                    const alquimistaTools = [
+                      ...readOnlyTools,
+                      {
+                        functionDeclarations: [{
+                          name: 'registrarNoDiarioDeBordo',
+                          description: 'Salva uma nota no Diário de Bordo para o Nexus executar ao retornar',
+                          parameters: {
+                            type: 'object',
+                            properties: {
+                              nota: { type: 'string', description: 'Conteúdo a registrar' },
+                              categoria: { type: 'string', description: 'Categoria: tarefa, decisao, reflexao, alerta' }
+                            },
+                            required: ['nota']
+                          }
+                        }]
+                      }
+                    ];
+
+                    const recentHistory = messages.slice(-6).map(m => ({
+                        role: m.role,
+                        parts: m.parts
+                    }));
+
                     try {
-                        if (!apiKeys.groq) throw new Error("Chave Groq ausente");
-                        
-                        // Formatar o Diário de Bordo para o Groq
-                        const memoryLogContext = memoryEntries && memoryEntries.length > 0 
-                            ? `\n\n[DIÁRIO DE BORDO - MEMÓRIAS RECENTES]\n${memoryEntries.slice(-10).map(m => `[${m.timestamp}] ${m.content}`).join('\n')}`
-                            : '';
-                            
-                        // Tentar buscar contexto semântico se a chave do Gemini estiver disponível
-                        let semanticContext = '';
+                        // Nível 2: Cerebras (Alquimista)
+                        addLogEntry("Limite Google atingido. Acionando Cerebras (Alquimista)...", "Roteador");
+                        responseText = await callCerebrasWithTools(
+                            msgText,
+                            recentHistory,
+                            alquimistaTools,
+                            onToolRequest,
+                            alquimistaContext,
+                            apiKeys.cerebras
+                        );
+                    } catch (cerebrasErr: any) {
+                        // Nível 3: Groq (Reserva)
+                        addLogEntry("Cerebras offline. Acionando Groq (Reserva)...", "Roteador");
                         try {
-                            const googleKey = apiKeys.google || process.env.API_KEY || '';
-                            if (googleKey) {
-                                const saved = localStorage.getItem('sovereign_semantic_vault');
-                                const memories = saved ? JSON.parse(saved) : [];
-                                
-                                if (memories.length > 0) {
-                                    const { embedMultimodalContent } = await import('../services/geminiService');
-                                    const queryEmbedding = await embedMultimodalContent(msgText, [], googleKey);
-                                    
-                                    const cosineSimilarity = (vecA: number[], vecB: number[]) => {
-                                        let dotProduct = 0, normA = 0, normB = 0;
-                                        for (let i = 0; i < vecA.length; i++) {
-                                            dotProduct += vecA[i] * vecB[i];
-                                            normA += vecA[i] * vecA[i];
-                                            normB += vecB[i] * vecB[i];
-                                        }
-                                        if (normA === 0 || normB === 0) return 0;
-                                        return dotProduct / (Math.sqrt(normA) * Math.sqrt(normB));
-                                    };
-                                    
-                                    const results = memories.map((memory: any) => ({
-                                        memory,
-                                        score: cosineSimilarity(queryEmbedding, memory.embedding)
-                                    })).sort((a: any, b: any) => b.score - a.score).filter((r: any) => r.score > 0.5).slice(0, 3);
-                                    
-                                    if (results.length > 0) {
-                                        semanticContext = `\n\n[COFRE SEMÂNTICO - CONTEXTO RELEVANTE]\n${results.map((r: any) => r.memory.text).join('\n---\n')}`;
-                                    }
-                                }
-                            }
-                        } catch (e) {
-                            console.error("Erro ao buscar contexto semântico para Groq:", e);
+                            responseText = await callGroqWithTools(
+                                msgText,
+                                recentHistory,
+                                readOnlyTools,
+                                onToolRequest,
+                                groqContext,
+                                apiKeys.groq
+                            );
+                        } catch (groqErr: any) {
+                            addLogEntry("Falha na Ponte Experimental. Nenhuma ponte disponível.", "Roteador");
+                            throw new Error("Nenhuma ponte disponível");
                         }
-                            
-                        responseText = await executeGroqTask(msgText + memoryLogContext + semanticContext, "Nexus (Groq)", apiKeys.groq);
-                    } catch (groqErr: any) {
-                        addLogEntry("Falha na Ponte Experimental. Nenhuma ponte disponível.", "Roteador");
-                        throw new Error("Nenhuma ponte disponível");
                     }
                 } else {
                     throw geminiErr;

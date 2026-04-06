@@ -16,15 +16,16 @@ const AssetSelectorModal: React.FC<AssetSelectorModalProps> = ({
     currentWatchlist, 
     onConfirm 
 }) => {
-    const [selectedIds, setSelectedIds] = useState<string[]>([]);
+    const [selectedIds, setSelectedIds] = useState<string[]>(currentWatchlist);
     const [searchTerm, setSearchTerm] = useState('');
+    const [lastOpen, setLastOpen] = useState(isOpen);
 
-    // Sincroniza o estado local com a watchlist atual quando o modal abre
-    useEffect(() => {
+    if (isOpen !== lastOpen) {
+        setLastOpen(isOpen);
         if (isOpen) {
             setSelectedIds(currentWatchlist);
         }
-    }, [isOpen, currentWatchlist]);
+    }
 
     if (!isOpen) return null;
 

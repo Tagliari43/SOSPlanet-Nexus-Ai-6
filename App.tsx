@@ -422,6 +422,17 @@ const App: React.FC = () => {
             return "Memória persistida no Diário de Bordo.";
         }
 
+        if (tool === 'registrarNoDiarioDeBordo') {
+            addLogEntry(`Alquimista registrando no Diário: ${args.categoria}`, "Alquimista");
+            try {
+                const { registrarNoDiarioDeBordo } = await import('./services/supabaseService');
+                const result = await registrarNoDiarioDeBordo(args.nota, args.categoria);
+                return result;
+            } catch (err: any) {
+                return `Erro ao registrar: ${err.message}`;
+            }
+        }
+
         if (tool === 'executeWebSearch') {
             addLogEntry(`Sonar Global: "${args.query}"...`, 'Nexus');
             try {

@@ -145,7 +145,7 @@ const Timeline: React.FC<TimelineProps> = ({ samples }) => {
             const stepIndex = Math.floor(x / stepWidth);
 
             const newItem: TrackItem = {
-                id: Date.now().toString(),
+                id: e.timeStamp.toString() + '-' + stepIndex,
                 sample: sampleData,
                 startTime: stepIndex,
                 duration: 4, // Duração padrão (1 compasso)

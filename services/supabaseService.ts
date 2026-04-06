@@ -114,3 +114,24 @@ export async function searchSimilarMemories(queryEmbedding: number[], matchThres
         return [];
     }
 }
+
+export async function registrarNoDiarioDeBordo(nota: string, categoria: string = 'geral'): Promise<string> {
+    if (!supabase) {
+        return "Erro: Supabase não inicializado. Chaves ausentes.";
+    }
+    try {
+        const { error } = await supabase
+            .from('diario_de_bordo')
+            .insert({
+                conteudo: nota,
+                categoria,
+                criado_em: new Date().toISOString(),
+                autor: 'Alquimista'
+            });
+        
+        if (error) return `Erro ao registrar: ${error.message}`;
+        return 'Nota registrada no Diário de Bordo com sucesso. O Nexus encontrará ao retornar.';
+    } catch (err: any) {
+        return `Falha crítica ao registrar no diário: ${err.message || String(err)}`;
+    }
+}

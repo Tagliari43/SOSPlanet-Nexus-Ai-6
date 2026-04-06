@@ -15,32 +15,36 @@ interface ProjectsProps {
 
 const Projects: React.FC<ProjectsProps> = ({ onNavigateToFinance, satelliteData, refreshSatellite, onSimulateCrisis }) => {
     const [onChainBalance, setOnChainBalance] = useState<number>(0);
-    const [loading, setLoading] = useState<boolean>(true);
     const [activeView, setActiveView] = useState<'list' | 'gaiaeye' | 'planner'>('list');
     const [donateAmount, setDonateAmount] = useState<string>('');
     const [statusMsg, setStatusMsg] = useState<{ text: string, type: 'success' | 'error' } | null>(null);
     
-    const { balance: sovereignBalance, transferToProject, projectContributions } = useSosToken();
+    const { balance: _sovereignBalance, transferToProject, projectContributions } = useSosToken();
     const localContribution = projectContributions['Projeto Semente'] || 0;
     
     const GOAL_AMOUNT = 50000;
 
-    const fetchOnChain = useCallback(async () => {
-        try {
-            const balance = await getSosTokenBalance(PROJECT_SEMENTE_WALLET);
-            setOnChainBalance(balance || 0); 
-            setLoading(false);
-        } catch (e) {
-            setOnChainBalance(0);
-            setLoading(false);
-        }
-    }, []);
-
     useEffect(() => {
-        fetchOnChain();
-        const interval = setInterval(fetchOnChain, 60000);
-        return () => clearInterval(interval);
-    }, [fetchOnChain]);
+        let mounted = true;
+        const doFetch = async () => {
+            try {
+                const balance = await getSosTokenBalance(PROJECT_SEMENTE_WALLET);
+                if (mounted) {
+                    setOnChainBalance(balance || 0); 
+                }
+            } catch (e) {
+                if (mounted) {
+                    setOnChainBalance(0);
+                }
+            }
+        };
+        doFetch();
+        const interval = setInterval(doFetch, 60000);
+        return () => {
+            mounted = false;
+            clearInterval(interval);
+        };
+    }, []);
 
     const totalProgressSos = onChainBalance + localContribution;
     const progressPercentage = Math.min((totalProgressSos / GOAL_AMOUNT) * 100, 100);
@@ -56,8 +60,8 @@ const Projects: React.FC<ProjectsProps> = ({ onNavigateToFinance, satelliteData,
             setDonateAmount('');
             setStatusMsg({ text: `Sucesso! ${formatNumber(amount)} SOS investidos na regeneração.`, type: 'success' });
             setTimeout(() => setStatusMsg(null), 5000);
-        } catch (err: any) {
-            setStatusMsg({ text: err.message, type: 'error' });
+        } catch (err: unknown) {
+            setStatusMsg({ text: err instanceof Error ? err.message : String(err), type: 'error' });
             setTimeout(() => setStatusMsg(null), 5000);
         }
     };
