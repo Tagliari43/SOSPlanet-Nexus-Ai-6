@@ -84,7 +84,8 @@ const TabButton: React.FC<{ tabId: Tab; label: string; activeTab: Tab; setActive
 const INITIAL_USER_KEYS: UserApiKey[] = [
     { id: 'google-default', service: 'Google Gemini', key: process.env.GEMINI_API_KEY || process.env.API_KEY || '', method: 'google-header' },
     { id: 'groq-default', service: 'Groq API', key: process.env.GROQ_API_KEY || '', method: 'bearer' },
-    { id: 'scraper-api-key', service: 'Scraper API (Navegador)', key: process.env.SCRAPER_API_KEY || '', method: 'bearer' }
+    { id: 'scraper-api-key', service: 'Scraper API (Navegador)', key: process.env.SCRAPER_API_KEY || '', method: 'bearer' },
+    { id: 'cerebras-default', service: 'Cerebras API', key: process.env.CEREBRAS_API_KEY || '', method: 'bearer' }
 ];
 
 const App: React.FC = () => {
@@ -101,12 +102,17 @@ const App: React.FC = () => {
     const [customTools, setCustomTools] = useState<SovereignTool[]>(() => loadFromStorage<SovereignTool[]>(CUSTOM_TOOLS_KEY, []));
     const [userApiKeys, setUserApiKeys] = useState<UserApiKey[]>(() => loadFromStorage<UserApiKey[]>(USER_API_KEYS_KEY, INITIAL_USER_KEYS));
 
-    // Migration to remove old Hugging Face keys from local storage
+    // Migration to remove old Hugging Face keys and ensure Cerebras is present
     useEffect(() => {
         setUserApiKeys(prevKeys => {
             const hasOldKey = prevKeys.some(k => k.service.includes('Hugging Face') || k.id === 'hf-default');
-            if (hasOldKey) {
+            const hasCerebras = prevKeys.some(k => k.id === 'cerebras-default');
+            
+            if (hasOldKey || !hasCerebras) {
                 const cleanedKeys = prevKeys.filter(k => !k.service.includes('Hugging Face') && k.id !== 'hf-default');
+                if (!hasCerebras) {
+                    cleanedKeys.push({ id: 'cerebras-default', service: 'Cerebras API', key: process.env.CEREBRAS_API_KEY || '', method: 'bearer' });
+                }
                 saveToStorage(USER_API_KEYS_KEY, cleanedKeys);
                 return cleanedKeys;
             }
