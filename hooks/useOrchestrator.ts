@@ -65,7 +65,7 @@ export const useSovereignRouter = (
     const [pontes, setPontes] = useState<Ponte[]>(() => loadFromStorage<Ponte[]>(PONTES_KEY, pontesConfig));
     const [activeProbes, setActiveProbes] = useState<ReconProbe[]>(() => loadFromStorage<ReconProbe[]>(PROBES_KEY, []));
 
-    // Migration to remove old pontes (Hugging Face, Cloudflare) from local storage
+    // Migration to remove old pontes and ensure Cerebras is present
     useEffect(() => {
         setPontes(prevPontes => {
             const hasOldPonte = prevPontes.some(p => 
@@ -74,7 +74,9 @@ export const useSovereignRouter = (
                 p.nome.includes('Cloudflare') ||
                 (p as any).provider === 'cloudflare'
             );
-            if (hasOldPonte) {
+            const hasCerebras = prevPontes.some(p => p.provider === 'cerebras');
+            
+            if (hasOldPonte || !hasCerebras) {
                 return pontesConfig;
             }
             return prevPontes;
