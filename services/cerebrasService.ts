@@ -3,7 +3,7 @@
  * Extremamente rápido, usado como Sub-Agente Alquimista.
  */
 
-const TEXT_MODEL = 'llama-3.3-70b';
+const TEXT_MODEL = 'llama3.1-8b';
 const API_BASE = 'https://api.cerebras.ai/v1/chat/completions';
 
 export async function callCerebrasWithTools(
@@ -14,7 +14,7 @@ export async function callCerebrasWithTools(
   systemContext?: string,
   apiKey?: string
 ): Promise<string> {
-  const token = apiKey || process.env.CEREBRAS_API_KEY;
+  const token = apiKey;
   
   if (!token) {
     throw new Error("Chave da API da Cerebras não encontrada.");

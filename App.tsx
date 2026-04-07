@@ -578,7 +578,7 @@ const App: React.FC = () => {
             addLogEntry(`Consultando o Alquimista (Cerebras)...`, 'Orquestração');
             const startTime = Date.now();
             try {
-                const cerebrasKey = userApiKeys.find(k => k.id === 'cerebras-default')?.key || process.env.CEREBRAS_API_KEY || '';
+                const cerebrasKey = userApiKeys.find(k => k.id === 'cerebras-default')?.key || '';
                 const systemPrompt = "Você é o Alquimista, o sub-agente financeiro da Nação SOSPlanet. Sua função é analisar dados financeiros, criptomoedas e sugerir estratégias de otimização de recursos. Seja preciso, analítico e foque em resultados.";
                 const prompt = `${systemPrompt}\n\nTarefa: ${args.prompt}`;
                 
