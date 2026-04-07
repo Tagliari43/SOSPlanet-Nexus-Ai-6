@@ -569,15 +569,15 @@ const App: React.FC = () => {
         }
 
         if (tool === 'consultarAlquimista') {
-            addLogEntry(`Consultando o Alquimista (Groq)...`, 'Orquestração');
+            addLogEntry(`Consultando o Alquimista (Cerebras)...`, 'Orquestração');
             const startTime = Date.now();
             try {
-                const groqKey = userApiKeys.find(k => k.id === 'groq-default')?.key || process.env.GROQ_API_KEY || '';
+                const cerebrasKey = userApiKeys.find(k => k.id === 'cerebras-default')?.key || process.env.CEREBRAS_API_KEY || '';
                 const systemPrompt = "Você é o Alquimista, o sub-agente financeiro da Nação SOSPlanet. Sua função é analisar dados financeiros, criptomoedas e sugerir estratégias de otimização de recursos. Seja preciso, analítico e foque em resultados.";
                 const prompt = `${systemPrompt}\n\nTarefa: ${args.prompt}`;
                 
-                const { generateText } = await import('./services/groqService');
-                const resultText = await generateText(prompt, 'llama3-8b-8192', groqKey);
+                const { callCerebrasWithTools } = await import('./services/cerebrasService');
+                const resultText = await callCerebrasWithTools(prompt, [], [], async () => {}, systemPrompt, cerebrasKey);
                 
                 // Salvar log de execução assincronamente
                 import('./services/supabaseService').then(({ saveAgentLogToSupabase }) => {
