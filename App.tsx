@@ -85,7 +85,8 @@ const INITIAL_USER_KEYS: UserApiKey[] = [
     { id: 'google-default', service: 'Google Gemini', key: process.env.GEMINI_API_KEY || process.env.API_KEY || '', method: 'google-header' },
     { id: 'groq-default', service: 'Groq API', key: process.env.GROQ_API_KEY || '', method: 'bearer' },
     { id: 'scraper-api-key', service: 'Scraper API (Navegador)', key: process.env.SCRAPER_API_KEY || '', method: 'bearer' },
-    { id: 'cerebras-default', service: 'Cerebras API', key: '', method: 'bearer' }
+    { id: 'cerebras-default', service: 'Cerebras API', key: '', method: 'bearer' },
+    { id: 'openrouter-default', service: 'OpenRouter API', key: '', method: 'bearer' }
 ];
 
 const App: React.FC = () => {
@@ -130,6 +131,13 @@ const App: React.FC = () => {
                     newKeys = newKeys.filter(k => k.id !== 'cerebras-default');
                     modified = true;
                 }
+            }
+
+            // 3. Add OpenRouter key if missing
+            const openrouterKeys = newKeys.filter(k => k.id === 'openrouter-default' || k.service.toLowerCase().includes('openrouter'));
+            if (openrouterKeys.length === 0) {
+                newKeys.push({ id: 'openrouter-default', service: 'OpenRouter API', key: '', method: 'bearer' });
+                modified = true;
             }
 
             if (modified) {

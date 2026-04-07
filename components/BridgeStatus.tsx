@@ -14,7 +14,8 @@ const BridgeStatus: React.FC = () => {
   const bridges = [
     { name: 'Ponte Estável (Google)', key: 'google', active: !!apiKeys.google },
     { name: 'Ponte Experimental (Groq)', key: 'groq', active: !!apiKeys.groq },
-    { name: 'Ponte Alquímica (Cerebras)', key: 'cerebras', active: !!apiKeys.cerebras }
+    { name: 'Ponte Alquímica (Cerebras)', key: 'cerebras', active: !!apiKeys.cerebras },
+    { name: 'Ponte Universal (OpenRouter)', key: 'openrouter', active: !!apiKeys.openrouter }
   ];
 
   return (

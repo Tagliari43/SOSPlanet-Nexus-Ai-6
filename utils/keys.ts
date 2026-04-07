@@ -13,6 +13,7 @@ export interface ApiKeys {
     groq?: string;
     github?: string;
     cerebras?: string;
+    openrouter?: string;
 }
 
 /**
@@ -31,11 +32,13 @@ export function loadApiKeys(): ApiKeys {
     const groqKey = userKeys.find(k => k.service.toLowerCase().includes('groq'))?.key || process.env.GROQ_API_KEY || sovereignKeys.groq;
     const githubKey = userKeys.find(k => k.id === 'github-autonomy-token')?.key || process.env.GITHUB_TOKEN;
     const cerebrasKey = userKeys.find(k => k.service.toLowerCase().includes('cerebras'))?.key || process.env.CEREBRAS_API_KEY;
+    const openrouterKey = userKeys.find(k => k.service.toLowerCase().includes('openrouter'))?.key || process.env.OPENROUTER_API_KEY;
 
     return {
         google: googleKey,
         groq: groqKey,
         github: githubKey,
-        cerebras: cerebrasKey
+        cerebras: cerebrasKey,
+        openrouter: openrouterKey
     };
 }
