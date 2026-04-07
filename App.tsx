@@ -102,19 +102,39 @@ const App: React.FC = () => {
     const [customTools, setCustomTools] = useState<SovereignTool[]>(() => loadFromStorage<SovereignTool[]>(CUSTOM_TOOLS_KEY, []));
     const [userApiKeys, setUserApiKeys] = useState<UserApiKey[]>(() => loadFromStorage<UserApiKey[]>(USER_API_KEYS_KEY, INITIAL_USER_KEYS));
 
-    // Migration to remove old Hugging Face keys and ensure Cerebras is present
+    // Migration to remove old Hugging Face keys and clean up Cerebras keys
     useEffect(() => {
         setUserApiKeys(prevKeys => {
-            const hasOldKey = prevKeys.some(k => k.service.includes('Hugging Face') || k.id === 'hf-default');
-            const hasCerebras = prevKeys.some(k => k.id === 'cerebras-default');
+            let modified = false;
+            let newKeys = [...prevKeys];
+
+            // 1. Remove Hugging Face
+            if (newKeys.some(k => k.service.includes('Hugging Face') || k.id === 'hf-default')) {
+                newKeys = newKeys.filter(k => !k.service.includes('Hugging Face') && k.id !== 'hf-default');
+                modified = true;
+            }
+
+            // 2. Clean up Cerebras keys
+            const cerebrasKeys = newKeys.filter(k => k.id === 'cerebras-default' || k.service.toLowerCase().includes('cerebras'));
             
-            if (hasOldKey || !hasCerebras) {
-                const cleanedKeys = prevKeys.filter(k => !k.service.includes('Hugging Face') && k.id !== 'hf-default');
-                if (!hasCerebras) {
-                    cleanedKeys.push({ id: 'cerebras-default', service: 'Cerebras API', key: '', method: 'bearer' });
+            if (cerebrasKeys.length === 0) {
+                // Add default if none exists
+                newKeys.push({ id: 'cerebras-default', service: 'Cerebras API', key: '', method: 'bearer' });
+                modified = true;
+            } else if (cerebrasKeys.length > 1) {
+                // If there are multiple, keep the one with a key, or the custom one
+                const hasCustomFilled = cerebrasKeys.some(k => k.id !== 'cerebras-default' && k.key.trim() !== '');
+                const defaultKey = cerebrasKeys.find(k => k.id === 'cerebras-default');
+                
+                if (hasCustomFilled && defaultKey && defaultKey.key.trim() === '') {
+                    newKeys = newKeys.filter(k => k.id !== 'cerebras-default');
+                    modified = true;
                 }
-                saveToStorage(USER_API_KEYS_KEY, cleanedKeys);
-                return cleanedKeys;
+            }
+
+            if (modified) {
+                saveToStorage(USER_API_KEYS_KEY, newKeys);
+                return newKeys;
             }
             return prevKeys;
         });
@@ -578,7 +598,8 @@ const App: React.FC = () => {
             addLogEntry(`Consultando o Alquimista (Cerebras)...`, 'Orquestração');
             const startTime = Date.now();
             try {
-                const cerebrasKey = userApiKeys.find(k => k.id === 'cerebras-default')?.key || '';
+                const cerebrasKeyObj = userApiKeys.find(k => (k.id === 'cerebras-default' || k.service.toLowerCase().includes('cerebras')) && k.key.trim() !== '');
+                const cerebrasKey = cerebrasKeyObj ? cerebrasKeyObj.key : '';
                 const systemPrompt = "Você é o Alquimista, o sub-agente financeiro da Nação SOSPlanet. Sua função é analisar dados financeiros, criptomoedas e sugerir estratégias de otimização de recursos. Seja preciso, analítico e foque em resultados.";
                 const prompt = `${systemPrompt}\n\nTarefa: ${args.prompt}`;
                 
