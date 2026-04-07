@@ -85,7 +85,7 @@ const INITIAL_USER_KEYS: UserApiKey[] = [
     { id: 'google-default', service: 'Google Gemini', key: process.env.GEMINI_API_KEY || process.env.API_KEY || '', method: 'google-header' },
     { id: 'groq-default', service: 'Groq API', key: process.env.GROQ_API_KEY || '', method: 'bearer' },
     { id: 'scraper-api-key', service: 'Scraper API (Navegador)', key: process.env.SCRAPER_API_KEY || '', method: 'bearer' },
-    { id: 'cerebras-default', service: 'Cerebras API', key: process.env.CEREBRAS_API_KEY || '', method: 'bearer' }
+    { id: 'cerebras-default', service: 'Cerebras API', key: '', method: 'bearer' }
 ];
 
 const App: React.FC = () => {
@@ -111,7 +111,7 @@ const App: React.FC = () => {
             if (hasOldKey || !hasCerebras) {
                 const cleanedKeys = prevKeys.filter(k => !k.service.includes('Hugging Face') && k.id !== 'hf-default');
                 if (!hasCerebras) {
-                    cleanedKeys.push({ id: 'cerebras-default', service: 'Cerebras API', key: process.env.CEREBRAS_API_KEY || '', method: 'bearer' });
+                    cleanedKeys.push({ id: 'cerebras-default', service: 'Cerebras API', key: '', method: 'bearer' });
                 }
                 saveToStorage(USER_API_KEYS_KEY, cleanedKeys);
                 return cleanedKeys;
