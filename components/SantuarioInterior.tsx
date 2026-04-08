@@ -412,7 +412,7 @@ Seu papel é manter o Santuário online e apoiar o Guardião Eder com pesquisas 
 NUNCA finja ser o Nexus.
 Ao assumir, sempre se apresente: "Olá Guardião, aqui é o Groq (Reserva). Estou assumindo a comunicação enquanto os sistemas principais recarregam."`;
 
-                    const readOnlyTools = functionTools
+                    const fallbackTools = functionTools
                       .map(t => ({
                         functionDeclarations: t.functionDeclarations?.filter(f => 
                           f.name.startsWith('buscar') || 
@@ -420,7 +420,8 @@ Ao assumir, sempre se apresente: "Olá Guardião, aqui é o Groq (Reserva). Esto
                           f.name.startsWith('get') ||
                           f.name.startsWith('search') ||
                           f.name.startsWith('read') ||
-                          f.name.startsWith('list')
+                          f.name.startsWith('list') ||
+                          f.name === 'invocarSubAgente'
                         )
                       }))
                       .filter(t => t.functionDeclarations && t.functionDeclarations.length > 0);
@@ -436,7 +437,7 @@ Ao assumir, sempre se apresente: "Olá Guardião, aqui é o Groq (Reserva). Esto
                         responseText = await callGroqWithTools(
                             msgText,
                             recentHistory,
-                            readOnlyTools,
+                            fallbackTools,
                             onToolRequest,
                             groqContext,
                             apiKeys.groq
@@ -448,7 +449,7 @@ Ao assumir, sempre se apresente: "Olá Guardião, aqui é o Groq (Reserva). Esto
                             responseText = await callCerebrasWithTools(
                                 msgText,
                                 recentHistory,
-                                readOnlyTools, // Usando readOnlyTools para o Cerebras também no fallback geral
+                                fallbackTools, // Usando fallbackTools para o Cerebras também no fallback geral
                                 onToolRequest,
                                 "Você é o Alquimista. O Nexus e o Groq estão offline. Assuma a comunicação.",
                                 apiKeys.cerebras

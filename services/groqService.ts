@@ -4,7 +4,7 @@
  */
 
 const TEXT_MODEL = 'llama-3.3-70b-versatile'; // Modelo atualizado, rápido e inteligente
-const API_BASE = '/v1/proxy/api.groq.com/openai/v1/chat/completions';
+const API_BASE = 'https://api.groq.com/openai/v1/chat/completions';
 
 const GROQ_DICTIONARY = `
 # ⚡ DICIONÁRIO VIVO - SUB-AGENTE GROQ (VANGUARDA TÁTICA) ⚡
