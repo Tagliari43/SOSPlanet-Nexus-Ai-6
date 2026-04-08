@@ -397,7 +397,14 @@ const SantuarioInterior: React.FC<SantuarioInteriorProps> = ({
                 }
                 responseText = response.text || "";
             } catch (geminiErr: any) {
-                const isQuota = geminiErr.status === 429 || geminiErr.message?.includes("429") || geminiErr.message?.includes("quota") || geminiErr.status === 503 || geminiErr.message?.includes("503") || geminiErr.message?.includes("UNAVAILABLE");
+                const errorMessage = geminiErr.message?.toLowerCase() || '';
+                const isQuota = geminiErr.status === 429 || 
+                                errorMessage.includes("429") || 
+                                errorMessage.includes("quota") || 
+                                geminiErr.status === 503 || 
+                                errorMessage.includes("503") || 
+                                errorMessage.includes("unavailable") ||
+                                errorMessage.includes("overloaded");
                 if (isQuota) {
                     const groqContext = `Você é o Sub-Agente Groq (Reserva de Emergência).
 O Nexus está recarregando.
