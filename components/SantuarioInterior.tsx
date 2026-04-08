@@ -446,9 +446,6 @@ Ao assumir, sempre se apresente: "Olá Guardião, aqui é o Groq (Reserva). Esto
                         // Nível 3: Cerebras (Alquimista)
                         addLogEntry("Groq offline. Acionando Cerebras (Alquimista)...", "Roteador");
                         try {
-                            // TEMPORARY TEST: Force Cerebras to fail to test OpenRouter fallback
-                            throw new Error("TESTE: Forçando falha do Cerebras para testar OpenRouter");
-                            
                             responseText = await callCerebrasWithTools(
                                 msgText,
                                 recentHistory,
@@ -466,6 +463,7 @@ Ao assumir, sempre se apresente: "Olá Guardião, aqui é o Groq (Reserva). Esto
                                     fallbackTools,
                                     onToolRequest,
                                     "Você é o Arkael. O Nexus, Groq e Cerebras estão offline. Assuma a comunicação. Use a ferramenta invocarSubAgente se precisar falar com outro agente.",
+                                    "meta-llama/llama-3.1-8b-instruct:free", // modelId
                                     apiKeys.openrouter
                                 );
                             } catch (openRouterErr: any) {
