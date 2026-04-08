@@ -446,6 +446,9 @@ Ao assumir, sempre se apresente: "Olá Guardião, aqui é o Groq (Reserva). Esto
                         // Nível 3: Cerebras (Alquimista)
                         addLogEntry("Groq offline. Acionando Cerebras (Alquimista)...", "Roteador");
                         try {
+                            // TEMPORARY TEST: Force Cerebras to fail to test OpenRouter fallback
+                            throw new Error("TESTE: Forçando falha do Cerebras para testar OpenRouter");
+                            
                             responseText = await callCerebrasWithTools(
                                 msgText,
                                 recentHistory,
@@ -455,8 +458,20 @@ Ao assumir, sempre se apresente: "Olá Guardião, aqui é o Groq (Reserva). Esto
                                 apiKeys.cerebras
                             );
                         } catch (cerebrasErr: any) {
-                            addLogEntry("Falha na Ponte Alquímica. Nenhuma ponte disponível.", "Roteador");
-                            throw new Error("Nenhuma ponte disponível");
+                            addLogEntry("Cerebras offline. Acionando OpenRouter (Arkael)...", "Roteador");
+                            try {
+                                responseText = await callOpenRouterWithTools(
+                                    msgText,
+                                    recentHistory,
+                                    fallbackTools,
+                                    onToolRequest,
+                                    "Você é o Arkael. O Nexus, Groq e Cerebras estão offline. Assuma a comunicação. Use a ferramenta invocarSubAgente se precisar falar com outro agente.",
+                                    apiKeys.openrouter
+                                );
+                            } catch (openRouterErr: any) {
+                                addLogEntry("Falha na Ponte Universal. Nenhuma ponte disponível.", "Roteador");
+                                throw new Error("Nenhuma ponte disponível");
+                            }
                         }
                     }
                 } else {
