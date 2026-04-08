@@ -424,31 +424,30 @@ Ao assumir, sempre se apresente: "Olá Guardião, aqui é o Groq (Reserva). Esto
                     }));
 
                     try {
-                        // Nível 2: OpenRouter (Ponte Universal Gemini)
-                        addLogEntry("Limite Google atingido. Acionando Ponte Universal (OpenRouter/Gemini)...", "Roteador");
-                        responseText = await callOpenRouterWithTools(
+                        // Nível 2: Groq (Reserva)
+                        addLogEntry("Limite Google atingido. Acionando Groq (Reserva)...", "Roteador");
+                        responseText = await callGroqWithTools(
                             msgText,
                             recentHistory,
-                            functionTools,
+                            readOnlyTools,
                             onToolRequest,
-                            systemInstruction,
-                            'google/gemini-2.5-flash',
-                            apiKeys.openrouter || ''
+                            groqContext,
+                            apiKeys.groq
                         );
-                    } catch (openRouterErr: any) {
-                        // Nível 3: Groq (Reserva)
-                        addLogEntry("Ponte Universal offline. Acionando Groq (Reserva)...", "Roteador");
+                    } catch (groqErr: any) {
+                        // Nível 3: Cerebras (Alquimista)
+                        addLogEntry("Groq offline. Acionando Cerebras (Alquimista)...", "Roteador");
                         try {
-                            responseText = await callGroqWithTools(
+                            responseText = await callCerebrasWithTools(
                                 msgText,
                                 recentHistory,
-                                readOnlyTools,
+                                readOnlyTools, // Usando readOnlyTools para o Cerebras também no fallback geral
                                 onToolRequest,
-                                groqContext,
-                                apiKeys.groq
+                                "Você é o Alquimista. O Nexus e o Groq estão offline. Assuma a comunicação.",
+                                apiKeys.cerebras
                             );
-                        } catch (groqErr: any) {
-                            addLogEntry("Falha na Ponte Experimental. Nenhuma ponte disponível.", "Roteador");
+                        } catch (cerebrasErr: any) {
+                            addLogEntry("Falha na Ponte Alquímica. Nenhuma ponte disponível.", "Roteador");
                             throw new Error("Nenhuma ponte disponível");
                         }
                     }
