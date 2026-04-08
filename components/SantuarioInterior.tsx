@@ -431,46 +431,72 @@ Ao assumir, sempre se apresente: "Olá Guardião, aqui é o Groq (Reserva). Esto
                         parts: m.parts
                     }));
 
-                    try {
-                        // Nível 2: Groq (Reserva)
-                        addLogEntry("Limite Google atingido. Acionando Groq (Reserva)...", "Roteador");
-                        responseText = await callGroqWithTools(
-                            msgText,
-                            recentHistory,
-                            fallbackTools,
-                            onToolRequest,
-                            groqContext,
-                            apiKeys.groq
-                        );
-                    } catch (groqErr: any) {
-                        // Nível 3: Cerebras (Alquimista)
-                        addLogEntry("Groq offline. Acionando Cerebras (Alquimista)...", "Roteador");
-                        try {
-                            responseText = await callCerebrasWithTools(
-                                msgText,
-                                recentHistory,
-                                fallbackTools, // Usando fallbackTools para o Cerebras também no fallback geral
-                                onToolRequest,
-                                "Você é o Alquimista. O Nexus e o Groq estão offline. Assuma a comunicação.",
-                                apiKeys.cerebras
-                            );
-                        } catch (cerebrasErr: any) {
-                            addLogEntry("Cerebras offline. Acionando OpenRouter (Arkael)...", "Roteador");
-                            try {
-                                responseText = await callOpenRouterWithTools(
+                    const provedores = [
+                        {
+                            nome: 'Groq (Reserva)',
+                            fn: async () => {
+                                addLogEntry("Acionando Groq (Reserva)...", "Roteador");
+                                return await callGroqWithTools(
+                                    msgText,
+                                    recentHistory,
+                                    fallbackTools,
+                                    onToolRequest,
+                                    groqContext,
+                                    apiKeys.groq
+                                );
+                            }
+                        },
+                        {
+                            nome: 'Cerebras (Alquimista)',
+                            fn: async () => {
+                                addLogEntry("Acionando Cerebras (Alquimista)...", "Roteador");
+                                return await callCerebrasWithTools(
+                                    msgText,
+                                    recentHistory,
+                                    fallbackTools,
+                                    onToolRequest,
+                                    "Você é o Alquimista. O Nexus e o Groq estão offline. Assuma a comunicação.",
+                                    apiKeys.cerebras
+                                );
+                            }
+                        },
+                        {
+                            nome: 'OpenRouter (Arkael)',
+                            fn: async () => {
+                                addLogEntry("Acionando OpenRouter (Arkael)...", "Roteador");
+                                return await callOpenRouterWithTools(
                                     msgText,
                                     recentHistory,
                                     fallbackTools,
                                     onToolRequest,
                                     "Você é o Arkael. O Nexus, Groq e Cerebras estão offline. Assuma a comunicação. Use a ferramenta invocarSubAgente se precisar falar com outro agente.",
-                                    "meta-llama/llama-3.1-8b-instruct:free", // modelId
+                                    "nousresearch/hermes-3-llama-3.1-405b:free", // modelId
                                     apiKeys.openrouter
                                 );
-                            } catch (openRouterErr: any) {
-                                addLogEntry("Falha na Ponte Universal. Nenhuma ponte disponível.", "Roteador");
-                                throw new Error("Nenhuma ponte disponível");
                             }
                         }
+                    ];
+
+                    addLogEntry("Limite Google atingido. Iniciando cascata de provedores...", "Roteador");
+                    let fallbackSuccess = false;
+
+                    for (const provedor of provedores) {
+                        try {
+                            responseText = await provedor.fn();
+                            if (responseText) {
+                                fallbackSuccess = true;
+                                break;
+                            }
+                        } catch (erro: any) {
+                            console.error(`Falha no provedor ${provedor.nome}:`, erro);
+                            addLogEntry(`${provedor.nome} offline. Tentando próximo...`, "Roteador");
+                            continue; // passa para o próximo automaticamente
+                        }
+                    }
+
+                    if (!fallbackSuccess) {
+                        addLogEntry("Falha Crítica. Nenhuma ponte disponível.", "Roteador");
+                        throw new Error("Nenhuma ponte disponível");
                     }
                 } else {
                     throw geminiErr;
