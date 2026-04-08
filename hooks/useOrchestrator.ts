@@ -65,7 +65,7 @@ export const useSovereignRouter = (
     const [pontes, setPontes] = useState<Ponte[]>(() => loadFromStorage<Ponte[]>(PONTES_KEY, pontesConfig));
     const [activeProbes, setActiveProbes] = useState<ReconProbe[]>(() => loadFromStorage<ReconProbe[]>(PROBES_KEY, []));
 
-    // Migration to remove old pontes and ensure Cerebras is present
+    // Migration to remove old pontes and ensure Cerebras and OpenRouter are present
     useEffect(() => {
         setPontes(prevPontes => {
             const hasOldPonte = prevPontes.some(p => 
@@ -75,8 +75,9 @@ export const useSovereignRouter = (
                 (p as any).provider === 'cloudflare'
             );
             const hasCerebras = prevPontes.some(p => p.provider === 'cerebras');
+            const hasOpenRouter = prevPontes.some(p => p.provider === 'openrouter');
             
-            if (hasOldPonte || !hasCerebras) {
+            if (hasOldPonte || !hasCerebras || !hasOpenRouter) {
                 return pontesConfig;
             }
             return prevPontes;
@@ -177,6 +178,10 @@ export const useSovereignRouter = (
                             } else if (bridge.provider === 'groq') {
                                 if (!apiKeys.groq) throw new Error("Chave Groq ausente");
                                 text = await executeGroqTask(sub.description, sub.assignedTo, apiKeys.groq);
+                            } else if (bridge.provider === 'openrouter') {
+                                if (!apiKeys.openrouter) throw new Error("Chave OpenRouter ausente");
+                                const { invocarSubAgente } = await import('../services/openrouterService');
+                                text = await invocarSubAgente(sub.assignedTo.toLowerCase(), sub.description, apiKeys.openrouter, bridge.model);
                             }
 
                             if (!text) throw new Error("Resposta vazia da ponte");

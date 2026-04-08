@@ -258,6 +258,23 @@ export const SovereignToolFunctions = {
         }
     } as FunctionDeclaration,
 
+    invocarSubAgente: {
+        name: 'invocarSubAgente',
+        description: 'Instancia um sub-agente via OpenRouter para executar uma tarefa especializada',
+        parameters: {
+            type: Type.OBJECT,
+            properties: {
+                agente: { 
+                    type: Type.STRING, 
+                    description: 'Qual sub-agente invocar (ex: arkael, semente)'
+                },
+                tarefa: { type: Type.STRING, description: 'A tarefa específica para o sub-agente' },
+                modelo: { type: Type.STRING, description: 'Modelo OpenRouter a usar (opcional)' }
+            },
+            required: ['agente', 'tarefa']
+        }
+    } as FunctionDeclaration,
+
     // --- COFRE SEMÂNTICO ---
     saveSemanticMemory: {
         name: 'saveSemanticMemory',

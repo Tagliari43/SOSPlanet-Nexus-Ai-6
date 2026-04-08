@@ -641,6 +641,43 @@ const App: React.FC = () => {
             }
         }
 
+        if (tool === 'invocarSubAgente') {
+            addLogEntry(`Invocando sub-agente '${args.agente}' via OpenRouter...`, 'Orquestração');
+            const startTime = Date.now();
+            try {
+                const openrouterKeyObj = userApiKeys.find(k => (k.id === 'openrouter-default' || k.service.toLowerCase().includes('openrouter')) && k.key.trim() !== '');
+                const openrouterKey = openrouterKeyObj ? openrouterKeyObj.key : '';
+                
+                const { invocarSubAgente } = await import('./services/openrouterService');
+                const resultText = await invocarSubAgente(args.agente, args.tarefa, openrouterKey, args.modelo);
+                
+                // Salvar log de execução assincronamente
+                import('./services/supabaseService').then(({ saveAgentLogToSupabase }) => {
+                    saveAgentLogToSupabase({
+                        agent_name: args.agente,
+                        task_description: args.tarefa,
+                        execution_result: resultText,
+                        success: true,
+                        duration_ms: Date.now() - startTime
+                    });
+                });
+
+                return `Resposta do sub-agente '${args.agente}':\n\n${resultText}`;
+            } catch (err: any) {
+                // Salvar log de falha assincronamente
+                import('./services/supabaseService').then(({ saveAgentLogToSupabase }) => {
+                    saveAgentLogToSupabase({
+                        agent_name: args.agente,
+                        task_description: args.tarefa,
+                        execution_result: err.message,
+                        success: false,
+                        duration_ms: Date.now() - startTime
+                    });
+                });
+                return `Falha ao invocar sub-agente '${args.agente}': ${err.message}`;
+            }
+        }
+
         if (tool === 'saveSemanticMemory') {
             addLogEntry(`Cristalizando memória no Cofre Semântico...`, 'Cofre Semântico');
             try {
