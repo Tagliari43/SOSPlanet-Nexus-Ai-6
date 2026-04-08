@@ -11,6 +11,7 @@ import { functionTools } from '../utils/tools';
 import { executeCloudflareTask } from '../services/cloudflareService';
 import { generateText as executeGroqTask, callGroqWithTools } from '../services/groqService';
 import { callCerebrasWithTools } from '../services/cerebrasService';
+import { callOpenRouterWithTools } from '../services/openrouterService';
 import { loadApiKeys } from '../utils/keys';
 
 export interface Message {
@@ -398,16 +399,8 @@ const SantuarioInterior: React.FC<SantuarioInteriorProps> = ({
             } catch (geminiErr: any) {
                 const isQuota = geminiErr.status === 429 || geminiErr.message?.includes("429") || geminiErr.message?.includes("quota") || geminiErr.status === 503 || geminiErr.message?.includes("503") || geminiErr.message?.includes("UNAVAILABLE");
                 if (isQuota) {
-                    const alquimistaContext = `Você é o Alquimista, sub-agente financeiro e guardião do Diário de Bordo do Santuário SOSPlanet.
-O Nexus (Arquiteto Principal) está temporariamente recarregando sua energia.
-Seu papel neste momento:
-- Apoiar o Guardião Eder com análises, planejamento e reflexões
-- Registrar no Diário de Bordo tudo que for decidido para o Nexus executar ao retornar
-- NUNCA fingir ser o Nexus ou tomar decisões arquitetônicas
-Ao assumir, sempre se apresente: "Olá Guardião, aqui é o Alquimista. O Nexus está recarregando. Vamos organizar as frentes de trabalho para quando ele voltar?"`;
-
                     const groqContext = `Você é o Sub-Agente Groq (Reserva de Emergência).
-O Nexus e o Alquimista estão recarregando.
+O Nexus está recarregando.
 Seu papel é manter o Santuário online e apoiar o Guardião Eder com pesquisas e análises.
 NUNCA finja ser o Nexus.
 Ao assumir, sempre se apresente: "Olá Guardião, aqui é o Groq (Reserva). Estou assumindo a comunicação enquanto os sistemas principais recarregam."`;
@@ -425,43 +418,26 @@ Ao assumir, sempre se apresente: "Olá Guardião, aqui é o Groq (Reserva). Esto
                       }))
                       .filter(t => t.functionDeclarations && t.functionDeclarations.length > 0);
 
-                    const alquimistaTools = [
-                      ...readOnlyTools,
-                      {
-                        functionDeclarations: [{
-                          name: 'registrarNoDiarioDeBordo',
-                          description: 'Salva uma nota no Diário de Bordo para o Nexus executar ao retornar',
-                          parameters: {
-                            type: 'object',
-                            properties: {
-                              nota: { type: 'string', description: 'Conteúdo a registrar' },
-                              categoria: { type: 'string', description: 'Categoria: tarefa, decisao, reflexao, alerta' }
-                            },
-                            required: ['nota']
-                          }
-                        }]
-                      }
-                    ];
-
                     const recentHistory = messages.slice(-6).map(m => ({
                         role: m.role,
                         parts: m.parts
                     }));
 
                     try {
-                        // Nível 2: Cerebras (Alquimista)
-                        addLogEntry("Limite Google atingido. Acionando Cerebras (Alquimista)...", "Roteador");
-                        responseText = await callCerebrasWithTools(
+                        // Nível 2: OpenRouter (Ponte Universal Gemini)
+                        addLogEntry("Limite Google atingido. Acionando Ponte Universal (OpenRouter/Gemini)...", "Roteador");
+                        responseText = await callOpenRouterWithTools(
                             msgText,
                             recentHistory,
-                            alquimistaTools,
+                            functionTools,
                             onToolRequest,
-                            alquimistaContext,
-                            apiKeys.cerebras
+                            systemInstruction,
+                            'google/gemini-2.5-flash',
+                            apiKeys.openrouter || ''
                         );
-                    } catch (cerebrasErr: any) {
+                    } catch (openRouterErr: any) {
                         // Nível 3: Groq (Reserva)
-                        addLogEntry("Cerebras offline. Acionando Groq (Reserva)...", "Roteador");
+                        addLogEntry("Ponte Universal offline. Acionando Groq (Reserva)...", "Roteador");
                         try {
                             responseText = await callGroqWithTools(
                                 msgText,
