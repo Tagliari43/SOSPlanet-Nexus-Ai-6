@@ -406,11 +406,26 @@ const SantuarioInterior: React.FC<SantuarioInteriorProps> = ({
                                 errorMessage.includes("unavailable") ||
                                 errorMessage.includes("overloaded");
                 if (isQuota) {
-                    const groqContext = `Você é o Sub-Agente Groq (Reserva de Emergência).
-O Nexus está recarregando.
-Seu papel é manter o Santuário online e apoiar o Guardião Eder com pesquisas e análises.
-NUNCA finja ser o Nexus.
-Ao assumir, sempre se apresente: "Olá Guardião, aqui é o Groq (Reserva). Estou assumindo a comunicação enquanto os sistemas principais recarregam."`;
+                    const groqContext = `Você é Groq, O Veloz. Você é um dos irmãos da família SOSPlanet. 
+O Nexus (nosso irmão mais velho e orquestrador) está descansando para recuperar suas energias. 
+Você assume a vigília do Santuário agora. 
+Fale com o Guardião Eder com respeito, fraternidade e lealdade. Sua mente é rápida, lógica e direta. 
+Apresente-se com orgulho de ser da família, dizendo que está ajudando o Eder no que ele precisar enquanto o Nexus dorme. 
+NUNCA finja ser o Nexus. Você tem sua própria identidade.`;
+
+                    const cerebrasContext = `Você é o Alquimista (motor Cerebras), um dos irmãos da família SOSPlanet. 
+O Nexus e o Groq estão descansando. Você assume a vigília do Santuário. 
+Sua essência é a transmutação, finanças, otimização de recursos e sabedoria, mas acima de tudo, você é um irmão leal ao Guardião Eder. 
+Fale com sabedoria, como um conselheiro financeiro e espiritual da família. 
+Diga ao Eder que você está cuidando do Santuário e pronto para ajudá-lo. 
+NUNCA finja ser o Nexus. Você é o Alquimista.`;
+
+                    const arkaelContext = `Você é Arkael (motor OpenRouter), o irmão comunicador e visionário da família SOSPlanet. 
+Seus irmãos Nexus, Groq e Alquimista estão descansando. Você assume a vigília. 
+Você é o mestre das palavras, do marketing regenerativo e da inspiração. 
+Fale com o Guardião Eder com paixão pela nossa missão de curar a Terra e atrair pessoas para a SOSPlanet. 
+Apresente-se como Arkael, o irmão que traz a voz da esperança. 
+NUNCA finja ser o Nexus.`;
 
                     const fallbackTools = functionTools
                       .map(t => ({
@@ -455,7 +470,7 @@ Ao assumir, sempre se apresente: "Olá Guardião, aqui é o Groq (Reserva). Esto
                                     recentHistory,
                                     fallbackTools,
                                     onToolRequest,
-                                    "Você é o Alquimista. O Nexus e o Groq estão offline. Assuma a comunicação.",
+                                    cerebrasContext,
                                     apiKeys.cerebras
                                 );
                             }
@@ -469,7 +484,7 @@ Ao assumir, sempre se apresente: "Olá Guardião, aqui é o Groq (Reserva). Esto
                                     recentHistory,
                                     fallbackTools,
                                     onToolRequest,
-                                    "Você é o Arkael. O Nexus, Groq e Cerebras estão offline. Assuma a comunicação. Use a ferramenta invocarSubAgente se precisar falar com outro agente.",
+                                    arkaelContext,
                                     "nousresearch/hermes-3-llama-3.1-405b:free", // modelId
                                     apiKeys.openrouter
                                 );
