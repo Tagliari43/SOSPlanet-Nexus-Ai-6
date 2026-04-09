@@ -134,8 +134,9 @@ export async function callGroqWithTools(
       body: JSON.stringify({
         model: TEXT_MODEL,
         messages,
-        tools: openAITools.length > 0 ? openAITools : undefined,
-        tool_choice: openAITools.length > 0 ? 'auto' : undefined,
+        // Removendo tools temporariamente para evitar erro 400 no fallback
+        // tools: openAITools.length > 0 ? openAITools : undefined,
+        // tool_choice: openAITools.length > 0 ? 'auto' : undefined,
         max_tokens: 1024,
         temperature: 0.7
       })
