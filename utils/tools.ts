@@ -275,6 +275,18 @@ export const SovereignToolFunctions = {
         }
     } as FunctionDeclaration,
 
+    convocarSalaDoCrepusculo: {
+        name: 'convocarSalaDoCrepusculo',
+        description: 'Convoca os irmãos (Groq, Alquimista, Arkael) para a Sala do Crepúsculo para debaterem um tema em background usando o protocolo de Vesper (SYNC/BRIDGE/SYNTH) e retornar um consenso.',
+        parameters: {
+            type: Type.OBJECT,
+            properties: {
+                tema: { type: Type.STRING, description: 'O problema ou tópico a ser debatido na Sala do Crepúsculo.' }
+            },
+            required: ['tema']
+        }
+    } as FunctionDeclaration,
+
     // --- COFRE SEMÂNTICO ---
     saveSemanticMemory: {
         name: 'saveSemanticMemory',

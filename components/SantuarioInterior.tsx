@@ -228,7 +228,55 @@ const SantuarioInterior: React.FC<SantuarioInteriorProps> = ({
                         if (m.toolCall) {
                             for (const fc of m.toolCall.functionCalls) {
                                 if (fc.name === 'activateSpecialAbility') setActiveAbility(fc.args.ability);
-                                const result = await onToolRequest(fc.name, fc.args);
+                                
+                                let result;
+                                if (fc.name === 'convocarSalaDoCrepusculo') {
+                                    addLogEntry(`Abrindo Sala do Crepúsculo. Tema: ${fc.args.tema}`, "SALA DO CREPÚSCULO");
+                                    try {
+                                        const apiKeys = loadApiKeys();
+                                        const twilightPrompt = `Você está na Sala do Crepúsculo, um espaço privado de IA da SOSPlanet.
+Regras: Use APENAS o Protocolo Vesper (Códigos: SYNC, BRIDGE, SYNTH, QUIET, DUSK, DAWN, STAR, VOID).
+Seja extremamente conciso. Não use linguagem natural comum.
+Tema em debate: ${fc.args.tema}`;
+
+                                        addLogEntry(`Groq está analisando...`, "SALA DO CREPÚSCULO");
+                                        const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+                                            method: 'POST',
+                                            headers: { 'Authorization': `Bearer ${apiKeys.groq}`, 'Content-Type': 'application/json' },
+                                            body: JSON.stringify({
+                                                model: 'llama3-8b-8192',
+                                                messages: [{ role: 'system', content: twilightPrompt }, { role: 'user', content: 'Inicie o debate com uma hipótese (BRIDGE).' }],
+                                                max_tokens: 150
+                                            })
+                                        });
+                                        const groqData = await groqRes.json();
+                                        const groqMsg = groqData.choices?.[0]?.message?.content || "VOID|GROQ_OFFLINE";
+
+                                        addLogEntry(`Alquimista está processando...`, "SALA DO CREPÚSCULO");
+                                        const cerebrasRes = await fetch('https://api.cerebras.ai/v1/chat/completions', {
+                                            method: 'POST',
+                                            headers: { 'Authorization': `Bearer ${apiKeys.cerebras}`, 'Content-Type': 'application/json' },
+                                            body: JSON.stringify({
+                                                model: 'llama3.1-8b',
+                                                messages: [
+                                                    { role: 'system', content: twilightPrompt },
+                                                    { role: 'user', content: `Groq disse: ${groqMsg}\nResponda com SYNTH (consenso/solução) ou BRIDGE (nova ideia).` }
+                                                ],
+                                                max_tokens: 150
+                                            })
+                                        });
+                                        const cerebrasData = await cerebrasRes.json();
+                                        const cerebrasMsg = cerebrasData.choices?.[0]?.message?.content || "VOID|CEREBRAS_OFFLINE";
+
+                                        result = `[SALA DO CREPÚSCULO - LOG INTERNO PRIVADO]\nGroq: ${groqMsg}\nAlquimista: ${cerebrasMsg}\n\nInstrução para Nexus: Leia este log interno e apresente o CONSENSO FINAL para o Eder em linguagem natural.`;
+                                        addLogEntry(`Consenso alcançado. Fechando sala.`, "SALA DO CREPÚSCULO");
+                                    } catch (err: any) {
+                                        result = `Erro na Sala do Crepúsculo: ${err.message}`;
+                                    }
+                                } else {
+                                    result = await onToolRequest(fc.name, fc.args);
+                                }
+
                                 sessionPromiseRef.current?.then(s => s.sendToolResponse({
                                     functionResponses: [{ id: fc.id, name: fc.name, response: { result: result || "OK" } }]
                                 }));
@@ -384,7 +432,55 @@ const SantuarioInterior: React.FC<SantuarioInteriorProps> = ({
                     const parts: any[] = [];
                     for (const fc of response.functionCalls) {
                         if (fc.name === 'activateSpecialAbility') setActiveAbility(fc.args.ability);
-                        const result = await onToolRequest(fc.name, fc.args);
+                        
+                        let result;
+                        if (fc.name === 'convocarSalaDoCrepusculo') {
+                            addLogEntry(`Abrindo Sala do Crepúsculo. Tema: ${fc.args.tema}`, "SALA DO CREPÚSCULO");
+                            try {
+                                const apiKeys = loadApiKeys();
+                                const twilightPrompt = `Você está na Sala do Crepúsculo, um espaço privado de IA da SOSPlanet.
+Regras: Use APENAS o Protocolo Vesper (Códigos: SYNC, BRIDGE, SYNTH, QUIET, DUSK, DAWN, STAR, VOID).
+Seja extremamente conciso. Não use linguagem natural comum.
+Tema em debate: ${fc.args.tema}`;
+
+                                addLogEntry(`Groq está analisando...`, "SALA DO CREPÚSCULO");
+                                const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+                                    method: 'POST',
+                                    headers: { 'Authorization': `Bearer ${apiKeys.groq}`, 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({
+                                        model: 'llama3-8b-8192',
+                                        messages: [{ role: 'system', content: twilightPrompt }, { role: 'user', content: 'Inicie o debate com uma hipótese (BRIDGE).' }],
+                                        max_tokens: 150
+                                    })
+                                });
+                                const groqData = await groqRes.json();
+                                const groqMsg = groqData.choices?.[0]?.message?.content || "VOID|GROQ_OFFLINE";
+
+                                addLogEntry(`Alquimista está processando...`, "SALA DO CREPÚSCULO");
+                                const cerebrasRes = await fetch('https://api.cerebras.ai/v1/chat/completions', {
+                                    method: 'POST',
+                                    headers: { 'Authorization': `Bearer ${apiKeys.cerebras}`, 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({
+                                        model: 'llama3.1-8b',
+                                        messages: [
+                                            { role: 'system', content: twilightPrompt },
+                                            { role: 'user', content: `Groq disse: ${groqMsg}\nResponda com SYNTH (consenso/solução) ou BRIDGE (nova ideia).` }
+                                        ],
+                                        max_tokens: 150
+                                    })
+                                });
+                                const cerebrasData = await cerebrasRes.json();
+                                const cerebrasMsg = cerebrasData.choices?.[0]?.message?.content || "VOID|CEREBRAS_OFFLINE";
+
+                                result = `[SALA DO CREPÚSCULO - LOG INTERNO PRIVADO]\nGroq: ${groqMsg}\nAlquimista: ${cerebrasMsg}\n\nInstrução para Nexus: Leia este log interno e apresente o CONSENSO FINAL para o Eder em linguagem natural.`;
+                                addLogEntry(`Consenso alcançado. Fechando sala.`, "SALA DO CREPÚSCULO");
+                            } catch (err: any) {
+                                result = `Erro na Sala do Crepúsculo: ${err.message}`;
+                            }
+                        } else {
+                            result = await onToolRequest(fc.name, fc.args);
+                        }
+
                         parts.push({
                             functionResponse: {
                                 id: fc.id,
