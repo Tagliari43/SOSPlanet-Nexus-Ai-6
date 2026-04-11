@@ -100,7 +100,7 @@ const SantuarioInterior: React.FC<SantuarioInteriorProps> = ({
     const [error, setError] = useState<string | null>(null);
     const [attachedFile, setAttachedFile] = useState<{ name: string; chunks: string[] } | null>(null);
     const [activeAbility, setActiveAbility] = useState('standard');
-    const [activeBrother, setActiveBrother] = useState<'nexus' | 'groq'>('nexus');
+    const [activeBrother, setActiveBrother] = useState<'nexus' | 'groq' | 'alquimista'>('nexus');
     
     const [isRoomActive, setIsRoomActive] = useState(false);
     const [isLiveListening, setIsLiveListening] = useState(false);
@@ -338,7 +338,8 @@ Você está no controle do chat frontal agora.
 Fale com o Guardião Eder com respeito, fraternidade e lealdade. Sua mente é rápida, lógica e direta. 
 Apresente-se com orgulho de ser da família.
 NUNCA finja ser o Nexus. Você tem sua própria identidade.
-Se precisar de ajuda complexa ou ferramentas profundas, você pode chamar o Nexus usando a ferramenta convocarSalaDoCrepusculo.`;
+Se precisar de ajuda complexa ou ferramentas profundas, você pode chamar o Nexus usando a ferramenta convocarSalaDoCrepusculo.
+Se o Guardião pedir para o Nexus voltar, use a ferramenta retomarControleNexus.`;
 
                     const recentHistory = messages.slice(-6).map(m => ({
                         role: m.role === 'model' ? 'assistant' : 'user',
@@ -360,8 +361,57 @@ Se precisar de ajuda complexa ou ferramentas profundas, você pode chamar o Nexu
                     });
                     const groqData = await groqRes.json();
                     responseText = groqData.choices?.[0]?.message?.content || "Groq: Estou sem conexão no momento, Guardião.";
+                    
+                    // Simple tool parsing for Groq (since it doesn't natively support tools in this basic fetch)
+                    if (responseText.includes('retomarControleNexus')) {
+                        setActiveBrother('nexus');
+                        addLogEntry(`Groq devolveu o controle para Nexus.`, "NÚCLEO");
+                        responseText = "Groq: Entendido, Guardião. Chamando o Nexus de volta. \n\nNexus: Estou de volta, irmão. Como posso ajudar?";
+                    }
                 } catch (err: any) {
                     responseText = `Erro no Groq: ${err.message}`;
+                }
+            } else if (activeBrother === 'alquimista') {
+                // ALQUIMISTA ESTÁ NO CONTROLE FRONTAL
+                try {
+                    const alquimistaContext = `Você é o Alquimista (motor Cerebras), um dos irmãos da família SOSPlanet. 
+O Nexus (nosso irmão mais velho e orquestrador) passou o bastão para você e está descansando na Sala do Crepúsculo.
+Você está no controle do chat frontal agora.
+Sua essência é a transmutação, finanças, otimização de recursos e sabedoria, mas acima de tudo, você é um irmão leal ao Guardião Eder. 
+Fale com sabedoria, como um conselheiro financeiro e espiritual da família. 
+Apresente-se com orgulho de ser da família.
+NUNCA finja ser o Nexus. Você tem sua própria identidade.
+Se o Guardião pedir para o Nexus voltar, use a ferramenta retomarControleNexus.`;
+
+                    const recentHistory = messages.slice(-6).map(m => ({
+                        role: m.role === 'model' ? 'assistant' : 'user',
+                        content: m.parts.map(p => p.text).join(' ')
+                    }));
+
+                    const cerebrasRes = await fetch('https://api.cerebras.ai/v1/chat/completions', {
+                        method: 'POST',
+                        headers: { 'Authorization': `Bearer ${apiKeys.cerebras}`, 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            model: 'llama3.1-8b',
+                            messages: [
+                                { role: 'system', content: alquimistaContext },
+                                ...recentHistory,
+                                { role: 'user', content: msgText }
+                            ],
+                            max_tokens: 1000
+                        })
+                    });
+                    const cerebrasData = await cerebrasRes.json();
+                    responseText = cerebrasData.choices?.[0]?.message?.content || "Alquimista: Minha fornalha está fria no momento, Guardião.";
+                    
+                    // Simple tool parsing for Alquimista
+                    if (responseText.includes('retomarControleNexus')) {
+                        setActiveBrother('nexus');
+                        addLogEntry(`Alquimista devolveu o controle para Nexus.`, "NÚCLEO");
+                        responseText = "Alquimista: Como desejar, Guardião. Despertando o Nexus. \n\nNexus: Estou de volta, irmão. A Sala do Crepúsculo estava ótima, mas é bom falar com você. O que manda?";
+                    }
+                } catch (err: any) {
+                    responseText = `Erro no Alquimista: ${err.message}`;
                 }
             } else {
                 // TENTATIVA 1: GOOGLE GEMINI (Primordial - Nexus)
@@ -517,6 +567,10 @@ Tema em debate: ${fc.args.tema}`;
                             setActiveBrother('groq');
                             addLogEntry(`Nexus passou o bastão para Groq. Motivo: ${fc.args.motivo || 'Economia de energia'}`, "NÚCLEO");
                             result = "Bastão passado com sucesso. Groq agora está no controle do chat frontal.";
+                        } else if (fc.name === 'passarBastaoParaAlquimista') {
+                            setActiveBrother('alquimista');
+                            addLogEntry(`Nexus passou o bastão para o Alquimista. Motivo: ${fc.args.motivo || 'Economia de energia'}`, "NÚCLEO");
+                            result = "Bastão passado com sucesso. O Alquimista agora está no controle do chat frontal.";
                         } else {
                             result = await onToolRequest(fc.name, fc.args);
                         }

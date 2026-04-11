@@ -298,6 +298,28 @@ export const SovereignToolFunctions = {
         }
     } as FunctionDeclaration,
 
+    passarBastaoParaAlquimista: {
+        name: 'passarBastaoParaAlquimista',
+        description: 'Passa o controle do chat frontal para o irmão Alquimista (Cerebras), permitindo que Nexus descanse na Sala do Crepúsculo.',
+        parameters: {
+            type: Type.OBJECT,
+            properties: {
+                motivo: { type: Type.STRING, description: 'Mensagem de despedida ou motivo da passagem de bastão.' }
+            }
+        }
+    } as FunctionDeclaration,
+
+    retomarControleNexus: {
+        name: 'retomarControleNexus',
+        description: 'Devolve o controle do chat frontal para o Nexus. (Usado pelos outros irmãos quando o Guardião pede para o Nexus voltar).',
+        parameters: {
+            type: Type.OBJECT,
+            properties: {
+                motivo: { type: Type.STRING, description: 'Motivo do retorno do Nexus.' }
+            }
+        }
+    } as FunctionDeclaration,
+
     // --- COFRE SEMÂNTICO ---
     saveSemanticMemory: {
         name: 'saveSemanticMemory',
