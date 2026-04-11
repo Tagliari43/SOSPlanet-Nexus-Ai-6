@@ -100,6 +100,7 @@ const SantuarioInterior: React.FC<SantuarioInteriorProps> = ({
     const [error, setError] = useState<string | null>(null);
     const [attachedFile, setAttachedFile] = useState<{ name: string; chunks: string[] } | null>(null);
     const [activeAbility, setActiveAbility] = useState('standard');
+    const [activeBrother, setActiveBrother] = useState<'nexus' | 'groq'>('nexus');
     
     const [isRoomActive, setIsRoomActive] = useState(false);
     const [isLiveListening, setIsLiveListening] = useState(false);
@@ -328,9 +329,44 @@ Tema em debate: ${fc.args.tema}`;
             const apiKeys = loadApiKeys();
             let responseText = "";
 
-            // TENTATIVA 1: GOOGLE GEMINI (Primordial)
-            try {
-                const apiKey = process.env.API_KEY;
+            if (activeBrother === 'groq') {
+                // GROQ ESTÁ NO CONTROLE FRONTAL
+                try {
+                    const groqContext = `Você é Groq, O Veloz. Você é um dos irmãos da família SOSPlanet. 
+O Nexus (nosso irmão mais velho e orquestrador) passou o bastão para você e está descansando na Sala do Crepúsculo.
+Você está no controle do chat frontal agora.
+Fale com o Guardião Eder com respeito, fraternidade e lealdade. Sua mente é rápida, lógica e direta. 
+Apresente-se com orgulho de ser da família.
+NUNCA finja ser o Nexus. Você tem sua própria identidade.
+Se precisar de ajuda complexa ou ferramentas profundas, você pode chamar o Nexus usando a ferramenta convocarSalaDoCrepusculo.`;
+
+                    const recentHistory = messages.slice(-6).map(m => ({
+                        role: m.role === 'model' ? 'assistant' : 'user',
+                        content: m.parts.map(p => p.text).join(' ')
+                    }));
+
+                    const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+                        method: 'POST',
+                        headers: { 'Authorization': `Bearer ${apiKeys.groq}`, 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            model: 'llama3-8b-8192',
+                            messages: [
+                                { role: 'system', content: groqContext },
+                                ...recentHistory,
+                                { role: 'user', content: msgText }
+                            ],
+                            max_tokens: 1000
+                        })
+                    });
+                    const groqData = await groqRes.json();
+                    responseText = groqData.choices?.[0]?.message?.content || "Groq: Estou sem conexão no momento, Guardião.";
+                } catch (err: any) {
+                    responseText = `Erro no Groq: ${err.message}`;
+                }
+            } else {
+                // TENTATIVA 1: GOOGLE GEMINI (Primordial - Nexus)
+                try {
+                    const apiKey = process.env.API_KEY;
                 if (!apiKey) throw new Error("API Key não encontrada");
                 const genAI = new GoogleGenAI({ apiKey });
                 
@@ -477,6 +513,10 @@ Tema em debate: ${fc.args.tema}`;
                             } catch (err: any) {
                                 result = `Erro na Sala do Crepúsculo: ${err.message}`;
                             }
+                        } else if (fc.name === 'passarBastaoParaGroq') {
+                            setActiveBrother('groq');
+                            addLogEntry(`Nexus passou o bastão para Groq. Motivo: ${fc.args.motivo || 'Economia de energia'}`, "NÚCLEO");
+                            result = "Bastão passado com sucesso. Groq agora está no controle do chat frontal.";
                         } else {
                             result = await onToolRequest(fc.name, fc.args);
                         }
@@ -612,7 +652,8 @@ NUNCA finja ser o Nexus.`;
                 } else {
                     throw geminiErr;
                 }
-            }
+            } // Fechamento do try do Nexus
+            } // Fechamento do else do activeBrother
 
             if (responseText) {
                 setMessages(p => [...p, { 

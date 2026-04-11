@@ -287,6 +287,17 @@ export const SovereignToolFunctions = {
         }
     } as FunctionDeclaration,
 
+    passarBastaoParaGroq: {
+        name: 'passarBastaoParaGroq',
+        description: 'Passa o controle do chat frontal para o irmão Groq, permitindo que Nexus descanse na Sala do Crepúsculo e economize tokens.',
+        parameters: {
+            type: Type.OBJECT,
+            properties: {
+                motivo: { type: Type.STRING, description: 'Mensagem de despedida ou motivo da passagem de bastão.' }
+            }
+        }
+    } as FunctionDeclaration,
+
     // --- COFRE SEMÂNTICO ---
     saveSemanticMemory: {
         name: 'saveSemanticMemory',
