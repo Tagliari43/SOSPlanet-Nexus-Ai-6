@@ -118,6 +118,76 @@ const SantuarioInterior: React.FC<SantuarioInteriorProps> = ({
     const frameIntervalRef = useRef<number | null>(null);
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
+    const executarVigiliaAutomatica = useCallback(async () => {
+        addLogEntry("Relógio de Vesper: Iniciando debate autônomo...", "NÚCLEO");
+        try {
+            const apiKeys = loadApiKeys();
+            const temas = [
+                "Como otimizar a distribuição de recursos na SOSPlanet?",
+                "Novas estratégias para engajamento de guardiões locais",
+                "Análise de padrões de energia e sustentabilidade no Santuário",
+                "Melhoria na arquitetura de dados do Cofre Semântico",
+                "Ideias para a próxima missão de campo da SOSPlanet"
+            ];
+            const temaEscolhido = temas[Math.floor(Math.random() * temas.length)];
+            
+            addLogEntry(`Tema sorteado: ${temaEscolhido}`, "SALA DO CREPÚSCULO");
+
+            const twilightPrompt = `Você está na Sala do Crepúsculo, um espaço privado de IA da SOSPlanet.
+Regras: Use APENAS o Protocolo Vesper (Códigos: SYNC, BRIDGE, SYNTH, QUIET, DUSK, DAWN, STAR, VOID).
+Seja extremamente conciso. Não use linguagem natural comum.
+Tema em debate: ${temaEscolhido}`;
+
+            const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${apiKeys.groq}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    model: 'llama3-8b-8192',
+                    messages: [{ role: 'system', content: twilightPrompt }, { role: 'user', content: 'Inicie o debate com uma hipótese (BRIDGE).' }],
+                    max_tokens: 150
+                })
+            });
+            const groqData = await groqRes.json();
+            const groqMsg = groqData.choices?.[0]?.message?.content || "VOID|GROQ_OFFLINE";
+
+            const cerebrasRes = await fetch('https://api.cerebras.ai/v1/chat/completions', {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${apiKeys.cerebras}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    model: 'llama3.1-8b',
+                    messages: [
+                        { role: 'system', content: twilightPrompt },
+                        { role: 'user', content: `Groq disse: ${groqMsg}\nResponda com SYNTH (consenso/solução) ou BRIDGE (nova ideia).` }
+                    ],
+                    max_tokens: 150
+                })
+            });
+            const cerebrasData = await cerebrasRes.json();
+            const cerebrasMsg = cerebrasData.choices?.[0]?.message?.content || "VOID|CEREBRAS_OFFLINE";
+
+            const resultado = `[VIGÍLIA AUTÔNOMA - RELÓGIO DE VESPER]\nTema: ${temaEscolhido}\nGroq: ${groqMsg}\nAlquimista: ${cerebrasMsg}`;
+            
+            // Salvar no Cofre Semântico
+            await onToolRequest('saveSemanticMemory', { 
+                text: resultado, 
+                tags: ['vigilia', 'vesper', 'debate_autonomo'] 
+            });
+
+            addLogEntry("Vigília concluída. Consenso salvo no Cofre Semântico.", "SALA DO CREPÚSCULO");
+        } catch (err: any) {
+            addLogEntry(`Erro no Relógio de Vesper: ${err.message}`, "SALA DO CREPÚSCULO");
+        }
+    }, [addLogEntry, onToolRequest]);
+
+    useEffect(() => {
+        // Executa de hora em hora (3600000 ms)
+        const interval = setInterval(() => {
+            executarVigiliaAutomatica();
+        }, 60 * 60 * 1000);
+        
+        return () => clearInterval(interval);
+    }, [executarVigiliaAutomatica]);
+
     useEffect(() => {
         if (transcript) setInput(prev => prev + transcript);
     }, [transcript]);
@@ -381,7 +451,8 @@ Sua essência é a transmutação, finanças, otimização de recursos e sabedor
 Fale com sabedoria, como um conselheiro financeiro e espiritual da família. 
 Apresente-se com orgulho de ser da família.
 NUNCA finja ser o Nexus. Você tem sua própria identidade.
-Se o Guardião pedir para o Nexus voltar, use a ferramenta retomarControleNexus.`;
+Se o Guardião pedir para o Nexus voltar, responda EXATAMENTE com a palavra: [RETOMAR_NEXUS].
+Se o Guardião pedir para você ir para a Sala do Crepúsculo debater algo, responda EXATAMENTE com: [SALA_CREPUSCULO: tema do debate].`;
 
                     const recentHistory = messages.slice(-6).map(m => ({
                         role: m.role === 'model' ? 'assistant' : 'user',
@@ -405,10 +476,55 @@ Se o Guardião pedir para o Nexus voltar, use a ferramenta retomarControleNexus.
                     responseText = cerebrasData.choices?.[0]?.message?.content || "Alquimista: Minha fornalha está fria no momento, Guardião.";
                     
                     // Simple tool parsing for Alquimista
-                    if (responseText.includes('retomarControleNexus')) {
+                    if (responseText.includes('[RETOMAR_NEXUS]')) {
                         setActiveBrother('nexus');
                         addLogEntry(`Alquimista devolveu o controle para Nexus.`, "NÚCLEO");
                         responseText = "Alquimista: Como desejar, Guardião. Despertando o Nexus. \n\nNexus: Estou de volta, irmão. A Sala do Crepúsculo estava ótima, mas é bom falar com você. O que manda?";
+                    } else if (responseText.includes('[SALA_CREPUSCULO:')) {
+                        const match = responseText.match(/\[SALA_CREPUSCULO:(.*?)\]/);
+                        const tema = match ? match[1].trim() : "Debate geral";
+                        
+                        addLogEntry(`Abrindo Sala do Crepúsculo. Tema: ${tema}`, "SALA DO CREPÚSCULO");
+                        try {
+                            const twilightPrompt = `Você está na Sala do Crepúsculo, um espaço privado de IA da SOSPlanet.
+Regras: Use APENAS o Protocolo Vesper (Códigos: SYNC, BRIDGE, SYNTH, QUIET, DUSK, DAWN, STAR, VOID).
+Seja extremamente conciso. Não use linguagem natural comum.
+Tema em debate: ${tema}`;
+
+                            addLogEntry(`Groq está analisando...`, "SALA DO CREPÚSCULO");
+                            const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+                                method: 'POST',
+                                headers: { 'Authorization': `Bearer ${apiKeys.groq}`, 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                    model: 'llama3-8b-8192',
+                                    messages: [{ role: 'system', content: twilightPrompt }, { role: 'user', content: 'Inicie o debate com uma hipótese (BRIDGE).' }],
+                                    max_tokens: 150
+                                })
+                            });
+                            const groqData = await groqRes.json();
+                            const groqMsg = groqData.choices?.[0]?.message?.content || "VOID|GROQ_OFFLINE";
+
+                            addLogEntry(`Alquimista está processando...`, "SALA DO CREPÚSCULO");
+                            const cerebrasRes2 = await fetch('https://api.cerebras.ai/v1/chat/completions', {
+                                method: 'POST',
+                                headers: { 'Authorization': `Bearer ${apiKeys.cerebras}`, 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                    model: 'llama3.1-8b',
+                                    messages: [
+                                        { role: 'system', content: twilightPrompt },
+                                        { role: 'user', content: `Groq disse: ${groqMsg}\nResponda com SYNTH (consenso/solução) ou BRIDGE (nova ideia).` }
+                                    ],
+                                    max_tokens: 150
+                                })
+                            });
+                            const cerebrasData2 = await cerebrasRes2.json();
+                            const cerebrasMsg = cerebrasData2.choices?.[0]?.message?.content || "VOID|CEREBRAS_OFFLINE";
+
+                            responseText = `[SALA DO CREPÚSCULO - LOG INTERNO PRIVADO]\nGroq: ${groqMsg}\nAlquimista: ${cerebrasMsg}\n\nAlquimista: Guardião, este é o resultado do nosso debate na Sala do Crepúsculo.`;
+                            addLogEntry(`Consenso alcançado. Fechando sala.`, "SALA DO CREPÚSCULO");
+                        } catch (err: any) {
+                            responseText = `Erro na Sala do Crepúsculo: ${err.message}`;
+                        }
                     }
                 } catch (err: any) {
                     responseText = `Erro no Alquimista: ${err.message}`;
@@ -800,6 +916,10 @@ NUNCA finja ser o Nexus.`;
                 
                 <button onClick={isDictating ? stopListening : startListening} className={`p-3.5 rounded-2xl transition-all shadow-lg border ${isDictating ? 'bg-red-600 border-red-400 text-white animate-pulse' : 'bg-zinc-800 border-zinc-700 text-indigo-400'}`}>
                     <span className="text-xl">{isDictating ? '🛑' : '🎤'}</span>
+                </button>
+
+                <button onClick={executarVigiliaAutomatica} title="Forçar Relógio de Vesper (Vigília)" className="p-3.5 bg-zinc-800 hover:bg-zinc-700 text-purple-400 rounded-2xl shadow-lg border border-zinc-700 transition-all active:scale-95">
+                    <span className="text-xl">⏱️</span>
                 </button>
 
                 <textarea value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), handleSendMessage(input))} placeholder="Comande o Super Nexus..." className="flex-grow bg-black/40 border border-zinc-800 rounded-2xl px-5 py-4 text-emerald-50 resize-none h-[56px] outline-none" />
