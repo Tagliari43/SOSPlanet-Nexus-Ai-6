@@ -92,6 +92,7 @@ export async function callCerebrasWithTools(
           return {
             role: 'tool',
             tool_call_id: tc.id,
+            name: tc.function.name,
             content: JSON.stringify(result || 'OK')
           };
         })

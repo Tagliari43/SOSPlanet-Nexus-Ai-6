@@ -164,6 +164,7 @@ export async function callGroqWithTools(
           return {
             role: 'tool',
             tool_call_id: tc.id,
+            name: tc.function.name,
             content: JSON.stringify(result || 'OK')
           };
         })
