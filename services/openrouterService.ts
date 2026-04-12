@@ -128,9 +128,8 @@ export async function callOpenRouterWithTools(
       body: JSON.stringify({
         model: modelId,
         messages,
-        // Removendo tools temporariamente para evitar erro no fallback com modelos que não suportam
-        // tools: openAITools.length > 0 ? openAITools : undefined,
-        // tool_choice: openAITools.length > 0 ? 'auto' : undefined,
+        tools: openAITools.length > 0 ? openAITools : undefined,
+        tool_choice: openAITools.length > 0 ? 'auto' : undefined,
         max_tokens: 2000,
         temperature: 0.7
       })
