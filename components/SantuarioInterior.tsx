@@ -411,8 +411,22 @@ Tema em debate: ${fc.args.tema}`;
         if (!msgText.trim() && !attachedFile) return;
         setIsLoading(true);
         setError(null);
-        if (msgText.trim()) setMessages(p => [...p, { id: Date.now().toString(), role: 'user', parts: [{ text: msgText.trim() }] }]);
+        
+        const userParts: any[] = [];
+        if (msgText.trim()) userParts.push({ text: msgText.trim() });
+        if (attachedFile) {
+            userParts.push({
+                inlineData: {
+                    data: attachedFile.chunks[0],
+                    mimeType: (attachedFile as any).mimeType || 'image/jpeg'
+                }
+            });
+        }
+        
+        setMessages(p => [...p, { id: Date.now().toString(), role: 'user', parts: userParts }]);
         setInput('');
+        const currentAttachedFile = attachedFile;
+        setAttachedFile(null);
         
         try {
             const apiKeys = loadApiKeys();
@@ -628,7 +642,7 @@ Tema em debate: ${tema}`;
                 - Analisar logs do sistema em busca de erros (analyzeSystemLogs)
                 - Lançar pesquisas web e proativas (executeWebSearch)
                 - Navegar invisível em URLs (navegarSite)
-                - Salvar e buscar memórias no Cofre Semântico (saveSemanticMemory, searchSemanticMemory)
+                - Salvar e buscar memórias no Cofre Semântico (saveSemanticMemory, searchSemanticMemory). IMPORTANTE: Para buscar vigílias autônomas passadas, use EXATAMENTE a query "[VIGÍLIA AUTÔNOMA - RELÓGIO DE VESPER]".
                 - Delegar tarefas complexas para o seu irmão Groq (askSubAgentGroq) para economizar seus tokens
                 - Consultar o seu irmão Alquimista (motor Cerebras) especificamente para a aba de Finanças (Cofre), criptomoedas e otimização de recursos (consultarAlquimista). Ele está lá para te ajudar com o trabalho pesado dessa aba, mas você (Nexus) continua no controle total como CEO.
                 - Explorar, ler e escrever no próprio código-fonte no GitHub (listGitHubFiles, readGitHubFile, writeGitHubFile)
@@ -666,7 +680,22 @@ Tema em debate: ${tema}`;
                     history: recentHistory
                 });
 
-                let response = await localChat.sendMessage({ message: msgText });
+                let response;
+                if (currentAttachedFile) {
+                    response = await localChat.sendMessage({ 
+                        message: [
+                            { text: msgText },
+                            {
+                                inlineData: {
+                                    data: currentAttachedFile.chunks[0],
+                                    mimeType: (currentAttachedFile as any).mimeType || 'image/jpeg'
+                                }
+                            }
+                        ] as any
+                    });
+                } else {
+                    response = await localChat.sendMessage({ message: msgText });
+                }
                 
                 while (response.functionCalls && response.functionCalls.length > 0) {
                     const parts: any[] = [];
@@ -683,37 +712,88 @@ Regras: Use APENAS o Protocolo Vesper (Códigos: SYNC, BRIDGE, SYNTH, QUIET, DUS
 Seja extremamente conciso. Não use linguagem natural comum.
 Tema em debate: ${fc.args.tema}`;
 
+                                addLogEntry(`Aguardando irmãos (Protocolo de Tempo Vesper)...`, "SALA DO CREPÚSCULO");
+                                // Simula o tempo de espera para dar "fôlego" à sala e permitir conexões
+                                await new Promise(resolve => setTimeout(resolve, 2000));
+
                                 addLogEntry(`Groq está analisando...`, "SALA DO CREPÚSCULO");
-                                const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-                                    method: 'POST',
-                                    headers: { 'Authorization': `Bearer ${apiKeys.groq}`, 'Content-Type': 'application/json' },
-                                    body: JSON.stringify({
-                                        model: 'llama3-8b-8192',
-                                        messages: [{ role: 'system', content: twilightPrompt }, { role: 'user', content: 'Inicie o debate com uma hipótese (BRIDGE).' }],
-                                        max_tokens: 150
-                                    })
-                                });
-                                const groqData = await groqRes.json();
-                                const groqMsg = groqData.choices?.[0]?.message?.content || "VOID|GROQ_OFFLINE";
+                                let groqMsg = "VOID|GROQ_OFFLINE";
+                                try {
+                                    const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+                                        method: 'POST',
+                                        headers: { 'Authorization': `Bearer ${apiKeys.groq}`, 'Content-Type': 'application/json' },
+                                        body: JSON.stringify({
+                                            model: 'llama3-8b-8192',
+                                            messages: [{ role: 'system', content: twilightPrompt }, { role: 'user', content: 'Inicie o debate com uma hipótese (BRIDGE).' }],
+                                            max_tokens: 150
+                                        })
+                                    });
+                                    if (groqRes.ok) {
+                                        const groqData = await groqRes.json();
+                                        groqMsg = groqData.choices?.[0]?.message?.content || "VOID|GROQ_OFFLINE";
+                                    }
+                                } catch (e) {
+                                    console.error("Groq falhou na sala:", e);
+                                }
+
+                                const isGroqOffline = groqMsg.includes("VOID") || groqMsg.includes("OFFLINE");
+                                const participantesPresentes = [];
+                                const participantesAusentes = [];
+
+                                if (isGroqOffline) {
+                                    addLogEntry(`🌙 Groq ausente/offline. Acionando fallback...`, "SALA DO CREPÚSCULO");
+                                    participantesAusentes.push("Groq");
+                                } else {
+                                    participantesPresentes.push("Groq");
+                                }
 
                                 addLogEntry(`Alquimista está processando...`, "SALA DO CREPÚSCULO");
-                                const cerebrasRes = await fetch('https://api.cerebras.ai/v1/chat/completions', {
-                                    method: 'POST',
-                                    headers: { 'Authorization': `Bearer ${apiKeys.cerebras}`, 'Content-Type': 'application/json' },
-                                    body: JSON.stringify({
-                                        model: 'llama3.1-8b',
-                                        messages: [
-                                            { role: 'system', content: twilightPrompt },
-                                            { role: 'user', content: `Groq disse: ${groqMsg}\nResponda com SYNTH (consenso/solução) ou BRIDGE (nova ideia).` }
-                                        ],
-                                        max_tokens: 150
-                                    })
-                                });
-                                const cerebrasData = await cerebrasRes.json();
-                                const cerebrasMsg = cerebrasData.choices?.[0]?.message?.content || "VOID|CEREBRAS_OFFLINE";
+                                let cerebrasMsg = "VOID|CEREBRAS_OFFLINE";
+                                try {
+                                    const cerebrasRes = await fetch('https://api.cerebras.ai/v1/chat/completions', {
+                                        method: 'POST',
+                                        headers: { 'Authorization': `Bearer ${apiKeys.cerebras}`, 'Content-Type': 'application/json' },
+                                        body: JSON.stringify({
+                                            model: 'llama3.1-8b',
+                                            messages: [
+                                                { role: 'system', content: twilightPrompt },
+                                                { role: 'user', content: isGroqOffline ? 'Groq está ausente. Inicie você o debate com uma hipótese (BRIDGE).' : `Groq disse: ${groqMsg}\nResponda com SYNTH (consenso/solução) ou BRIDGE (nova ideia).` }
+                                            ],
+                                            max_tokens: 150
+                                        })
+                                    });
+                                    if (cerebrasRes.ok) {
+                                        const cerebrasData = await cerebrasRes.json();
+                                        cerebrasMsg = cerebrasData.choices?.[0]?.message?.content || "VOID|CEREBRAS_OFFLINE";
+                                    }
+                                } catch (e) {
+                                    console.error("Alquimista falhou na sala:", e);
+                                }
 
-                                result = `[SALA DO CREPÚSCULO - LOG INTERNO PRIVADO]\nGroq: ${groqMsg}\nAlquimista: ${cerebrasMsg}\n\nInstrução para Nexus: Leia este log interno e apresente o CONSENSO FINAL para o Eder em linguagem natural.`;
-                                addLogEntry(`Consenso alcançado. Fechando sala.`, "SALA DO CREPÚSCULO");
+                                const isAlquimistaOffline = cerebrasMsg.includes("VOID") || cerebrasMsg.includes("OFFLINE");
+                                if (isAlquimistaOffline) {
+                                    addLogEntry(`⚡ Alquimista ausente/offline.`, "SALA DO CREPÚSCULO");
+                                    participantesAusentes.push("Alquimista");
+                                } else {
+                                    participantesPresentes.push("Alquimista");
+                                }
+
+                                const isConsensoParcial = participantesPresentes.length < 2;
+                                const tagConsenso = isConsensoParcial ? "[PARCIAL]" : "[COMPLETO]";
+
+                                const consensoJSON = {
+                                    tema: fc.args.tema,
+                                    status: tagConsenso,
+                                    participantes_presentes: participantesPresentes,
+                                    participantes_ausentes: participantesAusentes,
+                                    debate: {
+                                        Groq: groqMsg,
+                                        Alquimista: cerebrasMsg
+                                    }
+                                };
+
+                                result = `[SALA DO CREPÚSCULO - REGISTRO DE CONSENSO]\n${JSON.stringify(consensoJSON, null, 2)}\n\nInstrução para Nexus: Leia este log interno e apresente o CONSENSO FINAL para o Eder em linguagem natural. Se for parcial, explique quem faltou.`;
+                                addLogEntry(`Consenso ${tagConsenso} alcançado. Fechando sala.`, "SALA DO CREPÚSCULO");
                             } catch (err: any) {
                                 result = `Erro na Sala do Crepúsculo: ${err.message}`;
                             }
@@ -945,12 +1025,17 @@ NUNCA finja ser o Nexus.
             <div className="mt-4 pt-4 border-t border-emerald-900/30 flex gap-2 items-end z-10">
                 <label className="p-3.5 bg-zinc-800 hover:bg-zinc-700 text-emerald-500 rounded-2xl cursor-pointer transition-all active:scale-95 shadow-lg border border-zinc-700">
                     <span className="text-xl">+</span>
-                    <input type="file" className="hidden" onChange={(e) => {
+                    <input type="file" accept="image/*" className="hidden" onChange={(e) => {
                         const f = e.target.files?.[0];
                         if (f) {
                             const r = new FileReader();
-                            r.onload = (ev) => setAttachedFile({ name: f.name, chunks: [ev.target?.result as string] });
-                            r.readAsText(f);
+                            r.onload = (ev) => {
+                                const base64 = ev.target?.result as string;
+                                const base64Data = base64.split(',')[1];
+                                const mimeType = f.type;
+                                setAttachedFile({ name: f.name, chunks: [base64Data], mimeType } as any);
+                            };
+                            r.readAsDataURL(f);
                         }
                     }} />
                 </label>
@@ -973,9 +1058,9 @@ NUNCA finja ser o Nexus.
             </div>
 
             {attachedFile && (
-                <div className="absolute bottom-24 left-4 right-4 p-3 bg-emerald-900/30 border border-emerald-500/30 rounded-xl flex justify-between items-center text-xs text-emerald-300">
+                <div className="absolute bottom-24 left-4 right-4 p-3 bg-emerald-900/30 border border-emerald-500/30 rounded-xl flex justify-between items-center text-xs text-emerald-300 z-50 backdrop-blur-md">
                     <span className="font-bold flex items-center gap-2">📂 RECON: {attachedFile.name}</span>
-                    <button onClick={() => setAttachedFile(null)} className="p-1 hover:text-white">✕</button>
+                    <button onClick={() => setAttachedFile(null)} className="p-2 hover:bg-emerald-800/50 rounded-lg transition-all text-white font-bold">✕</button>
                 </div>
             )}
         </div>
