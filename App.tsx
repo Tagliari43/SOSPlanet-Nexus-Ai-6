@@ -679,7 +679,8 @@ const App: React.FC = () => {
         }
 
         if (tool === 'saveSemanticMemory') {
-            addLogEntry(`Cristalizando memória no Cofre Semântico...`, 'Cofre Semântico');
+            const prateleiraTag = args.prateleira ? `[Prateleira: ${args.prateleira}] ` : '';
+            addLogEntry(`Cristalizando memória no Cofre Semântico... ${prateleiraTag}`, 'Cofre Semântico');
             try {
                 const apiKey = userApiKeys.find(k => k.id === 'google-default')?.key || process.env.API_KEY || '';
                 if (!apiKey) throw new Error("API Key não encontrada");
@@ -693,12 +694,12 @@ const App: React.FC = () => {
                     const result = await saveMemoryToSupabase(
                         args.text, 
                         embedding, 
-                        { source: 'nexus_tool', timestamp: Date.now() },
+                        { source: 'nexus_tool', timestamp: Date.now(), prateleira: args.prateleira || 'geral' },
                         args.type || 'conversa',
                         args.importance || 0.5
                     );
                     if (result.success) {
-                        return `Memória cristalizada com sucesso no Cofre Semântico (Supabase). Tipo: ${args.type || 'conversa'}, Importância: ${args.importance || 0.5}`;
+                        return `Memória cristalizada com sucesso no Cofre Semântico (Supabase). Prateleira: ${args.prateleira || 'geral'}, Tipo: ${args.type || 'conversa'}, Importância: ${args.importance || 0.5}`;
                     } else {
                         throw new Error(`Falha ao salvar no Supabase. Detalhe do erro: ${result.error}`);
                     }
@@ -712,13 +713,14 @@ const App: React.FC = () => {
                         timestamp: Date.now(),
                         text: args.text,
                         mediaUrls: [],
-                        embedding
+                        embedding,
+                        prateleira: args.prateleira || 'geral'
                     };
                     
                     memories.unshift(newMemory);
                     localStorage.setItem('sovereign_semantic_vault', JSON.stringify(memories));
                     
-                    return `Aviso: Supabase não está configurado na Vercel (VITE_SUPABASE_URL ou VITE_SUPABASE_ANON_KEY ausentes). Memória salva localmente como fallback. ID: ${newMemory.id}`;
+                    return `Aviso: Supabase não está configurado na Vercel (VITE_SUPABASE_URL ou VITE_SUPABASE_ANON_KEY ausentes). Memória salva localmente como fallback. ID: ${newMemory.id}, Prateleira: ${newMemory.prateleira}`;
                 }
             } catch (err: any) {
                 return `Erro ao salvar memória semântica: ${err.message}`;
@@ -726,7 +728,8 @@ const App: React.FC = () => {
         }
 
         if (tool === 'searchSemanticMemory') {
-            addLogEntry(`Buscando no Cofre Semântico: "${args.query}"`, 'Cofre Semântico');
+            const prateleiraTag = args.prateleira ? ` [Prateleira: ${args.prateleira}]` : '';
+            addLogEntry(`Buscando no Cofre Semântico${prateleiraTag}: "${args.query}"`, 'Cofre Semântico');
             try {
                 const apiKey = userApiKeys.find(k => k.id === 'google-default')?.key || process.env.API_KEY || '';
                 if (!apiKey) throw new Error("API Key não encontrada");
@@ -736,14 +739,15 @@ const App: React.FC = () => {
                 const queryEmbedding = await embedMultimodalContent(args.query, [], apiKey);
                 
                 if (supabase) {
-                    const results = await searchSimilarMemories(queryEmbedding, 0.5, 5);
+                    const results = await searchSimilarMemories(queryEmbedding, 0.5, 5, args.prateleira);
                     if (results && results.length > 0) {
                         return JSON.stringify(results.map((r: any) => ({
                             texto: r.content,
+                            prateleira: r.metadata?.prateleira || 'geral',
                             relevancia: (r.similarity * 100).toFixed(2) + '%'
                         })));
                     } else {
-                        return "Nenhuma memória relevante encontrada para esta consulta no Supabase.";
+                        return `Nenhuma memória relevante encontrada para esta consulta${args.prateleira ? ` na prateleira '${args.prateleira}'` : ''} no Supabase.`;
                     }
                 } else {
                     // Fallback para localStorage
@@ -766,16 +770,23 @@ const App: React.FC = () => {
                         return dotProduct / (Math.sqrt(normA) * Math.sqrt(normB));
                     };
                     
-                    const results = memories.map((memory: any) => ({
+                    let results = memories.map((memory: any) => ({
                         memory,
                         score: cosineSimilarity(queryEmbedding, memory.embedding)
-                    })).sort((a: any, b: any) => b.score - a.score).filter((r: any) => r.score > 0.5).slice(0, 5);
+                    })).sort((a: any, b: any) => b.score - a.score).filter((r: any) => r.score > 0.5);
                     
-                    if (results.length === 0) return "Nenhuma memória relevante encontrada para esta consulta no armazenamento local.";
+                    if (args.prateleira) {
+                        results = results.filter((r: any) => r.memory.prateleira === args.prateleira);
+                    }
+                    
+                    results = results.slice(0, 5);
+                    
+                    if (results.length === 0) return `Nenhuma memória relevante encontrada${args.prateleira ? ` na prateleira '${args.prateleira}'` : ''} no armazenamento local.`;
                     
                     return JSON.stringify(results.map((r: any) => ({
                         aviso: "Resultados do armazenamento local (Supabase não configurado)",
                         data: new Date(r.memory.timestamp).toLocaleString(),
+                        prateleira: r.memory.prateleira || 'geral',
                         texto: r.memory.text,
                         relevancia: (r.score * 100).toFixed(2) + '%'
                     })));

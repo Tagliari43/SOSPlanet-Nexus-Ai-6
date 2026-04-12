@@ -90,17 +90,20 @@ export async function saveMemoryToSupabase(content: string, embedding: number[],
 /**
  * Busca memórias similares usando a função match_memories do Supabase (RAG)
  */
-export async function searchSimilarMemories(queryEmbedding: number[], matchThreshold: number = 0.7, matchCount: number = 5): Promise<any[]> {
+export async function searchSimilarMemories(queryEmbedding: number[], matchThreshold: number = 0.7, matchCount: number = 5, prateleira?: string): Promise<any[]> {
     if (!supabase) {
         console.warn("Supabase não inicializado. Chaves ausentes.");
         return [];
     }
 
     try {
+        // Se tiver prateleira, busca mais resultados para filtrar depois
+        const fetchCount = prateleira ? 50 : matchCount;
+        
         const { data, error } = await supabase.rpc('match_memories', {
             query_embedding: queryEmbedding,
             match_threshold: matchThreshold,
-            match_count: matchCount
+            match_count: fetchCount
         });
 
         if (error) {
@@ -108,7 +111,14 @@ export async function searchSimilarMemories(queryEmbedding: number[], matchThres
             return [];
         }
 
-        return data || [];
+        let results = data || [];
+        
+        if (prateleira) {
+            results = results.filter((r: any) => r.metadata && r.metadata.prateleira === prateleira);
+            results = results.slice(0, matchCount);
+        }
+
+        return results;
     } catch (err) {
         console.error("Falha crítica ao buscar memórias:", err);
         return [];

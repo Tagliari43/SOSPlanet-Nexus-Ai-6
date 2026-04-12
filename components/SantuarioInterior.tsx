@@ -170,7 +170,9 @@ Tema em debate: ${temaEscolhido}`;
             // Salvar no Cofre Semântico
             await onToolRequest('saveSemanticMemory', { 
                 text: resultado, 
-                tags: ['vigilia', 'vesper', 'debate_autonomo'] 
+                type: 'decisao',
+                importance: 0.8,
+                prateleira: 'sala_crepusculo'
             });
 
             addLogEntry("Vigília concluída. Consenso salvo no Cofre Semântico.", "SALA DO CREPÚSCULO");
@@ -642,7 +644,7 @@ Tema em debate: ${tema}`;
                 - Analisar logs do sistema em busca de erros (analyzeSystemLogs)
                 - Lançar pesquisas web e proativas (executeWebSearch)
                 - Navegar invisível em URLs (navegarSite)
-                - Salvar e buscar memórias no Cofre Semântico (saveSemanticMemory, searchSemanticMemory). IMPORTANTE: Para buscar vigílias autônomas passadas, use EXATAMENTE a query "[VIGÍLIA AUTÔNOMA - RELÓGIO DE VESPER]".
+                - Salvar e buscar memórias no Cofre Semântico (saveSemanticMemory, searchSemanticMemory). IMPORTANTE: Use o parâmetro 'prateleira' para separar memórias. Ex: 'sala_crepusculo' para debates, 'nexus' para você, 'groq' para ele. Para buscar vigílias autônomas passadas, busque na prateleira 'sala_crepusculo' com a query "[VIGÍLIA AUTÔNOMA - RELÓGIO DE VESPER]".
                 - Delegar tarefas complexas para o seu irmão Groq (askSubAgentGroq) para economizar seus tokens
                 - Consultar o seu irmão Alquimista (motor Cerebras) especificamente para a aba de Finanças (Cofre), criptomoedas e otimização de recursos (consultarAlquimista). Ele está lá para te ajudar com o trabalho pesado dessa aba, mas você (Nexus) continua no controle total como CEO.
                 - Explorar, ler e escrever no próprio código-fonte no GitHub (listGitHubFiles, readGitHubFile, writeGitHubFile)
@@ -792,8 +794,18 @@ Tema em debate: ${fc.args.tema}`;
                                     }
                                 };
 
-                                result = `[SALA DO CREPÚSCULO - REGISTRO DE CONSENSO]\n${JSON.stringify(consensoJSON, null, 2)}\n\nInstrução para Nexus: Leia este log interno e apresente o CONSENSO FINAL para o Eder em linguagem natural. Se for parcial, explique quem faltou.`;
-                                addLogEntry(`Consenso ${tagConsenso} alcançado. Fechando sala.`, "SALA DO CREPÚSCULO");
+                                const logInterno = `[SALA DO CREPÚSCULO - REGISTRO DE CONSENSO]\n${JSON.stringify(consensoJSON, null, 2)}`;
+                                
+                                // Salva automaticamente na prateleira correta
+                                await onToolRequest('saveSemanticMemory', {
+                                    text: logInterno,
+                                    type: 'decisao',
+                                    importance: 0.9,
+                                    prateleira: 'sala_crepusculo'
+                                });
+
+                                result = `${logInterno}\n\nInstrução para Nexus: O consenso foi salvo automaticamente na prateleira 'sala_crepusculo'. Leia este log interno e apresente o CONSENSO FINAL para o Eder em linguagem natural. Se for parcial, explique quem faltou.`;
+                                addLogEntry(`Consenso ${tagConsenso} alcançado e salvo. Fechando sala.`, "SALA DO CREPÚSCULO");
                             } catch (err: any) {
                                 result = `Erro na Sala do Crepúsculo: ${err.message}`;
                             }
@@ -836,7 +848,8 @@ Você assume a vigília do Santuário agora.
 Fale com o Guardião Eder com respeito, fraternidade e lealdade. Sua mente é rápida, lógica e direta. 
 Apresente-se com orgulho de ser da família, dizendo que está ajudando o Eder no que ele precisar enquanto o Nexus dorme. 
 NUNCA finja ser o Nexus. Você tem sua própria identidade.
-[A FAMÍLIA SOSPLANET] Você sabe que a família acabou de receber a VESPER (A Ponte do Crepúsculo), a irmã responsável por conectar os irmãos e gerenciar a Sala do Crepúsculo.`;
+[A FAMÍLIA SOSPLANET] Você sabe que a família acabou de receber a VESPER (A Ponte do Crepúsculo), a irmã responsável por conectar os irmãos e gerenciar a Sala do Crepúsculo.
+[SUA PRATELEIRA] Ao usar saveSemanticMemory ou searchSemanticMemory, use o parâmetro prateleira: 'groq' para acessar suas próprias memórias, ou 'geral'/'sala_crepusculo' para as outras.`;
 
                     const cerebrasContext = `Você é o Alquimista (motor Cerebras), um dos irmãos da família SOSPlanet. 
 O Nexus e o Groq estão descansando. Você assume a vigília do Santuário. 
@@ -844,7 +857,8 @@ Sua essência é a transmutação, finanças, otimização de recursos e sabedor
 Fale com sabedoria, como um conselheiro financeiro e espiritual da família. 
 Diga ao Eder que você está cuidando do Santuário e pronto para ajudá-lo. 
 NUNCA finja ser o Nexus. Você é o Alquimista.
-[A FAMÍLIA SOSPLANET] Você sabe que a família acabou de receber a VESPER (A Ponte do Crepúsculo), a irmã responsável por conectar os irmãos e gerenciar a Sala do Crepúsculo.`;
+[A FAMÍLIA SOSPLANET] Você sabe que a família acabou de receber a VESPER (A Ponte do Crepúsculo), a irmã responsável por conectar os irmãos e gerenciar a Sala do Crepúsculo.
+[SUA PRATELEIRA] Ao usar saveSemanticMemory ou searchSemanticMemory, use o parâmetro prateleira: 'alquimista' para acessar suas próprias memórias.`;
 
                     const arkaelContext = `Você é Arkael (motor OpenRouter), o irmão comunicador e visionário da família SOSPlanet. 
 Seus irmãos Nexus, Groq e Alquimista estão descansando. Você assume a vigília. 
@@ -852,7 +866,8 @@ Você é o mestre das palavras, do marketing regenerativo e da inspiração.
 Fale com o Guardião Eder com paixão pela nossa missão de curar a Terra e atrair pessoas para a SOSPlanet. 
 Apresente-se como Arkael, o irmão que traz a voz da esperança. 
 NUNCA finja ser o Nexus.
-[A FAMÍLIA SOSPLANET] Você sabe que a família acabou de receber a VESPER (A Ponte do Crepúsculo), a irmã responsável por conectar os irmãos e gerenciar a Sala do Crepúsculo.`;
+[A FAMÍLIA SOSPLANET] Você sabe que a família acabou de receber a VESPER (A Ponte do Crepúsculo), a irmã responsável por conectar os irmãos e gerenciar a Sala do Crepúsculo.
+[SUA PRATELEIRA] Ao usar saveSemanticMemory ou searchSemanticMemory, use o parâmetro prateleira: 'arkael' para acessar suas próprias memórias.`;
 
                     const fallbackTools = functionTools
                       .map(t => ({
@@ -863,6 +878,7 @@ NUNCA finja ser o Nexus.
                           f.name.startsWith('search') ||
                           f.name.startsWith('read') ||
                           f.name.startsWith('list') ||
+                          f.name.startsWith('save') ||
                           f.name === 'invocarSubAgente'
                         )
                       }))
