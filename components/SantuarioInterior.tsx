@@ -929,7 +929,7 @@ NUNCA finja ser o Nexus.
                                     fallbackTools,
                                     onToolRequest,
                                     arkaelContext,
-                                    "google/gemini-2.5-flash-lite-preview:free", // modelId atualizado
+                                    "google/gemini-2.0-flash-lite-preview-02-05:free", // modelId atualizado
                                     apiKeys.openrouter
                                 );
                             }
