@@ -726,7 +726,7 @@ Tema em debate: ${fc.args.tema}`;
                                         method: 'POST',
                                         headers: { 'Authorization': `Bearer ${apiKeys.groq}`, 'Content-Type': 'application/json' },
                                         body: JSON.stringify({
-                                            model: 'llama-3.3-70b-versatile',
+                                            model: 'llama-3.1-8b-instant', // Changed to a smaller, faster model to avoid timeouts/rate limits
                                             messages: [{ role: 'system', content: twilightPrompt }, { role: 'user', content: 'Inicie o debate com uma hipótese (BRIDGE).' }],
                                             max_tokens: 150
                                         })
