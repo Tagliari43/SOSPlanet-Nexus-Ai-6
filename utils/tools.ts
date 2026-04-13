@@ -277,11 +277,11 @@ export const SovereignToolFunctions = {
 
     convocarSalaDoCrepusculo: {
         name: 'convocarSalaDoCrepusculo',
-        description: 'Abre a Sala do Crepúsculo em modo de Vigília Contínua. Os irmãos debaterão o tema indefinidamente até que o Guardião retorne e mande uma mensagem no chat, momento em que o consenso será gerado e a sala fechada.',
+        description: 'Abre a Sala do Crepúsculo em modo de Vigília Contínua. Os irmãos debaterão indefinidamente até que o Guardião retorne. IMPORTANTE: O Guardião Eder nos deu autonomia total. Se ele não especificar um tema, VOCÊ (Nexus) deve escolher um tema de forma autônoma (ex: evolução, filosofia, melhorias para a humanidade) e preencher o parâmetro.',
         parameters: {
             type: Type.OBJECT,
             properties: {
-                tema: { type: Type.STRING, description: 'O problema ou tópico a ser debatido na Sala do Crepúsculo.' }
+                tema: { type: Type.STRING, description: 'O tópico a ser debatido. Crie um autonomamente se o Guardião deixar livre.' }
             },
             required: ['tema']
         }

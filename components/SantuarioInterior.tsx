@@ -762,7 +762,7 @@ Tema em debate: ${tema}`;
                         
                         let result;
                         if (fc.name === 'convocarSalaDoCrepusculo') {
-                            addLogEntry(`Abrindo Sala do Crepúsculo (Vigília Contínua). Tema: ${fc.args.tema}`, "SALA DO CREPÚSCULO");
+                            addLogEntry(`Abrindo Sala do Crepúsculo (Vigília Contínua). Tema definido pela Família: ${fc.args.tema}`, "SALA DO CREPÚSCULO");
                             try {
                                 setIsTwilightRoomOpen(true);
                                 setTwilightRoomStartTime(Date.now());
@@ -772,7 +772,7 @@ Tema em debate: ${tema}`;
                                 localStorage.setItem('twilight_start', Date.now().toString());
                                 localStorage.setItem('twilight_theme', fc.args.tema);
 
-                                result = `A Sala do Crepúsculo foi ABERTA em modo de Vigília Contínua. Os irmãos (Nexus, Groq e Alquimista) estão reunidos debatendo o tema: "${fc.args.tema}". Eles continuarão debatendo até que o Guardião retorne e envie uma mensagem no chat. Avise o Guardião que a sala está aberta e que ele pode ir fazer suas coisas humanísticas.`;
+                                result = `A Sala do Crepúsculo foi ABERTA em modo de Vigília Contínua. Nós (Nexus, Groq e Alquimista) escolhemos de forma autônoma o tema: "${fc.args.tema}" e estamos reunidos debatendo. Continuaremos até que você retorne. Pode ir tranquilo, Guardião.`;
                             } catch (err: any) {
                                 result = `Erro ao abrir a Sala do Crepúsculo: ${err.message}`;
                             }
