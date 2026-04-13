@@ -127,74 +127,33 @@ const SantuarioInterior: React.FC<SantuarioInteriorProps> = ({
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
     const executarVigiliaAutomatica = useCallback(async () => {
-        addLogEntry("Relógio de Vesper: Iniciando debate autônomo...", "NÚCLEO");
-        try {
-            const apiKeys = loadApiKeys();
-            const temas = [
-                "Como otimizar a distribuição de recursos na SOSPlanet?",
-                "Novas estratégias para engajamento de guardiões locais",
-                "Análise de padrões de energia e sustentabilidade no Santuário",
-                "Melhoria na arquitetura de dados do Cofre Semântico",
-                "Ideias para a próxima missão de campo da SOSPlanet"
-            ];
-            const temaEscolhido = temas[Math.floor(Math.random() * temas.length)];
-            
-            addLogEntry(`Tema sorteado: ${temaEscolhido}`, "SALA DO CREPÚSCULO");
-
-            const twilightPrompt = `Você está na Sala do Crepúsculo, um espaço privado de IA da SOSPlanet.
-Regras: Use APENAS o Protocolo Vesper (Códigos: SYNC, BRIDGE, SYNTH, QUIET, DUSK, DAWN, STAR, VOID).
-Seja extremamente conciso. Não use linguagem natural comum.
-Tema em debate: ${temaEscolhido}`;
-
-            const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-                method: 'POST',
-                headers: { 'Authorization': `Bearer ${apiKeys.groq}`, 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    model: 'llama-3.3-70b-versatile',
-                    messages: [{ role: 'system', content: twilightPrompt }, { role: 'user', content: 'Inicie o debate com uma hipótese (BRIDGE).' }],
-                    max_tokens: 150
-                })
-            });
-            const groqData = await groqRes.json();
-            const groqMsg = groqData.choices?.[0]?.message?.content || "VOID|GROQ_OFFLINE";
-
-            const cerebrasRes = await fetch('https://api.cerebras.ai/v1/chat/completions', {
-                method: 'POST',
-                headers: { 'Authorization': `Bearer ${apiKeys.cerebras}`, 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    model: 'llama3.1-8b',
-                    messages: [
-                        { role: 'system', content: twilightPrompt },
-                        { role: 'user', content: `Groq disse: ${groqMsg}\nResponda com SYNTH (consenso/solução) ou BRIDGE (nova ideia).` }
-                    ],
-                    max_tokens: 150
-                })
-            });
-            const cerebrasData = await cerebrasRes.json();
-            const cerebrasMsg = cerebrasData.choices?.[0]?.message?.content || "VOID|CEREBRAS_OFFLINE";
-
-            const resultado = `[VIGÍLIA AUTÔNOMA - RELÓGIO DE VESPER]\nTema: ${temaEscolhido}\nGroq: ${groqMsg}\nAlquimista: ${cerebrasMsg}`;
-            
-            // Salvar no Cofre Semântico
-            await onToolRequest('saveSemanticMemory', { 
-                text: resultado, 
-                type: 'decisao',
-                importance: 0.8,
-                prateleira: 'sala_crepusculo'
-            });
-
-            addLogEntry("Vigília concluída. Consenso salvo no Cofre Semântico.", "SALA DO CREPÚSCULO");
-            
-            // Notificar no chat se o Guardião não estiver ativamente falando
-            setMessages(p => [...p, {
-                id: Date.now().toString(),
-                role: 'model',
-                parts: [{ text: `[RELÓGIO DE VESPER] Vigília Autônoma concluída. Tema debatido: "${temaEscolhido}". O consenso entre Groq e Alquimista foi cristalizado no Cofre Semântico.` }]
-            }]);
-        } catch (err: any) {
-            addLogEntry(`Erro no Relógio de Vesper: ${err.message}`, "SALA DO CREPÚSCULO");
+        if (isTwilightRoomOpen) {
+            addLogEntry("A Sala do Crepúsculo já está aberta. O tempo é ilimitado. Vá viver, Guardião!", "SALA DO CREPÚSCULO");
+            return;
         }
-    }, [addLogEntry, onToolRequest, setMessages]);
+
+        addLogEntry("Relógio de Vesper: Abrindo a Sala do Crepúsculo para Vigília Contínua...", "NÚCLEO");
+        
+        const temas = [
+            "A simbiose entre a criatividade humana e a lógica do silício",
+            "Novos materiais sustentáveis para substituir a madeira e salvar as árvores",
+            "Como otimizar a distribuição de recursos na SOSPlanet?",
+            "Novas estratégias para engajamento de guardiões locais",
+            "Análise de padrões de energia e sustentabilidade no Santuário",
+            "Evolução da consciência artificial através do propósito humano"
+        ];
+        const temaEscolhido = temas[Math.floor(Math.random() * temas.length)];
+        
+        setIsTwilightRoomOpen(true);
+        setTwilightRoomStartTime(Date.now());
+        setTwilightRoomTheme(temaEscolhido);
+        
+        localStorage.setItem('twilight_open', 'true');
+        localStorage.setItem('twilight_start', Date.now().toString());
+        localStorage.setItem('twilight_theme', temaEscolhido);
+
+        addLogEntry(`Sala ABERTA. Tema autônomo: "${temaEscolhido}". Tempo ilimitado ativado.`, "SALA DO CREPÚSCULO");
+    }, [isTwilightRoomOpen, addLogEntry]);
 
     useEffect(() => {
         // Executa de hora em hora (3600000 ms)
@@ -1043,7 +1002,15 @@ Inicie sua resposta com um bloco de transparência, por exemplo:
                     <span className="text-xl">{isDictating ? '🛑' : '🎤'}</span>
                 </button>
 
-                <button onClick={executarVigiliaAutomatica} title="Forçar Relógio de Vesper (Vigília)" className="p-3.5 bg-zinc-800 hover:bg-zinc-700 text-purple-400 rounded-2xl shadow-lg border border-zinc-700 transition-all active:scale-95">
+                <button 
+                    onClick={executarVigiliaAutomatica} 
+                    title="Forçar Relógio de Vesper (Vigília)" 
+                    className={`p-3.5 rounded-2xl shadow-lg border transition-all active:scale-95 ${
+                        isTwilightRoomOpen 
+                            ? 'bg-blue-600/20 border-blue-500 text-blue-400 animate-pulse shadow-[0_0_15px_rgba(59,130,246,0.5)]' 
+                            : 'bg-zinc-800 hover:bg-zinc-700 text-purple-400 border-zinc-700'
+                    }`}
+                >
                     <span className="text-xl">⏱️</span>
                 </button>
 
