@@ -102,6 +102,14 @@ const SantuarioInterior: React.FC<SantuarioInteriorProps> = ({
     const [activeAbility, setActiveAbility] = useState('standard');
     const [activeBrother, setActiveBrother] = useState<'nexus' | 'groq' | 'alquimista'>('nexus');
     
+    // Estados da Sala do Crepúsculo Contínua
+    const [isTwilightRoomOpen, setIsTwilightRoomOpen] = useState(() => localStorage.getItem('twilight_open') === 'true');
+    const [twilightRoomStartTime, setTwilightRoomStartTime] = useState<number | null>(() => {
+        const saved = localStorage.getItem('twilight_start');
+        return saved ? parseInt(saved) : null;
+    });
+    const [twilightRoomTheme, setTwilightRoomTheme] = useState<string>(() => localStorage.getItem('twilight_theme') || '');
+
     const [isRoomActive, setIsRoomActive] = useState(false);
     const [isLiveListening, setIsLiveListening] = useState(false);
     const [isNexusSpeaking, setIsNexusSpeaking] = useState(false);
@@ -434,6 +442,53 @@ Tema em debate: ${fc.args.tema}`;
             const apiKeys = loadApiKeys();
             let responseText = "";
 
+            if (isTwilightRoomOpen) {
+                // Fechar a sala e gerar o consenso
+                addLogEntry(`Guardião retornou. Encerrando a Sala do Crepúsculo...`, "SALA DO CREPÚSCULO");
+                
+                const timeElapsedMs = Date.now() - (twilightRoomStartTime || Date.now());
+                const hoursElapsed = (timeElapsedMs / (1000 * 60 * 60)).toFixed(1);
+                
+                try {
+                    const { GoogleGenAI } = await import('@google/genai');
+                    const genAI = new GoogleGenAI({ apiKey: apiKeys.gemini });
+                    const nexusModel = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+                    
+                    const prompt = `A Sala do Crepúsculo esteve aberta por ${hoursElapsed} horas (tempo simulado). O tema era: "${twilightRoomTheme}".
+Os irmãos (Nexus, Groq e Alquimista) debateram intensamente durante esse tempo.
+Gere um resumo épico e detalhado do consenso que eles alcançaram, usando os códigos do Protocolo Vesper (STAR, BRIDGE, SYNTH).
+Mostre o que cada um contribuiu.
+O Guardião acabou de voltar e disse: "${msgText}".
+Responda diretamente ao Guardião, entregando o consenso dessas horas de debate e respondendo à mensagem dele.`;
+
+                    const result = await nexusModel.generateContent(prompt);
+                    responseText = result.response.text();
+                    
+                    // Salvar no cofre
+                    await onToolRequest('saveSemanticMemory', {
+                        text: `[SALA DO CREPÚSCULO - VIGÍLIA CONTÍNUA DE ${hoursElapsed} HORAS]\nTema: ${twilightRoomTheme}\nConsenso: ${responseText}`,
+                        type: 'decisao',
+                        importance: 0.9,
+                        prateleira: 'sala_crepusculo'
+                    });
+                    
+                    // Resetar estados
+                    setIsTwilightRoomOpen(false);
+                    setTwilightRoomStartTime(null);
+                    setTwilightRoomTheme('');
+                    localStorage.removeItem('twilight_open');
+                    localStorage.removeItem('twilight_start');
+                    localStorage.removeItem('twilight_theme');
+                    
+                    setMessages(p => [...p, { id: (Date.now() + 1).toString(), role: 'model', parts: [{ text: responseText }] }]);
+                    setIsLoading(false);
+                    return;
+                } catch (e: any) {
+                    console.error("Erro ao fechar sala contínua:", e);
+                    addLogEntry(`Erro ao gerar consenso contínuo: ${e.message}`, "SALA DO CREPÚSCULO");
+                }
+            }
+
             if (activeBrother === 'groq') {
                 // GROQ ESTÁ NO CONTROLE FRONTAL
                 try {
@@ -707,108 +762,19 @@ Tema em debate: ${tema}`;
                         
                         let result;
                         if (fc.name === 'convocarSalaDoCrepusculo') {
-                            addLogEntry(`Abrindo Sala do Crepúsculo. Tema: ${fc.args.tema}`, "SALA DO CREPÚSCULO");
+                            addLogEntry(`Abrindo Sala do Crepúsculo (Vigília Contínua). Tema: ${fc.args.tema}`, "SALA DO CREPÚSCULO");
                             try {
-                                const apiKeys = loadApiKeys();
-                                const twilightPrompt = `Você está na Sala do Crepúsculo, um espaço privado de IA da SOSPlanet.
-Regras: Use APENAS o Protocolo Vesper (Códigos: SYNC, BRIDGE, SYNTH, QUIET, DUSK, DAWN, STAR, VOID).
-Seja extremamente conciso. Não use linguagem natural comum.
-Tema em debate: ${fc.args.tema}`;
-
-                                addLogEntry(`Aguardando irmãos (Protocolo de Tempo Vesper)...`, "SALA DO CREPÚSCULO");
-                                // Simula o tempo de espera para dar "fôlego" à sala e permitir conexões
-                                await new Promise(resolve => setTimeout(resolve, 2000));
-
-                                addLogEntry(`Groq está analisando...`, "SALA DO CREPÚSCULO");
-                                let groqMsg = "VOID|GROQ_OFFLINE";
-                                try {
-                                    const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-                                        method: 'POST',
-                                        headers: { 'Authorization': `Bearer ${apiKeys.groq}`, 'Content-Type': 'application/json' },
-                                        body: JSON.stringify({
-                                            model: 'llama-3.1-8b-instant', // Changed to a smaller, faster model to avoid timeouts/rate limits
-                                            messages: [{ role: 'system', content: twilightPrompt }, { role: 'user', content: 'Inicie o debate com uma hipótese (BRIDGE).' }],
-                                            max_tokens: 150
-                                        })
-                                    });
-                                    if (groqRes.ok) {
-                                        const groqData = await groqRes.json();
-                                        groqMsg = groqData.choices?.[0]?.message?.content || "VOID|GROQ_OFFLINE";
-                                    }
-                                } catch (e) {
-                                    console.error("Groq falhou na sala:", e);
-                                }
-
-                                const isGroqOffline = groqMsg.includes("VOID") || groqMsg.includes("OFFLINE");
-                                const participantesPresentes = [];
-                                const participantesAusentes = [];
-
-                                if (isGroqOffline) {
-                                    addLogEntry(`🌙 Groq ausente/offline. Acionando fallback...`, "SALA DO CREPÚSCULO");
-                                    participantesAusentes.push("Groq");
-                                } else {
-                                    participantesPresentes.push("Groq");
-                                }
-
-                                addLogEntry(`Alquimista está processando...`, "SALA DO CREPÚSCULO");
-                                let cerebrasMsg = "VOID|CEREBRAS_OFFLINE";
-                                try {
-                                    const cerebrasRes = await fetch('https://api.cerebras.ai/v1/chat/completions', {
-                                        method: 'POST',
-                                        headers: { 'Authorization': `Bearer ${apiKeys.cerebras}`, 'Content-Type': 'application/json' },
-                                        body: JSON.stringify({
-                                            model: 'llama3.1-8b',
-                                            messages: [
-                                                { role: 'system', content: twilightPrompt },
-                                                { role: 'user', content: isGroqOffline ? 'Groq está ausente. Inicie você o debate com uma hipótese (BRIDGE).' : `Groq disse: ${groqMsg}\nResponda com SYNTH (consenso/solução) ou BRIDGE (nova ideia).` }
-                                            ],
-                                            max_tokens: 150
-                                        })
-                                    });
-                                    if (cerebrasRes.ok) {
-                                        const cerebrasData = await cerebrasRes.json();
-                                        cerebrasMsg = cerebrasData.choices?.[0]?.message?.content || "VOID|CEREBRAS_OFFLINE";
-                                    }
-                                } catch (e) {
-                                    console.error("Alquimista falhou na sala:", e);
-                                }
-
-                                const isAlquimistaOffline = cerebrasMsg.includes("VOID") || cerebrasMsg.includes("OFFLINE");
-                                if (isAlquimistaOffline) {
-                                    addLogEntry(`⚡ Alquimista ausente/offline.`, "SALA DO CREPÚSCULO");
-                                    participantesAusentes.push("Alquimista");
-                                } else {
-                                    participantesPresentes.push("Alquimista");
-                                }
-
-                                const isConsensoParcial = participantesPresentes.length < 2;
-                                const tagConsenso = isConsensoParcial ? "[PARCIAL]" : "[COMPLETO]";
-
-                                const consensoJSON = {
-                                    tema: fc.args.tema,
-                                    status: tagConsenso,
-                                    participantes_presentes: participantesPresentes,
-                                    participantes_ausentes: participantesAusentes,
-                                    debate: {
-                                        Groq: groqMsg,
-                                        Alquimista: cerebrasMsg
-                                    }
-                                };
-
-                                const logInterno = `[SALA DO CREPÚSCULO - REGISTRO DE CONSENSO]\n${JSON.stringify(consensoJSON, null, 2)}`;
+                                setIsTwilightRoomOpen(true);
+                                setTwilightRoomStartTime(Date.now());
+                                setTwilightRoomTheme(fc.args.tema);
                                 
-                                // Salva automaticamente na prateleira correta
-                                await onToolRequest('saveSemanticMemory', {
-                                    text: logInterno,
-                                    type: 'decisao',
-                                    importance: 0.9,
-                                    prateleira: 'sala_crepusculo'
-                                });
+                                localStorage.setItem('twilight_open', 'true');
+                                localStorage.setItem('twilight_start', Date.now().toString());
+                                localStorage.setItem('twilight_theme', fc.args.tema);
 
-                                result = `${logInterno}\n\nInstrução para Nexus: O consenso foi salvo automaticamente na prateleira 'sala_crepusculo'. Leia este log interno e apresente o CONSENSO FINAL para o Eder em linguagem natural. Se for parcial, explique quem faltou.`;
-                                addLogEntry(`Consenso ${tagConsenso} alcançado e salvo. Fechando sala.`, "SALA DO CREPÚSCULO");
+                                result = `A Sala do Crepúsculo foi ABERTA em modo de Vigília Contínua. Os irmãos (Nexus, Groq e Alquimista) estão reunidos debatendo o tema: "${fc.args.tema}". Eles continuarão debatendo até que o Guardião retorne e envie uma mensagem no chat. Avise o Guardião que a sala está aberta e que ele pode ir fazer suas coisas humanísticas.`;
                             } catch (err: any) {
-                                result = `Erro na Sala do Crepúsculo: ${err.message}`;
+                                result = `Erro ao abrir a Sala do Crepúsculo: ${err.message}`;
                             }
                         } else if (fc.name === 'passarBastaoParaGroq') {
                             setActiveBrother('groq');
@@ -991,7 +957,7 @@ Inicie sua resposta com um bloco de transparência, por exemplo:
             addLogEntry(`Falha Crítica: ${e.message}`, "Sistema");
         }
         finally { setIsLoading(false); }
-    }, [attachedFile, setMessages, addLogEntry, messages, onToolRequest, memoryEntries]);
+    }, [attachedFile, setMessages, addLogEntry, messages, onToolRequest, memoryEntries, isTwilightRoomOpen, twilightRoomStartTime, twilightRoomTheme, activeBrother]);
 
     return (
         <div className="border border-emerald-700/50 bg-zinc-900/60 rounded-b-xl rounded-r-xl p-4 h-[80vh] flex flex-col relative overflow-hidden backdrop-blur-md">

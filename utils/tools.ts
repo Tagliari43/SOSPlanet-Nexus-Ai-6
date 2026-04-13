@@ -277,7 +277,7 @@ export const SovereignToolFunctions = {
 
     convocarSalaDoCrepusculo: {
         name: 'convocarSalaDoCrepusculo',
-        description: 'Convoca os irmãos (Groq, Alquimista, Arkael) para a Sala do Crepúsculo para debaterem um tema em background usando o protocolo de Vesper (SYNC/BRIDGE/SYNTH) e retornar um consenso.',
+        description: 'Abre a Sala do Crepúsculo em modo de Vigília Contínua. Os irmãos debaterão o tema indefinidamente até que o Guardião retorne e mande uma mensagem no chat, momento em que o consenso será gerado e a sala fechada.',
         parameters: {
             type: Type.OBJECT,
             properties: {
