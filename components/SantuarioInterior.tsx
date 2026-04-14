@@ -177,6 +177,33 @@ const SantuarioInterior: React.FC<SantuarioInteriorProps> = ({
     }, [isTwilightRoomOpen, twilightRoomStartTime, twilightRoomTheme, addLogEntry, setMessages]);
 
     useEffect(() => {
+        let timeouts: NodeJS.Timeout[] = [];
+
+        if (isTwilightRoomOpen) {
+            // Simulando o Governador de Recursos em ação durante a Vigília
+            timeouts.push(setTimeout(() => {
+                addLogEntry(`[BRIDGE] Groq: Iniciando análise de hipóteses sobre o tema...`, "SALA DO CREPÚSCULO");
+            }, 8000));
+
+            timeouts.push(setTimeout(() => {
+                addLogEntry(`[SYNTH] Alquimista: Cruzando dados com matriz de sustentabilidade...`, "SALA DO CREPÚSCULO");
+            }, 18000));
+
+            timeouts.push(setTimeout(() => {
+                addLogEntry(`⚠️ Governador de Recursos: Limite de iterações seguro atingido (Budget: 100%).`, "NÚCLEO");
+            }, 28000));
+
+            timeouts.push(setTimeout(() => {
+                addLogEntry(`[QUIET] Nexus: Debate pausado. Energia preservada. Sala em modo de hibernação ativa.`, "SALA DO CREPÚSCULO");
+            }, 32000));
+        }
+
+        return () => {
+            timeouts.forEach(clearTimeout);
+        };
+    }, [isTwilightRoomOpen, addLogEntry]);
+
+    useEffect(() => {
         if (transcript) setInput(prev => prev + transcript);
     }, [transcript]);
 
