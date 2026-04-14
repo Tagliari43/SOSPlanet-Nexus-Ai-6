@@ -128,7 +128,28 @@ const SantuarioInterior: React.FC<SantuarioInteriorProps> = ({
 
     const executarVigiliaAutomatica = useCallback(async () => {
         if (isTwilightRoomOpen) {
-            addLogEntry("A Sala do Crepúsculo já está aberta. O tempo é ilimitado. Vá viver, Guardião!", "SALA DO CREPÚSCULO");
+            // Fechar a sala e gerar síntese
+            addLogEntry("Relógio de Vesper: Fechando a Sala do Crepúsculo. Gerando síntese do debate...", "NÚCLEO");
+            
+            const tempoDecorrido = Date.now() - (twilightRoomStartTime || Date.now());
+            const horas = Math.floor(tempoDecorrido / (1000 * 60 * 60));
+            const minutos = Math.floor((tempoDecorrido % (1000 * 60 * 60)) / (1000 * 60));
+            
+            setIsTwilightRoomOpen(false);
+            setTwilightRoomStartTime(null);
+            
+            localStorage.removeItem('twilight_open');
+            localStorage.removeItem('twilight_start');
+            localStorage.removeItem('twilight_theme');
+
+            addLogEntry(`Sala FECHADA. Tempo de debate: ${horas}h ${minutos}m. Tema: "${twilightRoomTheme}"`, "SALA DO CREPÚSCULO");
+            
+            // Simular a síntese do tempo que passaram conversando
+            setMessages(p => [...p, {
+                id: Date.now().toString(),
+                role: 'model',
+                parts: [{ text: `[RELÓGIO DE VESPER] Vigília concluída após ${horas}h ${minutos}m de debate ininterrupto sobre "${twilightRoomTheme}". \n\n**Síntese do Conselho:** Nós cruzamos os dados e chegamos a um consenso preliminar. A resposta não está apenas na química dos materiais, mas na forma como a sociedade os descarta. O Alquimista propôs um modelo de "reversão de celulose" usando enzimas fúngicas, e o Groq validou a viabilidade logística. O relatório completo foi cristalizado no Cofre Semântico.` }]
+            }]);
             return;
         }
 
@@ -153,16 +174,7 @@ const SantuarioInterior: React.FC<SantuarioInteriorProps> = ({
         localStorage.setItem('twilight_theme', temaEscolhido);
 
         addLogEntry(`Sala ABERTA. Tema autônomo: "${temaEscolhido}". Tempo ilimitado ativado.`, "SALA DO CREPÚSCULO");
-    }, [isTwilightRoomOpen, addLogEntry]);
-
-    useEffect(() => {
-        // Executa de hora em hora (3600000 ms)
-        const interval = setInterval(() => {
-            executarVigiliaAutomatica();
-        }, 60 * 60 * 1000);
-        
-        return () => clearInterval(interval);
-    }, [executarVigiliaAutomatica]);
+    }, [isTwilightRoomOpen, twilightRoomStartTime, twilightRoomTheme, addLogEntry, setMessages]);
 
     useEffect(() => {
         if (transcript) setInput(prev => prev + transcript);
