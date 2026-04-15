@@ -178,10 +178,17 @@ export async function invocarSubAgente(
   agente: string,
   tarefa: string,
   apiKey: string,
-  modeloOverride?: string
+  modeloOverride?: string,
+  contextoExtra?: string
 ): Promise<string> {
   const perfil = SUB_AGENT_PROFILES[agente];
   if (!perfil) return `Sub-agente '${agente}' não encontrado.`;
   const modelo = modeloOverride || perfil.modelo;
-  return await callOpenRouter(tarefa, perfil.systemPrompt, modelo, apiKey);
+  
+  let finalSystemPrompt = perfil.systemPrompt;
+  if (contextoExtra) {
+    finalSystemPrompt += `\n\n[CONTEXTO EXTRA / MEMÓRIAS]\n${contextoExtra}`;
+  }
+  
+  return await callOpenRouter(tarefa, finalSystemPrompt, modelo, apiKey);
 }

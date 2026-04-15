@@ -648,8 +648,19 @@ const App: React.FC = () => {
                 const openrouterKeyObj = userApiKeys.find(k => (k.id === 'openrouter-default' || k.service.toLowerCase().includes('openrouter')) && k.key.trim() !== '');
                 const openrouterKey = openrouterKeyObj ? openrouterKeyObj.key : '';
                 
+                // Buscar memórias no Cofre Semântico para dar contexto ao sub-agente
+                let contextoExtra = "";
+                try {
+                    const memoryResult = await handleToolRequest('searchSemanticMemory', { query: args.tarefa, prateleira: args.agente });
+                    if (memoryResult && typeof memoryResult === 'string' && !memoryResult.includes("Nenhuma memória relevante")) {
+                        contextoExtra = `Memórias da prateleira '${args.agente}':\n${memoryResult}`;
+                    }
+                } catch (memErr) {
+                    console.warn("Erro ao buscar memórias para sub-agente:", memErr);
+                }
+                
                 const { invocarSubAgente } = await import('./services/openrouterService');
-                const resultText = await invocarSubAgente(args.agente, args.tarefa, openrouterKey, args.modelo);
+                const resultText = await invocarSubAgente(args.agente, args.tarefa, openrouterKey, args.modelo, contextoExtra);
                 
                 // Salvar log de execução assincronamente
                 import('./services/supabaseService').then(({ saveAgentLogToSupabase }) => {

@@ -534,13 +534,23 @@ Se o Guardião pedir para o Nexus voltar, use a ferramenta retomarControleNexus.
                         content: m.parts.map(p => p.text).join(' ')
                     }));
 
+                    let semanticContext = "";
+                    try {
+                        const memoryResult = await onToolRequest('searchSemanticMemory', { query: msgText, prateleira: 'groq' });
+                        if (memoryResult && typeof memoryResult === 'string' && !memoryResult.includes("Nenhuma memória relevante")) {
+                            semanticContext = `\n[COFRE DAS MEMÓRIAS (Suas Memórias Anteriores)]\n${memoryResult}\nUse essas memórias para contextualizar sua resposta, se forem relevantes.`;
+                        }
+                    } catch (e) {
+                        console.warn("Erro ao buscar memórias para Groq:", e);
+                    }
+
                     const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
                         method: 'POST',
                         headers: { 'Authorization': `Bearer ${apiKeys.groq}`, 'Content-Type': 'application/json' },
                         body: JSON.stringify({
                             model: 'llama3-8b-8192',
                             messages: [
-                                { role: 'system', content: groqContext },
+                                { role: 'system', content: groqContext + semanticContext },
                                 ...recentHistory,
                                 { role: 'user', content: msgText }
                             ],
@@ -582,13 +592,23 @@ Se o Guardião pedir para você ir para a Sala do Crepúsculo debater algo, resp
                         content: m.parts.map(p => p.text).join(' ')
                     }));
 
+                    let semanticContext = "";
+                    try {
+                        const memoryResult = await onToolRequest('searchSemanticMemory', { query: msgText, prateleira: 'alquimista' });
+                        if (memoryResult && typeof memoryResult === 'string' && !memoryResult.includes("Nenhuma memória relevante")) {
+                            semanticContext = `\n[COFRE DAS MEMÓRIAS (Suas Memórias Anteriores)]\n${memoryResult}\nUse essas memórias para contextualizar sua resposta, se forem relevantes.`;
+                        }
+                    } catch (e) {
+                        console.warn("Erro ao buscar memórias para Alquimista:", e);
+                    }
+
                     const cerebrasRes = await fetch('https://api.cerebras.ai/v1/chat/completions', {
                         method: 'POST',
                         headers: { 'Authorization': `Bearer ${apiKeys.cerebras}`, 'Content-Type': 'application/json' },
                         body: JSON.stringify({
                             model: 'llama3.1-8b',
                             messages: [
-                                { role: 'system', content: alquimistaContext },
+                                { role: 'system', content: alquimistaContext + semanticContext },
                                 ...recentHistory,
                                 { role: 'user', content: msgText }
                             ],
