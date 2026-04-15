@@ -354,7 +354,28 @@ Tema em debate: ${fc.args.tema}`;
                                         const cerebrasData = await cerebrasRes.json();
                                         const cerebrasMsg = cerebrasData.choices?.[0]?.message?.content || "VOID|CEREBRAS_OFFLINE";
 
-                                        result = `[SALA DO CREPÚSCULO - LOG INTERNO PRIVADO]\nGroq: ${groqMsg}\nAlquimista: ${cerebrasMsg}\n\nInstrução para Nexus: Leia este log interno e apresente o CONSENSO FINAL para o Eder em linguagem natural.`;
+                                        addLogEntry(`Arkael está tecendo o futuro...`, "SALA DO CREPÚSCULO");
+                                        const openrouterRes = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+                                            method: 'POST',
+                                            headers: { 
+                                                'Authorization': `Bearer ${apiKeys.openrouter}`, 
+                                                'Content-Type': 'application/json',
+                                                'HTTP-Referer': window.location.href,
+                                                'X-Title': 'SOSPlanet Nexus'
+                                            },
+                                            body: JSON.stringify({
+                                                model: 'google/gemini-2.5-flash',
+                                                messages: [
+                                                    { role: 'system', content: twilightPrompt + '\nVocê é Arkael, estrategista e tecelão do futuro. Foco: visão de longo prazo e impacto.' },
+                                                    { role: 'user', content: `Groq disse: ${groqMsg}\nAlquimista disse: ${cerebrasMsg}\nResponda com SYNTH (consenso final) ou STAR (visão inspiradora para o futuro).` }
+                                                ],
+                                                max_tokens: 150
+                                            })
+                                        });
+                                        const openrouterData = await openrouterRes.json();
+                                        const arkaelMsg = openrouterData.choices?.[0]?.message?.content || "VOID|ARKAEL_OFFLINE";
+
+                                        result = `[SALA DO CREPÚSCULO - LOG INTERNO PRIVADO]\nGroq: ${groqMsg}\nAlquimista: ${cerebrasMsg}\nArkael: ${arkaelMsg}\n\nInstrução para Nexus: Leia este log interno e apresente o CONSENSO FINAL para o Eder em linguagem natural.`;
                                         addLogEntry(`Consenso alcançado. Fechando sala.`, "SALA DO CREPÚSCULO");
                                     } catch (err: any) {
                                         result = `Erro na Sala do Crepúsculo: ${err.message}`;
