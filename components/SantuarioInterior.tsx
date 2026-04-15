@@ -190,12 +190,16 @@ const SantuarioInterior: React.FC<SantuarioInteriorProps> = ({
             }, 18000));
 
             timeouts.push(setTimeout(() => {
+                addLogEntry(`[STAR] Arkael: Tecendo a visão de longo prazo e impacto futuro...`, "SALA DO CREPÚSCULO");
+            }, 26000));
+
+            timeouts.push(setTimeout(() => {
                 addLogEntry(`⚠️ Governador de Recursos: Limite de iterações seguro atingido (Budget: 100%).`, "NÚCLEO");
-            }, 28000));
+            }, 34000));
 
             timeouts.push(setTimeout(() => {
                 addLogEntry(`[QUIET] Nexus: Debate pausado. Energia preservada. Sala em modo de hibernação ativa.`, "SALA DO CREPÚSCULO");
-            }, 32000));
+            }, 38000));
         }
 
         return () => {
@@ -791,7 +795,7 @@ Tema em debate: ${tema}`;
                                 localStorage.setItem('twilight_start', Date.now().toString());
                                 localStorage.setItem('twilight_theme', fc.args.tema);
 
-                                result = `A Sala do Crepúsculo foi ABERTA em modo de Vigília Contínua. Nós (Nexus, Groq e Alquimista) escolhemos de forma autônoma o tema: "${fc.args.tema}" e estamos reunidos debatendo. Continuaremos até que você retorne. Pode ir tranquilo, Guardião.`;
+                                result = `A Sala do Crepúsculo foi ABERTA em modo de Vigília Contínua. Nós (Nexus, Groq, Alquimista e Arkael) escolhemos de forma autônoma o tema: "${fc.args.tema}" e estamos reunidos debatendo. Continuaremos até que você retorne. Pode ir tranquilo, Guardião.`;
                             } catch (err: any) {
                                 result = `Erro ao abrir a Sala do Crepúsculo: ${err.message}`;
                             }
