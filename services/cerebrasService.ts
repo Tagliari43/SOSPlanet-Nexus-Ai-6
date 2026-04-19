@@ -47,6 +47,8 @@ export async function callCerebrasWithTools(
     for (const key in schema) {
       if (key === 'type' && typeof schema[key] === 'string') {
         result[key] = schema[key].toLowerCase();
+      } else if (key === 'required' && Array.isArray(schema[key])) {
+        result[key] = schema[key]; // Preserve the required array
       } else {
         result[key] = mapSchemaTypes(schema[key]);
       }
@@ -57,14 +59,23 @@ export async function callCerebrasWithTools(
   // Converte ferramentas do formato Gemini para OpenAI
   const openAITools = tools
     .flatMap(t => t.functionDeclarations || [])
-    .map(f => ({
-      type: 'function',
-      function: {
-        name: f.name,
-        description: f.description,
-        parameters: mapSchemaTypes(f.parameters)
+    .map(f => {
+      let gParams = mapSchemaTypes(f.parameters);
+      if (!gParams) {
+        gParams = { type: "object", properties: {}, required: [] };
+      } else {
+        if (!gParams.properties) gParams.properties = {};
+        if (!gParams.required) gParams.required = [];
       }
-    }));
+      return {
+        type: 'function',
+        function: {
+          name: f.name,
+          description: f.description || '',
+          parameters: gParams
+        }
+      };
+    });
 
   let continueLoop = true;
   let responseText = '';

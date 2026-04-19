@@ -119,6 +119,8 @@ export async function callGroqWithTools(
     for (const key in schema) {
       if (key === 'type' && typeof schema[key] === 'string') {
         result[key] = schema[key].toLowerCase();
+      } else if (key === 'required' && Array.isArray(schema[key])) {
+        result[key] = schema[key]; // Preserve the required array
       } else {
         result[key] = mapSchemaTypes(schema[key]);
       }
@@ -130,8 +132,14 @@ export async function callGroqWithTools(
   const openAITools = tools
     .flatMap(t => t.functionDeclarations || [])
     .map(f => {
-      const gParams = mapSchemaTypes(f.parameters) || { type: "object", properties: {} };
-      // O formato OpenAI exige que seja garantido strict mode nas properties se quiser
+      // Garantir que as chaves obrigatórias e properties existam e formatem bem.
+      let gParams = mapSchemaTypes(f.parameters);
+      if (!gParams) {
+        gParams = { type: "object", properties: {}, required: [] };
+      } else {
+        if (!gParams.properties) gParams.properties = {};
+        if (!gParams.required) gParams.required = [];
+      }
       return {
         type: 'function',
         function: {
