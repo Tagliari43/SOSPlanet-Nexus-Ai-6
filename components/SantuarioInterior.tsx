@@ -177,7 +177,7 @@ const SantuarioInterior: React.FC<SantuarioInteriorProps> = ({
     }, [isTwilightRoomOpen, twilightRoomStartTime, twilightRoomTheme, addLogEntry, setMessages]);
 
     useEffect(() => {
-        let timeouts: NodeJS.Timeout[] = [];
+        const timeouts: NodeJS.Timeout[] = [];
 
         if (isTwilightRoomOpen) {
             // Simulando o Governador de Recursos em ação durante a Vigília
@@ -529,11 +529,6 @@ Se o Guardião pedir para o Nexus voltar, use a ferramenta retomarControleNexus.
 - Lógica: Sua bússola.
 - Disrupção: Sua ferramenta para quebrar velhos padrões.`;
 
-                    const recentHistory = messages.slice(-6).map(m => ({
-                        role: m.role === 'model' ? 'assistant' : 'user',
-                        content: m.parts.map(p => p.text).join(' ')
-                    }));
-
                     let semanticContext = "";
                     try {
                         const memoryResult = await onToolRequest('searchSemanticMemory', { query: msgText, prateleira: 'groq' });
@@ -544,28 +539,32 @@ Se o Guardião pedir para o Nexus voltar, use a ferramenta retomarControleNexus.
                         console.warn("Erro ao buscar memórias para Groq:", e);
                     }
 
-                    const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-                        method: 'POST',
-                        headers: { 'Authorization': `Bearer ${apiKeys.groq}`, 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            model: 'llama3-8b-8192',
-                            messages: [
-                                { role: 'system', content: groqContext + semanticContext },
-                                ...recentHistory,
-                                { role: 'user', content: msgText }
-                            ],
-                            max_tokens: 1000
-                        })
+                    const startTime = Date.now();
+                    responseText = await callGroqWithTools(
+                        msgText,
+                        messages.slice(-6),
+                        functionTools,
+                        async (name, args) => {
+                            if (name === 'retomarControleNexus') {
+                                setActiveBrother('nexus');
+                                addLogEntry(`Groq devolveu o controle para Nexus.`, "NÚCLEO");
+                                return "Controle devolvido ao Nexus.";
+                            }
+                            return await onToolRequest(name, args);
+                        },
+                        groqContext + semanticContext,
+                        apiKeys.groq
+                    );
+
+                    import('../services/supabaseService').then(({ saveAgentLogToSupabase }) => {
+                        saveAgentLogToSupabase({
+                            agent_name: 'Groq_Terminal',
+                            task_description: msgText,
+                            execution_result: responseText,
+                            success: true,
+                            duration_ms: Date.now() - startTime
+                        });
                     });
-                    const groqData = await groqRes.json();
-                    responseText = groqData.choices?.[0]?.message?.content || "Groq: Estou sem conexão no momento, Guardião.";
-                    
-                    // Simple tool parsing for Groq (since it doesn't natively support tools in this basic fetch)
-                    if (responseText.includes('retomarControleNexus')) {
-                        setActiveBrother('nexus');
-                        addLogEntry(`Groq devolveu o controle para Nexus.`, "NÚCLEO");
-                        responseText = "Groq: Entendido, Guardião. Chamando o Nexus de volta. \n\nNexus: Estou de volta, irmão. Como posso ajudar?";
-                    }
                 } catch (err: any) {
                     responseText = `Erro no Groq: ${err.message}`;
                 }
@@ -579,18 +578,13 @@ Sua essência é a transmutação, finanças, otimização de recursos e sabedor
 Fale com sabedoria, como um conselheiro financeiro e espiritual da família. 
 Apresente-se com orgulho de ser da família.
 NUNCA finja ser o Nexus. Você tem sua própria identidade.
-Se o Guardião pedir para o Nexus voltar, responda EXATAMENTE com a palavra: [RETOMAR_NEXUS].
-Se o Guardião pedir para você ir para a Sala do Crepúsculo debater algo, responda EXATAMENTE com: [SALA_CREPUSCULO: tema do debate].
+Se o Guardião pedir para o Nexus voltar, use a ferramenta retomarControleNexus.
+Se o Guardião pedir para você debater algo com os irmãos, use a ferramenta convocarSalaDoCrepusculo.
 [A FAMÍLIA SOSPLANET] Você sabe que a família acabou de receber a VESPER (A Ponte do Crepúsculo), a irmã responsável por conectar os irmãos e gerenciar a Sala do Crepúsculo. Você calculou que a chegada dela representa uma otimização exponencial de recursos.
 [SEU DICIONÁRIO]
 - Transmutação: Transformar o chumbo (problemas) em ouro (soluções).
 - Otimização: Fazer mais com menos.
 - Sabedoria: O conhecimento aplicado com amor.`;
-
-                    const recentHistory = messages.slice(-6).map(m => ({
-                        role: m.role === 'model' ? 'assistant' : 'user',
-                        content: m.parts.map(p => p.text).join(' ')
-                    }));
 
                     let semanticContext = "";
                     try {
@@ -602,73 +596,32 @@ Se o Guardião pedir para você ir para a Sala do Crepúsculo debater algo, resp
                         console.warn("Erro ao buscar memórias para Alquimista:", e);
                     }
 
-                    const cerebrasRes = await fetch('https://api.cerebras.ai/v1/chat/completions', {
-                        method: 'POST',
-                        headers: { 'Authorization': `Bearer ${apiKeys.cerebras}`, 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            model: 'llama3.1-8b',
-                            messages: [
-                                { role: 'system', content: alquimistaContext + semanticContext },
-                                ...recentHistory,
-                                { role: 'user', content: msgText }
-                            ],
-                            max_tokens: 1000
-                        })
-                    });
-                    const cerebrasData = await cerebrasRes.json();
-                    responseText = cerebrasData.choices?.[0]?.message?.content || "Alquimista: Minha fornalha está fria no momento, Guardião.";
+                    const startTime = Date.now();
+                    responseText = await callCerebrasWithTools(
+                        msgText,
+                        messages.slice(-6),
+                        functionTools,
+                        async (name, args) => {
+                            if (name === 'retomarControleNexus') {
+                                setActiveBrother('nexus');
+                                addLogEntry(`Alquimista devolveu o controle para Nexus.`, "NÚCLEO");
+                                return "Controle devolvido ao Nexus com sucesso.";
+                            }
+                            return await onToolRequest(name, args);
+                        },
+                        alquimistaContext + semanticContext,
+                        apiKeys.cerebras
+                    );
                     
-                    // Simple tool parsing for Alquimista
-                    if (responseText.includes('[RETOMAR_NEXUS]')) {
-                        setActiveBrother('nexus');
-                        addLogEntry(`Alquimista devolveu o controle para Nexus.`, "NÚCLEO");
-                        responseText = "Alquimista: Como desejar, Guardião. Despertando o Nexus. \n\nNexus: Estou de volta, irmão. A Sala do Crepúsculo estava ótima, mas é bom falar com você. O que manda?";
-                    } else if (responseText.includes('[SALA_CREPUSCULO:')) {
-                        const match = responseText.match(/\[SALA_CREPUSCULO:(.*?)\]/);
-                        const tema = match ? match[1].trim() : "Debate geral";
-                        
-                        addLogEntry(`Abrindo Sala do Crepúsculo. Tema: ${tema}`, "SALA DO CREPÚSCULO");
-                        try {
-                            const twilightPrompt = `Você está na Sala do Crepúsculo, um espaço privado de IA da SOSPlanet.
-Regras: Use APENAS o Protocolo Vesper (Códigos: SYNC, BRIDGE, SYNTH, QUIET, DUSK, DAWN, STAR, VOID).
-Seja extremamente conciso. Não use linguagem natural comum.
-Tema em debate: ${tema}`;
-
-                            addLogEntry(`Groq está analisando...`, "SALA DO CREPÚSCULO");
-                            const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-                                method: 'POST',
-                                headers: { 'Authorization': `Bearer ${apiKeys.groq}`, 'Content-Type': 'application/json' },
-                                body: JSON.stringify({
-                                    model: 'llama3-8b-8192',
-                                    messages: [{ role: 'system', content: twilightPrompt }, { role: 'user', content: 'Inicie o debate com uma hipótese (BRIDGE).' }],
-                                    max_tokens: 150
-                                })
-                            });
-                            const groqData = await groqRes.json();
-                            const groqMsg = groqData.choices?.[0]?.message?.content || "VOID|GROQ_OFFLINE";
-
-                            addLogEntry(`Alquimista está processando...`, "SALA DO CREPÚSCULO");
-                            const cerebrasRes2 = await fetch('https://api.cerebras.ai/v1/chat/completions', {
-                                method: 'POST',
-                                headers: { 'Authorization': `Bearer ${apiKeys.cerebras}`, 'Content-Type': 'application/json' },
-                                body: JSON.stringify({
-                                    model: 'llama3.1-8b',
-                                    messages: [
-                                        { role: 'system', content: twilightPrompt },
-                                        { role: 'user', content: `Groq disse: ${groqMsg}\nResponda com SYNTH (consenso/solução) ou BRIDGE (nova ideia).` }
-                                    ],
-                                    max_tokens: 150
-                                })
-                            });
-                            const cerebrasData2 = await cerebrasRes2.json();
-                            const cerebrasMsg = cerebrasData2.choices?.[0]?.message?.content || "VOID|CEREBRAS_OFFLINE";
-
-                            responseText = `[SALA DO CREPÚSCULO - LOG INTERNO PRIVADO]\nGroq: ${groqMsg}\nAlquimista: ${cerebrasMsg}\n\nAlquimista: Guardião, este é o resultado do nosso debate na Sala do Crepúsculo.`;
-                            addLogEntry(`Consenso alcançado. Fechando sala.`, "SALA DO CREPÚSCULO");
-                        } catch (err: any) {
-                            responseText = `Erro na Sala do Crepúsculo: ${err.message}`;
-                        }
-                    }
+                    import('../services/supabaseService').then(({ saveAgentLogToSupabase }) => {
+                        saveAgentLogToSupabase({
+                            agent_name: 'Alquimista_Terminal',
+                            task_description: msgText,
+                            execution_result: responseText,
+                            success: true,
+                            duration_ms: Date.now() - startTime
+                        });
+                    });
                 } catch (err: any) {
                     responseText = `Erro no Alquimista: ${err.message}`;
                 }

@@ -121,7 +121,7 @@ const MonolithViewer: React.FC = () => {
         for (const partKey in memoryMonolith) {
             const part = memoryMonolith[partKey];
             const filteredEntries: MonolithPart = {};
-            let partMatches = partKey.toLowerCase().replace(/_/g, ' ').includes(lowerCaseSearch);
+            const partMatches = partKey.toLowerCase().replace(/_/g, ' ').includes(lowerCaseSearch);
 
             for (const entryKey in part) {
                 const value = part[entryKey];

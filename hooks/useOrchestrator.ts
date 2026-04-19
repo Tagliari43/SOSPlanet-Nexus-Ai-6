@@ -130,7 +130,7 @@ export const useSovereignRouter = (
                 }
 
                 let executionPlan: { task: string, delegate: string }[] = [];
-                let mainDelegate = protocolMatch ? protocolMatch[1] : "Nexus";
+                const mainDelegate = protocolMatch ? protocolMatch[1] : "Nexus";
 
                 if (protocolMatch) {
                     executionPlan = [{ task: currentTask.prompt, delegate: mainDelegate }];

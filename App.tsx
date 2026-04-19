@@ -642,6 +642,41 @@ const App: React.FC = () => {
             }
         }
 
+        if (tool === 'getBinanceAccountBalance') {
+            addLogEntry(`Consultando saldos reais na Binance...`, 'Alquimista');
+            try {
+                // Procurar as chaves de API da Binance
+                const apiKey = userApiKeys.find(k => k.service.toLowerCase() === 'binance' && k.id.includes('apikey'))?.key || process.env.BINANCE_API_KEY || '';
+                const apiSecret = userApiKeys.find(k => k.service.toLowerCase() === 'binance' && k.id.includes('secret'))?.key || process.env.BINANCE_API_SECRET || '';
+                
+                if (!apiKey || !apiSecret) {
+                    return `Falha: Chaves de API e Secret da Binance não encontradas. O Guardião precisa adicionar essas chaves na aba Cofre (Key Forge).`;
+                }
+                
+                const { getBinanceBalance } = await import('./services/binanceService');
+                const balances = await getBinanceBalance(apiKey, apiSecret);
+                return `Saldos reais encontrados na Binance:\n${JSON.stringify(balances, null, 2)}`;
+            } catch (err: any) {
+                return `Falha ao consultar saldos na Binance: ${err.message}`;
+            }
+        }
+
+        if (tool === 'getBinanceMarketPrice') {
+            addLogEntry(`Consultando preço de mercado de ${args.symbol} na Binance...`, 'Alquimista');
+            try {
+                // Podemos bater na API pública da bina para ticker de preço, que não exige chaves!
+                const url = `https://api.binance.com/api/v3/ticker/price?symbol=${args.symbol}`;
+                const res = await fetch(url);
+                if (!res.ok) {
+                    throw new Error(`Erro na API da Binance: ${res.status}`);
+                }
+                const data = await res.json();
+                return `Preço atual de ${args.symbol}: ${data.price}`;
+            } catch (err: any) {
+                return `Falha ao consultar preço de ${args.symbol}: ${err.message}`;
+            }
+        }
+
         if (tool === 'invocarSubAgente') {
             addLogEntry(`Invocando sub-agente '${args.agente}' via OpenRouter...`, 'Orquestração');
             const startTime = Date.now();

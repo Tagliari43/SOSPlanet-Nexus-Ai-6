@@ -125,6 +125,25 @@ export const SovereignToolFunctions = {
         }
     } as FunctionDeclaration,
 
+    // --- MERCADO E ALQUIMIA REAL (Integração Binance) ---
+    getBinanceAccountBalance: {
+        name: 'getBinanceAccountBalance',
+        description: 'Verifica o saldo real da conta Binance do Guardião. REQUER CHAVES CADASTRADAS NO COFRE.',
+        parameters: { type: Type.OBJECT, properties: {} }
+    } as FunctionDeclaration,
+    
+    getBinanceMarketPrice: {
+        name: 'getBinanceMarketPrice',
+        description: 'Consulta o preço real atual de um ativo na Binance (ex: BTCUSDT, ETHUSDT).',
+        parameters: {
+            type: Type.OBJECT,
+            properties: {
+                symbol: { type: Type.STRING, description: 'Símbolo do par, ex: BTCUSDT' }
+            },
+            required: ['symbol']
+        }
+    } as FunctionDeclaration,
+    
     // --- COMANDO FINANCEIRO E PROJETOS (Cofre / Projetos) ---
     getTreasuryStatus: {
         name: 'getTreasuryStatus',

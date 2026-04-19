@@ -124,12 +124,12 @@ export const useAlchemy = (marketData: MarketData[], config: StrategyConfig) => 
 
         setState(prevState => {
             let newCash = prevState.cash;
-            let newPositions = [...prevState.positions];
-            let newHistory = [...prevState.tradeHistory];
-            let newRsiMap = { ...prevState.rsiMap };
-            let newSmaMap = { ...prevState.smaMap };
-            let newLastSellTimes = { ...prevState.lastSellTimes };
-            let newSentimentMap = { ...prevState.sentimentMap };
+            const newPositions = [...prevState.positions];
+            const newHistory = [...prevState.tradeHistory];
+            const newRsiMap = { ...prevState.rsiMap };
+            const newSmaMap = { ...prevState.smaMap };
+            const newLastSellTimes = { ...prevState.lastSellTimes };
+            const newSentimentMap = { ...prevState.sentimentMap };
 
             marketData.filter(coin => watchlist.includes(coin.id)).forEach(coin => {
                 // 1. Atualiza Histórico

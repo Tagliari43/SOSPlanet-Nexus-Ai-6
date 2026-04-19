@@ -51,7 +51,7 @@ const MicrogridDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
             setConsumption(newCons);
 
             let currentBattery = battery;
-            let currentFlows = { solarToHub: newGen > 0, hubToHouse: true, hubToBattery: 0, hubToGrid: 0 };
+            const currentFlows = { solarToHub: newGen > 0, hubToHouse: true, hubToBattery: 0, hubToGrid: 0 };
 
             // 2. Lógica Baseada no Modo
             if (isGridDown) {
