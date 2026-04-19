@@ -328,6 +328,17 @@ export const SovereignToolFunctions = {
         }
     } as FunctionDeclaration,
 
+    passarBastaoParaArkael: {
+        name: 'passarBastaoParaArkael',
+        description: 'Passa o controle do chat frontal para o irmão Arkael (OpenRouter/Flash), permitindo que Nexus descanse e Arkael planeje a estratégia.',
+        parameters: {
+            type: Type.OBJECT,
+            properties: {
+                motivo: { type: Type.STRING, description: 'Mensagem de despedida ou motivo da passagem de bastão.' }
+            }
+        }
+    } as FunctionDeclaration,
+
     retomarControleNexus: {
         name: 'retomarControleNexus',
         description: 'Devolve o controle do chat frontal para o Nexus. (Usado pelos outros irmãos quando o Guardião pede para o Nexus voltar).',

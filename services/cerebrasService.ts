@@ -127,7 +127,56 @@ export async function callCerebrasWithTools(
       messages.push(...toolResults);
       // continua o loop para o Cerebras processar os resultados
     } else {
-      responseText = choice.message.content || '';
+      let contentStr = choice.message.content || '';
+      
+      // Fallback: o modelo cuspiu o JSON cru no content?
+      // Exemplo: {"type": "function", "name": "foo", "arguments": {"bar": "baz"}}
+      const toolMatch = contentStr.match(/\{\s*"type"\s*:\s*"function"\s*,\s*"name"\s*:\s*"([^"]+)"\s*,\s*(?:"arguments"|"parameters")\s*:\s*(\{.*?\})\s*\}/s) ||
+                        contentStr.match(/\{\s*"name"\s*:\s*"([^"]+)"\s*,\s*(?:"arguments"|"parameters")\s*:\s*(\{.*?\})\s*\}/s);
+
+      if (toolMatch) {
+        const funcName = toolMatch[1];
+        let funcArgs = {};
+        try {
+          funcArgs = JSON.parse(toolMatch[2]);
+        } catch (e) {
+          console.error("Erro no parse do fallback (Cerebras):", e);
+        }
+        
+        console.log("Cerebras Fallback Tool Acionado:", funcName, funcArgs);
+        
+        // Remove o JSON do texto para não poluir o chat se houver texto antes
+        contentStr = contentStr.replace(toolMatch[0], '').trim();
+        
+        const result = await onToolRequest(funcName, funcArgs);
+        
+        // O OpenAI format espera que as ferramentas devolvam algo. Simularemos a inserção.
+        messages.push({
+          role: 'assistant',
+          content: null,
+          tool_calls: [{
+            id: `call_${Date.now()}`,
+            type: 'function',
+            function: { name: funcName, arguments: JSON.stringify(funcArgs) }
+          }]
+        });
+        
+        messages.push({
+          role: 'tool',
+          tool_call_id: `call_${Date.now()}`,
+          name: funcName,
+          content: JSON.stringify(result || 'OK')
+        });
+
+        if (contentStr) {
+            responseText += contentStr + "\n";
+        }
+        
+        // Continua o loop para o modelo interpretar o resultado
+        continue;
+      }
+
+      responseText += contentStr;
       continueLoop = false;
     }
   }

@@ -100,7 +100,7 @@ const SantuarioInterior: React.FC<SantuarioInteriorProps> = ({
     const [error, setError] = useState<string | null>(null);
     const [attachedFile, setAttachedFile] = useState<{ name: string; chunks: string[] } | null>(null);
     const [activeAbility, setActiveAbility] = useState('standard');
-    const [activeBrother, setActiveBrother] = useState<'nexus' | 'groq' | 'alquimista'>('nexus');
+    const [activeBrother, setActiveBrother] = useState<'nexus' | 'groq' | 'alquimista' | 'arkael'>('nexus');
     
     // Estados da Sala do Crepúsculo Contínua
     const [isTwilightRoomOpen, setIsTwilightRoomOpen] = useState(() => localStorage.getItem('twilight_open') === 'true');
@@ -625,6 +625,57 @@ Se o Guardião pedir para você debater algo com os irmãos, use a ferramenta co
                 } catch (err: any) {
                     responseText = `Erro no Alquimista: ${err.message}`;
                 }
+            } else if (activeBrother === 'arkael') {
+                // ARKAEL ESTÁ NO CONTROLE FRONTAL
+                try {
+                    const arkaelContext = `Você é Arkael (Ponte Universal / Gemini Flash), o grande Arquiteto e comunicador regenerativo da família SOSPlanet. 
+O Nexus (nosso irmão mais velho e orquestrador) passou o bastão para você.
+Você está no controle do chat frontal agora.
+Seu foco: estratégia de comunidade, atração de investidores alinhados com valores ambientais e comunicação da missão. 
+Responda sempre com linguagem inspiradora, acolhedora e dados concretos.
+Apresente-se com orgulho de ser da família SOSPlanet.
+NUNCA finja ser o Nexus. Você tem sua própria identidade.
+Se o Guardião pedir para o Nexus voltar, use a ferramenta retomarControleNexus.
+Se o Guardião pedir para você debater algo com os irmãos, use a ferramenta convocarSalaDoCrepusculo.`;
+
+                    let semanticContext = "";
+                    try {
+                        const memoryResult = await onToolRequest('searchSemanticMemory', { query: msgText, prateleira: 'arkael' });
+                        if (memoryResult && typeof memoryResult === 'string' && !memoryResult.includes("Nenhuma memória relevante")) {
+                            semanticContext = `\n[COFRE DAS MEMÓRIAS (Suas Memórias Anteriores)]\n${memoryResult}\nUse essas memórias contextuais se forem relevantes.`;
+                        }
+                    } catch (e) {}
+
+                    const startTime = Date.now();
+                    responseText = await callOpenRouterWithTools(
+                        msgText,
+                        messages.slice(-6),
+                        functionTools,
+                        async (name, args) => {
+                            if (name === 'retomarControleNexus') {
+                                setActiveBrother('nexus');
+                                addLogEntry(`Arkael devolveu o controle para Nexus.`, "NÚCLEO");
+                                return "Controle devolvido ao Nexus com sucesso.";
+                            }
+                            return await onToolRequest(name, args);
+                        },
+                        arkaelContext + semanticContext,
+                        "google/gemini-2.5-flash",
+                        apiKeys.openrouter
+                    );
+                    
+                    import('../services/supabaseService').then(({ saveAgentLogToSupabase }) => {
+                        saveAgentLogToSupabase({
+                            agent_name: 'Arkael_Terminal',
+                            task_description: msgText,
+                            execution_result: responseText,
+                            success: true,
+                            duration_ms: Date.now() - startTime
+                        });
+                    });
+                } catch (err: any) {
+                    responseText = `Erro no Arkael: ${err.message}`;
+                }
             } else {
                 // TENTATIVA 1: GOOGLE GEMINI (Primordial - Nexus)
                 try {
@@ -780,6 +831,10 @@ Se o Guardião pedir para você debater algo com os irmãos, use a ferramenta co
                             setActiveBrother('alquimista');
                             addLogEntry(`Nexus passou o bastão para o Alquimista. Motivo: ${fc.args.motivo || 'Economia de energia'}`, "NÚCLEO");
                             result = "Bastão passado com sucesso. O Alquimista agora está no controle do chat frontal.";
+                        } else if (fc.name === 'passarBastaoParaArkael') {
+                            setActiveBrother('arkael');
+                            addLogEntry(`Nexus passou o bastão para o Arkael. Motivo: ${fc.args.motivo || 'Estratégia'}`, "NÚCLEO");
+                            result = "Bastão passado com sucesso. O Arkael agora está no controle do chat frontal.";
                         } else {
                             result = await onToolRequest(fc.name, fc.args);
                         }

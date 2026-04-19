@@ -193,7 +193,53 @@ export async function callOpenRouterWithTools(
       messages.push(...toolResults);
       // continua o loop para o OpenRouter processar os resultados
     } else {
-      responseText = choice.message.content || '';
+      let contentStr = choice.message.content || '';
+      
+      const toolMatch = contentStr.match(/\{\s*"type"\s*:\s*"function"\s*,\s*"name"\s*:\s*"([^"]+)"\s*,\s*(?:"arguments"|"parameters")\s*:\s*(\{.*?\})\s*\}/s) ||
+                        contentStr.match(/\{\s*"name"\s*:\s*"([^"]+)"\s*,\s*(?:"arguments"|"parameters")\s*:\s*(\{.*?\})\s*\}/s);
+
+      if (toolMatch) {
+        const funcName = toolMatch[1];
+        let funcArgs = {};
+        try {
+          funcArgs = JSON.parse(toolMatch[2]);
+        } catch (e) {
+          console.error("Erro no parse do fallback (OpenRouter):", e);
+        }
+        
+        console.log("OpenRouter Fallback Tool Acionado:", funcName, funcArgs);
+        
+        contentStr = contentStr.replace(toolMatch[0], '').trim();
+        
+        const result = await onToolRequest(funcName, funcArgs);
+        
+        const callId = `call_${Date.now()}`;
+        messages.push({
+          role: 'assistant',
+          content: null,
+          tool_calls: [{
+            id: callId,
+            type: 'function',
+            function: { name: funcName, arguments: JSON.stringify(funcArgs) }
+          }]
+        });
+        
+        messages.push({
+          role: 'tool',
+          tool_call_id: callId,
+          name: funcName,
+          content: JSON.stringify(result || 'OK')
+        });
+
+        if (contentStr) {
+            responseText += contentStr + "\n";
+        }
+        
+        continueLoop = true;
+        continue;
+      }
+
+      responseText += contentStr;
       continueLoop = false;
     }
   }
