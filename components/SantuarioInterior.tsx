@@ -555,8 +555,20 @@ Se o Guardião pedir para o Nexus voltar, use a ferramenta retomarControleNexus.
 
                     const startTime = Date.now();
                     
+                    // Limitando ferramentas para o Groq para não estourar a cota de Tokens Per Minute (TPM)
+                    const allowedGroqTools = [
+                        'navigateTo', 
+                        'executeWebSearch', 
+                        'navegarSite', 
+                        'searchSemanticMemory', 
+                        'saveSemanticMemory', 
+                        'convocarSalaDoCrepusculo', 
+                        'retomarControleNexus', 
+                        'passarBastaoParaAlquimista', 
+                        'passarBastaoParaArkael'
+                    ];
                     const groqSpecificTools = [{
-                        functionDeclarations: functionTools[0].functionDeclarations.filter(f => f.name !== 'passarBastaoParaGroq' && f.name !== 'askSubAgentGroq')
+                        functionDeclarations: functionTools[0].functionDeclarations.filter(f => allowedGroqTools.includes(f.name))
                     }];
 
                     responseText = await callGroqWithTools(
