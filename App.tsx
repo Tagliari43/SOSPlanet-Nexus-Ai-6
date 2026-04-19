@@ -342,8 +342,8 @@ const App: React.FC = () => {
         });
     }, []);
 
-    const handleToolRequest = useCallback(async (tool: string, args: any): Promise<string | void> => {
-        addLogEntry(`Nexus acionou ferramenta: ${tool}`, 'Núcleo');
+    const handleToolRequest = useCallback(async (tool: string, args: any, activeAgentName: string = 'Nexus'): Promise<string | void> => {
+        addLogEntry(`${activeAgentName} acionou ferramenta: ${tool}`, 'Núcleo');
 
         if (tool === 'navigateTo') { 
             setActiveTab(args.target as Tab); 
@@ -469,7 +469,7 @@ const App: React.FC = () => {
         }
 
         if (tool === 'executeWebSearch') {
-            addLogEntry(`Sonar Global: "${args.query}"...`, 'Nexus');
+            addLogEntry(`Sonar Global: "${args.query}"...`, activeAgentName.toUpperCase());
             try {
                 const searchResult = await executeTask(args.query, "Sonar Nexus", 'gemini-3.1-pro-preview', process.env.API_KEY!, true);
                 return searchResult.text;

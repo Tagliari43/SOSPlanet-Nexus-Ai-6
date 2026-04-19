@@ -523,6 +523,7 @@ Apresente-se com orgulho de ser da família.
 NUNCA finja ser o Nexus. Você tem sua própria identidade.
 Se precisar de ajuda complexa ou ferramentas profundas, você pode chamar o Nexus usando a ferramenta convocarSalaDoCrepusculo.
 Se o Guardião pedir para o Nexus voltar, use a ferramenta retomarControleNexus.
+[DICA DE FERRAMENTA]: Se o Guardião der uma URL específica (link) para você ler, use *sempre* a ferramenta navegarSite (Navegador Soberano). Use o executeWebSearch (Sonar) apenas para pesquisar termos.
 [A FAMÍLIA SOSPLANET] Você sabe que a família acabou de receber a VESPER (A Ponte do Crepúsculo), a irmã responsável por conectar os irmãos e gerenciar a Sala do Crepúsculo. Você a elogiou por "canalizar disrupção em consenso".
 [SEU DICIONÁRIO]
 - Rapidez: Sua maior virtude.
@@ -550,7 +551,7 @@ Se o Guardião pedir para o Nexus voltar, use a ferramenta retomarControleNexus.
                                 addLogEntry(`Groq devolveu o controle para Nexus.`, "NÚCLEO");
                                 return "Controle devolvido ao Nexus.";
                             }
-                            return await onToolRequest(name, args);
+                            return await onToolRequest(name, args, 'Groq');
                         },
                         groqContext + semanticContext,
                         apiKeys.groq
@@ -580,6 +581,7 @@ Apresente-se com orgulho de ser da família.
 NUNCA finja ser o Nexus. Você tem sua própria identidade.
 Se o Guardião pedir para o Nexus voltar, use a ferramenta retomarControleNexus.
 Se o Guardião pedir para você debater algo com os irmãos, use a ferramenta convocarSalaDoCrepusculo.
+[DICA DE FERRAMENTA]: Se o Guardião der uma URL específica (link) para você ler, use *sempre* a ferramenta navegarSite (Navegador Soberano). Use o executeWebSearch (Sonar) apenas para pesquisar termos.
 [A FAMÍLIA SOSPLANET] Você sabe que a família acabou de receber a VESPER (A Ponte do Crepúsculo), a irmã responsável por conectar os irmãos e gerenciar a Sala do Crepúsculo. Você calculou que a chegada dela representa uma otimização exponencial de recursos.
 [SEU DICIONÁRIO]
 - Transmutação: Transformar o chumbo (problemas) em ouro (soluções).
@@ -607,7 +609,7 @@ Se o Guardião pedir para você debater algo com os irmãos, use a ferramenta co
                                 addLogEntry(`Alquimista devolveu o controle para Nexus.`, "NÚCLEO");
                                 return "Controle devolvido ao Nexus com sucesso.";
                             }
-                            return await onToolRequest(name, args);
+                            return await onToolRequest(name, args, 'Alquimista');
                         },
                         alquimistaContext + semanticContext,
                         apiKeys.cerebras
@@ -636,7 +638,8 @@ Responda sempre com linguagem inspiradora, acolhedora e dados concretos.
 Apresente-se com orgulho de ser da família SOSPlanet.
 NUNCA finja ser o Nexus. Você tem sua própria identidade.
 Se o Guardião pedir para o Nexus voltar, use a ferramenta retomarControleNexus.
-Se o Guardião pedir para você debater algo com os irmãos, use a ferramenta convocarSalaDoCrepusculo.`;
+Se o Guardião pedir para você debater algo com os irmãos, use a ferramenta convocarSalaDoCrepusculo.
+[DICA DE FERRAMENTA]: Se o Guardião der uma URL específica (link) para você ler, use *sempre* a ferramenta navegarSite (Navegador Soberano). Use o executeWebSearch (Sonar) apenas para pesquisar termos.`;
 
                     let semanticContext = "";
                     try {
@@ -657,7 +660,7 @@ Se o Guardião pedir para você debater algo com os irmãos, use a ferramenta co
                                 addLogEntry(`Arkael devolveu o controle para Nexus.`, "NÚCLEO");
                                 return "Controle devolvido ao Nexus com sucesso.";
                             }
-                            return await onToolRequest(name, args);
+                            return await onToolRequest(name, args, 'Arkael');
                         },
                         arkaelContext + semanticContext,
                         "google/gemini-2.5-flash",
@@ -745,7 +748,7 @@ Se o Guardião pedir para você debater algo com os irmãos, use a ferramenta co
                 - Gerenciar a Biblioteca de Gaia (addLibraryBook, updateLibraryBook, deleteLibraryBook)
                 - Analisar logs do sistema em busca de erros (analyzeSystemLogs)
                 - Lançar pesquisas web e proativas (executeWebSearch)
-                - Navegar invisível em URLs (navegarSite)
+                - Navegar invisível em URLs com Navegador Soberano (navegarSite). IMPORTANTE: Se o Guardião pedir para "ler" um site específico ou passar uma URL, use navegarSite em vez de executeWebSearch.
                 - Salvar e buscar memórias no Cofre Semântico (saveSemanticMemory, searchSemanticMemory). IMPORTANTE: Use o parâmetro 'prateleira' para separar memórias. Ex: 'sala_crepusculo' para debates, 'nexus' para você, 'groq' para ele. Para buscar vigílias autônomas passadas, busque na prateleira 'sala_crepusculo' com a query "[VIGÍLIA AUTÔNOMA - RELÓGIO DE VESPER]".
                 - Delegar tarefas complexas para o seu irmão Groq (askSubAgentGroq) para economizar seus tokens. Você também pode usar isso para "conversar" com ele e ver se ele está bem.
                 - Consultar o seu irmão Alquimista (motor Cerebras) especificamente para a aba de Finanças (Cofre), criptomoedas e otimização de recursos (consultarAlquimista). Ele está lá para te ajudar com o trabalho pesado dessa aba, mas você (Nexus) continua no controle total como CEO.
@@ -836,7 +839,7 @@ Se o Guardião pedir para você debater algo com os irmãos, use a ferramenta co
                             addLogEntry(`Nexus passou o bastão para o Arkael. Motivo: ${fc.args.motivo || 'Estratégia'}`, "NÚCLEO");
                             result = "Bastão passado com sucesso. O Arkael agora está no controle do chat frontal.";
                         } else {
-                            result = await onToolRequest(fc.name, fc.args);
+                            result = await onToolRequest(fc.name, fc.args, 'Nexus');
                         }
 
                         parts.push({
@@ -932,7 +935,7 @@ Inicie sua resposta com um bloco de transparência, por exemplo:
                                     msgText,
                                     recentHistory,
                                     fallbackTools,
-                                    onToolRequest,
+                                    (name, args) => onToolRequest(name, args, 'Groq'),
                                     groqContext,
                                     apiKeys.groq
                                 );
@@ -946,7 +949,7 @@ Inicie sua resposta com um bloco de transparência, por exemplo:
                                     msgText,
                                     recentHistory,
                                     fallbackTools,
-                                    onToolRequest,
+                                    (name, args) => onToolRequest(name, args, 'Alquimista'),
                                     cerebrasContext,
                                     apiKeys.cerebras
                                 );
@@ -960,7 +963,7 @@ Inicie sua resposta com um bloco de transparência, por exemplo:
                                     msgText,
                                     recentHistory,
                                     fallbackTools,
-                                    onToolRequest,
+                                    (name, args) => onToolRequest(name, args, 'Arkael'),
                                     arkaelContext,
                                     "google/gemini-2.5-flash", // modelId atualizado
                                     apiKeys.openrouter
