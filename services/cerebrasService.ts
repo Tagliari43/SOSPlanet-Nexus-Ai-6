@@ -62,10 +62,9 @@ export async function callCerebrasWithTools(
     .map(f => {
       let gParams = mapSchemaTypes(f.parameters);
       if (!gParams) {
-        gParams = { type: "object", properties: {}, required: [] };
+        gParams = { type: "object", properties: {} };
       } else {
         if (!gParams.properties) gParams.properties = {};
-        if (!gParams.required) gParams.required = [];
       }
       return {
         type: 'function',

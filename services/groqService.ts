@@ -135,10 +135,10 @@ export async function callGroqWithTools(
       // Garantir que as chaves obrigatórias e properties existam e formatem bem.
       let gParams = mapSchemaTypes(f.parameters);
       if (!gParams) {
-        gParams = { type: "object", properties: {}, required: [] };
+        gParams = { type: "object", properties: {} };
       } else {
         if (!gParams.properties) gParams.properties = {};
-        if (!gParams.required) gParams.required = [];
+        // REMOVIDO: if (!gParams.required) gParams.required = []; -> Groq odeia array required vazio!
       }
       return {
         type: 'function',
