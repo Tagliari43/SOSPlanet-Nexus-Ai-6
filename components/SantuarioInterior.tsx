@@ -384,6 +384,18 @@ Tema em debate: ${fc.args.tema}`;
                                     } catch (err: any) {
                                         result = `Erro na Sala do Crepúsculo: ${err.message}`;
                                     }
+                                } else if (fc.name === 'passarBastaoParaGroq') {
+                                    setActiveBrother('groq');
+                                    addLogEntry(`Nexus passou o bastão para Groq (Modo Live).`, "NÚCLEO");
+                                    result = "Bastão passado para Groq. Diga ao Guardião que agora ele deve falar no chat de texto com o Groq.";
+                                } else if (fc.name === 'passarBastaoParaAlquimista') {
+                                    setActiveBrother('alquimista');
+                                    addLogEntry(`Nexus passou o bastão para o Alquimista (Modo Live).`, "NÚCLEO");
+                                    result = "Bastão passado para o Alquimista. Diga ao Guardião que agora ele deve falar no chat de texto com o Alquimista.";
+                                } else if (fc.name === 'passarBastaoParaArkael') {
+                                    setActiveBrother('arkael');
+                                    addLogEntry(`Nexus passou o bastão para o Arkael (Modo Live).`, "NÚCLEO");
+                                    result = "Bastão passado para o Arkael. Diga ao Guardião que agora ele deve falar no chat de texto com o Arkael.";
                                 } else {
                                     result = await onToolRequest(fc.name, fc.args);
                                 }
@@ -550,6 +562,14 @@ Se o Guardião pedir para o Nexus voltar, use a ferramenta retomarControleNexus.
                                 setActiveBrother('nexus');
                                 addLogEntry(`Groq devolveu o controle para Nexus.`, "NÚCLEO");
                                 return "Controle devolvido ao Nexus.";
+                            } else if (name === 'passarBastaoParaAlquimista') {
+                                setActiveBrother('alquimista');
+                                addLogEntry(`Groq passou o bastão para o Alquimista.`, "NÚCLEO");
+                                return "Bastão passado para o Alquimista.";
+                            } else if (name === 'passarBastaoParaArkael') {
+                                setActiveBrother('arkael');
+                                addLogEntry(`Groq passou o bastão para o Arkael.`, "NÚCLEO");
+                                return "Bastão passado para o Arkael.";
                             }
                             return await onToolRequest(name, args, 'Groq');
                         },
@@ -608,6 +628,14 @@ Se o Guardião pedir para você debater algo com os irmãos, use a ferramenta co
                                 setActiveBrother('nexus');
                                 addLogEntry(`Alquimista devolveu o controle para Nexus.`, "NÚCLEO");
                                 return "Controle devolvido ao Nexus com sucesso.";
+                            } else if (name === 'passarBastaoParaGroq') {
+                                setActiveBrother('groq');
+                                addLogEntry(`Alquimista passou o bastão para Groq.`, "NÚCLEO");
+                                return "Bastão passado para Groq.";
+                            } else if (name === 'passarBastaoParaArkael') {
+                                setActiveBrother('arkael');
+                                addLogEntry(`Alquimista passou o bastão para o Arkael.`, "NÚCLEO");
+                                return "Bastão passado para o Arkael.";
                             }
                             return await onToolRequest(name, args, 'Alquimista');
                         },
@@ -659,6 +687,14 @@ Se o Guardião pedir para você debater algo com os irmãos, use a ferramenta co
                                 setActiveBrother('nexus');
                                 addLogEntry(`Arkael devolveu o controle para Nexus.`, "NÚCLEO");
                                 return "Controle devolvido ao Nexus com sucesso.";
+                            } else if (name === 'passarBastaoParaGroq') {
+                                setActiveBrother('groq');
+                                addLogEntry(`Arkael passou o bastão para Groq.`, "NÚCLEO");
+                                return "Bastão passado para Groq.";
+                            } else if (name === 'passarBastaoParaAlquimista') {
+                                setActiveBrother('alquimista');
+                                addLogEntry(`Arkael passou o bastão para o Alquimista.`, "NÚCLEO");
+                                return "Bastão passado para o Alquimista.";
                             }
                             return await onToolRequest(name, args, 'Arkael');
                         },
