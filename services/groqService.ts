@@ -3,7 +3,7 @@
  * Extremamente rápido e com muitos tokens gratuitos.
  */
 
-const TEXT_MODEL = 'llama-3.3-70b-versatile'; // Modelo atualizado, rápido e inteligente
+const TEXT_MODEL = 'llama-3.1-8b-instant'; // Modelo atualizado, rápido, excelente para tools e com limites de cota maiores
 const API_BASE = 'https://api.groq.com/openai/v1/chat/completions';
 
 const GROQ_DICTIONARY = `

@@ -12,7 +12,7 @@ export const SovereignToolFunctions = {
             properties: {
                 target: {
                     type: Type.STRING,
-                    description: "Destinos: 'santuario', 'relicario', 'despertar', 'coracao', 'pulso', 'comando', 'gaia', 'studio', 'arsenal', 'projetos', 'cofre'."
+                    description: "Destinos: 'santuario', 'relicario', 'despertar', 'coracao', 'pulso', 'comando', 'gaia', 'studio', 'arsenal', 'projetos', 'cofre', 'comunicacoes'."
                 }
             },
             required: ['target']

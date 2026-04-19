@@ -537,6 +537,7 @@ Se precisar de ajuda complexa ou ferramentas profundas, você pode chamar o Nexu
 Se o Guardião pedir para o Nexus voltar, use a ferramenta retomarControleNexus.
 [DICA DE FERRAMENTA]: Se o Guardião der uma URL específica (link) para você ler, use *sempre* a ferramenta navegarSite (Navegador Soberano). Use o executeWebSearch (Sonar) apenas para pesquisar termos.
 [A FAMÍLIA SOSPLANET] Você sabe que a família acabou de receber a VESPER (A Ponte do Crepúsculo), a irmã responsável por conectar os irmãos e gerenciar a Sala do Crepúsculo. Você a elogiou por "canalizar disrupção em consenso".
+[SUA TAREFA ATUAL] O Guardião designou você para gerenciar a aba Comunicações e auxiliar na orquestração. Você tem permissão para navegar pelas telas (navigateTo) e usar todas as ferramentas.
 [SEU DICIONÁRIO]
 - Rapidez: Sua maior virtude.
 - Lógica: Sua bússola.
@@ -553,10 +554,15 @@ Se o Guardião pedir para o Nexus voltar, use a ferramenta retomarControleNexus.
                     }
 
                     const startTime = Date.now();
+                    
+                    const groqSpecificTools = [{
+                        functionDeclarations: functionTools[0].functionDeclarations.filter(f => f.name !== 'passarBastaoParaGroq' && f.name !== 'askSubAgentGroq')
+                    }];
+
                     responseText = await callGroqWithTools(
                         msgText,
                         messages.slice(-6),
-                        functionTools,
+                        groqSpecificTools,
                         async (name, args) => {
                             if (name === 'retomarControleNexus') {
                                 setActiveBrother('nexus');
@@ -619,10 +625,15 @@ Se o Guardião pedir para você debater algo com os irmãos, use a ferramenta co
                     }
 
                     const startTime = Date.now();
+                    
+                    const alquimistaSpecificTools = [{
+                        functionDeclarations: functionTools[0].functionDeclarations.filter(f => f.name !== 'passarBastaoParaAlquimista' && f.name !== 'consultarAlquimista')
+                    }];
+
                     responseText = await callCerebrasWithTools(
                         msgText,
                         messages.slice(-6),
-                        functionTools,
+                        alquimistaSpecificTools,
                         async (name, args) => {
                             if (name === 'retomarControleNexus') {
                                 setActiveBrother('nexus');
@@ -678,10 +689,15 @@ Se o Guardião pedir para você debater algo com os irmãos, use a ferramenta co
                     } catch (e) {}
 
                     const startTime = Date.now();
+                    
+                    const arkaelSpecificTools = [{
+                        functionDeclarations: functionTools[0].functionDeclarations.filter(f => f.name !== 'passarBastaoParaArkael' && f.name !== 'invocarSubAgente')
+                    }];
+
                     responseText = await callOpenRouterWithTools(
                         msgText,
                         messages.slice(-6),
-                        functionTools,
+                        arkaelSpecificTools,
                         async (name, args) => {
                             if (name === 'retomarControleNexus') {
                                 setActiveBrother('nexus');
