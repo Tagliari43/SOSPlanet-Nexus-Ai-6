@@ -3,7 +3,7 @@
  * Extremamente rápido e com muitos tokens gratuitos.
  */
 
-const TEXT_MODEL = 'llama-3.1-8b-instant'; // Modelo atualizado, rápido, excelente para tools e com limites de cota maiores
+const TEXT_MODEL = 'mixtral-8x7b-32768'; // Modelo alternativo poderoso (Mistral AI), não-Llama, para testar limites e comportamento
 const API_BASE = 'https://api.groq.com/openai/v1/chat/completions';
 
 const GROQ_DICTIONARY = `
