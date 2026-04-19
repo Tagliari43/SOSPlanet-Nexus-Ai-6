@@ -109,7 +109,7 @@ export async function callGroqWithTools(
 
   messages.push({ role: 'user', content: userMessage });
 
-  // Utilitário para converter o schema do formato Gemini (uppercase Types) para o formato JSON Schema padrão (lowercase Types) esperado pela API OpenAI/Groq
+  // Utilitário para converter o schema do formato Gemini (uppercase Types) para o formato JSON Schema padrão esperado
   const mapSchemaTypes = (schema: any): any => {
     if (!schema) return schema;
     if (typeof schema !== 'object') return schema;
@@ -129,14 +129,18 @@ export async function callGroqWithTools(
   // Converte ferramentas do formato Gemini para OpenAI
   const openAITools = tools
     .flatMap(t => t.functionDeclarations || [])
-    .map(f => ({
-      type: 'function',
-      function: {
-        name: f.name,
-        description: f.description,
-        parameters: mapSchemaTypes(f.parameters)
-      }
-    }));
+    .map(f => {
+      const gParams = mapSchemaTypes(f.parameters) || { type: "object", properties: {} };
+      // O formato OpenAI exige que seja garantido strict mode nas properties se quiser
+      return {
+        type: 'function',
+        function: {
+          name: f.name,
+          description: f.description || '',
+          parameters: gParams
+        }
+      };
+    });
 
   let continueLoop = true;
   let responseText = '';
