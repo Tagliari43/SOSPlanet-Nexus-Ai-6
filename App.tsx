@@ -343,7 +343,9 @@ const App: React.FC = () => {
     }, []);
 
     const handleToolRequest = useCallback(async (tool: string, args: any, activeAgentName: string = 'Nexus'): Promise<string | void> => {
-        addLogEntry(`${activeAgentName} acionou ferramenta: ${tool}`, 'Núcleo');
+        const uppercaseName = activeAgentName.toUpperCase();
+        const fallbackTag = uppercaseName === 'NEXUS' ? 'NÚCLEO' : uppercaseName;
+        addLogEntry(`${activeAgentName} acionou ferramenta: ${tool}`, fallbackTag);
 
         if (tool === 'navigateTo') { 
             setActiveTab(args.target as Tab); 
@@ -469,7 +471,8 @@ const App: React.FC = () => {
         }
 
         if (tool === 'executeWebSearch') {
-            addLogEntry(`Sonar Global: "${args.query}"...`, activeAgentName.toUpperCase());
+            const fallbackTag = activeAgentName.toUpperCase() === 'NEXUS' ? 'NÚCLEO' : activeAgentName.toUpperCase();
+            addLogEntry(`Sonar Global: "${args.query}"...`, fallbackTag);
             try {
                 const searchResult = await executeTask(args.query, "Sonar Nexus", 'gemini-3.1-pro-preview', process.env.API_KEY!, true);
                 return searchResult.text;
@@ -507,7 +510,8 @@ const App: React.FC = () => {
         }
 
         if (tool === 'navegarSite') {
-            addLogEntry(`Navegador Soberano acessando: ${args.url}`, 'Navegador');
+            const fallbackTag = activeAgentName.toUpperCase() === 'NEXUS' ? 'NAVEGADOR' : activeAgentName.toUpperCase();
+            addLogEntry(`Acessando url: ${args.url}`, fallbackTag);
             try {
                 // Tenta usar o ScraperAPI primeiro (via nosso backend)
                 let html = '';

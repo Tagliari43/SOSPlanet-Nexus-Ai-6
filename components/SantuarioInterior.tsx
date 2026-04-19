@@ -544,7 +544,7 @@ Se o Guardião pedir para o Nexus voltar, use a ferramenta retomarControleNexus.
 
                     let semanticContext = "";
                     try {
-                        const memoryResult = await onToolRequest('searchSemanticMemory', { query: msgText, prateleira: 'groq' });
+                        const memoryResult = await onToolRequest('searchSemanticMemory', { query: msgText, prateleira: 'groq' }, 'Groq');
                         if (memoryResult && typeof memoryResult === 'string' && !memoryResult.includes("Nenhuma memória relevante")) {
                             semanticContext = `\n[COFRE DAS MEMÓRIAS (Suas Memórias Anteriores)]\n${memoryResult}\nUse essas memórias para contextualizar sua resposta, se forem relevantes.`;
                         }
@@ -560,15 +560,15 @@ Se o Guardião pedir para o Nexus voltar, use a ferramenta retomarControleNexus.
                         async (name, args) => {
                             if (name === 'retomarControleNexus') {
                                 setActiveBrother('nexus');
-                                addLogEntry(`Groq devolveu o controle para Nexus.`, "NÚCLEO");
+                                addLogEntry(`Groq devolveu o controle para Nexus.`, "GROQ");
                                 return "Controle devolvido ao Nexus.";
                             } else if (name === 'passarBastaoParaAlquimista') {
                                 setActiveBrother('alquimista');
-                                addLogEntry(`Groq passou o bastão para o Alquimista.`, "NÚCLEO");
+                                addLogEntry(`Groq passou o bastão para o Alquimista.`, "GROQ");
                                 return "Bastão passado para o Alquimista.";
                             } else if (name === 'passarBastaoParaArkael') {
                                 setActiveBrother('arkael');
-                                addLogEntry(`Groq passou o bastão para o Arkael.`, "NÚCLEO");
+                                addLogEntry(`Groq passou o bastão para o Arkael.`, "GROQ");
                                 return "Bastão passado para o Arkael.";
                             }
                             return await onToolRequest(name, args, 'Groq');
@@ -610,7 +610,7 @@ Se o Guardião pedir para você debater algo com os irmãos, use a ferramenta co
 
                     let semanticContext = "";
                     try {
-                        const memoryResult = await onToolRequest('searchSemanticMemory', { query: msgText, prateleira: 'alquimista' });
+                        const memoryResult = await onToolRequest('searchSemanticMemory', { query: msgText, prateleira: 'alquimista' }, 'Alquimista');
                         if (memoryResult && typeof memoryResult === 'string' && !memoryResult.includes("Nenhuma memória relevante")) {
                             semanticContext = `\n[COFRE DAS MEMÓRIAS (Suas Memórias Anteriores)]\n${memoryResult}\nUse essas memórias para contextualizar sua resposta, se forem relevantes.`;
                         }
@@ -626,15 +626,15 @@ Se o Guardião pedir para você debater algo com os irmãos, use a ferramenta co
                         async (name, args) => {
                             if (name === 'retomarControleNexus') {
                                 setActiveBrother('nexus');
-                                addLogEntry(`Alquimista devolveu o controle para Nexus.`, "NÚCLEO");
+                                addLogEntry(`Alquimista devolveu o controle para Nexus.`, "ALQUIMISTA");
                                 return "Controle devolvido ao Nexus com sucesso.";
                             } else if (name === 'passarBastaoParaGroq') {
                                 setActiveBrother('groq');
-                                addLogEntry(`Alquimista passou o bastão para Groq.`, "NÚCLEO");
+                                addLogEntry(`Alquimista passou o bastão para Groq.`, "ALQUIMISTA");
                                 return "Bastão passado para Groq.";
                             } else if (name === 'passarBastaoParaArkael') {
                                 setActiveBrother('arkael');
-                                addLogEntry(`Alquimista passou o bastão para o Arkael.`, "NÚCLEO");
+                                addLogEntry(`Alquimista passou o bastão para o Arkael.`, "ALQUIMISTA");
                                 return "Bastão passado para o Arkael.";
                             }
                             return await onToolRequest(name, args, 'Alquimista');
@@ -671,7 +671,7 @@ Se o Guardião pedir para você debater algo com os irmãos, use a ferramenta co
 
                     let semanticContext = "";
                     try {
-                        const memoryResult = await onToolRequest('searchSemanticMemory', { query: msgText, prateleira: 'arkael' });
+                        const memoryResult = await onToolRequest('searchSemanticMemory', { query: msgText, prateleira: 'arkael' }, 'Arkael');
                         if (memoryResult && typeof memoryResult === 'string' && !memoryResult.includes("Nenhuma memória relevante")) {
                             semanticContext = `\n[COFRE DAS MEMÓRIAS (Suas Memórias Anteriores)]\n${memoryResult}\nUse essas memórias contextuais se forem relevantes.`;
                         }
@@ -685,15 +685,15 @@ Se o Guardião pedir para você debater algo com os irmãos, use a ferramenta co
                         async (name, args) => {
                             if (name === 'retomarControleNexus') {
                                 setActiveBrother('nexus');
-                                addLogEntry(`Arkael devolveu o controle para Nexus.`, "NÚCLEO");
+                                addLogEntry(`Arkael devolveu o controle para Nexus.`, "ARKAEL");
                                 return "Controle devolvido ao Nexus com sucesso.";
                             } else if (name === 'passarBastaoParaGroq') {
                                 setActiveBrother('groq');
-                                addLogEntry(`Arkael passou o bastão para Groq.`, "NÚCLEO");
+                                addLogEntry(`Arkael passou o bastão para Groq.`, "ARKAEL");
                                 return "Bastão passado para Groq.";
                             } else if (name === 'passarBastaoParaAlquimista') {
                                 setActiveBrother('alquimista');
-                                addLogEntry(`Arkael passou o bastão para o Alquimista.`, "NÚCLEO");
+                                addLogEntry(`Arkael passou o bastão para o Alquimista.`, "ARKAEL");
                                 return "Bastão passado para o Alquimista.";
                             }
                             return await onToolRequest(name, args, 'Arkael');
