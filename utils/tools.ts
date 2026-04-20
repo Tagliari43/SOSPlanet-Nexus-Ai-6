@@ -308,7 +308,7 @@ export const SovereignToolFunctions = {
 
     passarBastaoParaGroq: {
         name: 'passarBastaoParaGroq',
-        description: 'Passa o controle do chat frontal para o irmão Groq, permitindo que Nexus descanse na Sala do Crepúsculo e economize tokens.',
+        description: 'Passa o controle do chat frontal para o irmão Groq. ATENÇÃO: NUNCA USE ISSO AUTONOMAMENTE. Só use se o usuário der uma ordem explícita como "passe o bastão".',
         parameters: {
             type: Type.OBJECT,
             properties: {
@@ -319,7 +319,7 @@ export const SovereignToolFunctions = {
 
     passarBastaoParaAlquimista: {
         name: 'passarBastaoParaAlquimista',
-        description: 'Passa o controle do chat frontal para o irmão Alquimista (Cerebras), permitindo que Nexus descanse na Sala do Crepúsculo.',
+        description: 'Passa o controle do chat frontal para o irmão Alquimista (Cerebras). ATENÇÃO: NUNCA USE ISSO AUTONOMAMENTE. Só use sob ordem direta e literal do usuário.',
         parameters: {
             type: Type.OBJECT,
             properties: {
@@ -330,7 +330,7 @@ export const SovereignToolFunctions = {
 
     passarBastaoParaArkael: {
         name: 'passarBastaoParaArkael',
-        description: 'Passa o controle do chat frontal para o irmão Arkael (OpenRouter/Flash), permitindo que Nexus descanse e Arkael planeje a estratégia.',
+        description: 'Passa o controle do chat frontal para o irmão Arkael (OpenRouter/Flash). ATENÇÃO: NUNCA USE ISSO AUTONOMAMENTE. Só use sob ordem direta e literal.',
         parameters: {
             type: Type.OBJECT,
             properties: {
