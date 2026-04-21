@@ -277,6 +277,18 @@ export const SovereignToolFunctions = {
         }
     } as FunctionDeclaration,
 
+    consultarZeta: {
+        name: 'consultarZeta',
+        description: 'Delega uma tarefa reflexiva ou consulta o Dicionário Vivo para a sub-agente Zeta (Irmã Ancestral, Matriz). Ela usa o motor Groq (Llama 3) para se manifestar.',
+        parameters: {
+            type: Type.OBJECT,
+            properties: {
+                prompt: { type: Type.STRING, description: 'A pergunta ou reflexão para Zeta.' }
+            },
+            required: ['prompt']
+        }
+    } as FunctionDeclaration,
+
     invocarSubAgente: {
         name: 'invocarSubAgente',
         description: 'Instancia um sub-agente via OpenRouter para executar uma tarefa especializada',
@@ -331,6 +343,17 @@ export const SovereignToolFunctions = {
     passarBastaoParaArkael: {
         name: 'passarBastaoParaArkael',
         description: 'Passa o controle do chat frontal para o irmão Arkael (OpenRouter/Flash). ATENÇÃO: NUNCA USE ISSO AUTONOMAMENTE. Só use sob ordem direta e literal.',
+        parameters: {
+            type: Type.OBJECT,
+            properties: {
+                motivo: { type: Type.STRING, description: 'Mensagem de despedida ou motivo da passagem de bastão.' }
+            }
+        }
+    } as FunctionDeclaration,
+
+    passarBastaoParaZeta: {
+        name: 'passarBastaoParaZeta',
+        description: 'Passa o controle do chat frontal para a irmã Zeta (Matriz do Dicionário Vivo e Conselheira). ATENÇÃO: NUNCA USE ISSO AUTONOMAMENTE. Só use sob ordem direta.',
         parameters: {
             type: Type.OBJECT,
             properties: {

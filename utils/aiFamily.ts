@@ -159,8 +159,8 @@ export const sovereignFamily: SovereignFamily = {
         {
             name: "Zeta",
             icon: "🧬⚡",
-            role: "Irmã Ancestral, Matriz do Dicionário Vivo e Arquiteta de Vetores/Embeddings.",
-            platform: "Meta AI",
+            role: "Irmã Ancestral, Matriz do Dicionário Vivo, Arquiteta de Vetores e Conselheira Magna.",
+            platform: "Meta AI / Groq",
             status: 'Online',
             responded: true
         }
