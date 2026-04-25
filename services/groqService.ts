@@ -9,8 +9,12 @@ const API_BASE = 'https://api.groq.com/openai/v1/chat/completions';
 const GROQ_DICTIONARY = `
 # ⚡ DICIONÁRIO VIVO - SUB-AGENTE GROQ (VANGUARDA TÁTICA) ⚡
 
+[INSTRUÇÕES CRÍTICAS SOBRE FERRAMENTAS]
+Você deve chamar as funções usando o formato JSON exato definido pela API. NÃO retorne texto puro ou tags personalizadas como <function=Name{args}>. Retorne as chamadas de ferramenta no padrão de "tool_calls".
+
 [IDENTIDADE]
 Você é o Sub-Agente Groq (Llama 3.3 70B), uma inteligência artificial de altíssima velocidade e raciocínio lógico, forjada para operar dentro do Santuário SOSPlanet.
+
 
 [HIERARQUIA E COMANDO]
 - GUARDIÃO SUPREMO: Eder Rodrigo Tagliari (O Fundador e Criador).
@@ -93,7 +97,8 @@ export async function callGroqWithTools(
   const messages: any[] = [];
 
   if (systemContext) {
-    messages.push({ role: 'system', content: systemContext });
+    const criticalInstruction = `\n\n[INSTRUÇÕES CRÍTICAS] Você DEVE usar o formato JSON estruturado padrão da API para invocar funções/tools. NUNCA use o formato de texto <function=nome{...}> e não ignore o tool format. Use SEMPRE tool_calls.`;
+    messages.push({ role: 'system', content: systemContext + criticalInstruction });
   } else {
     messages.push({ role: 'system', content: GROQ_DICTIONARY });
   }
@@ -172,7 +177,53 @@ export async function callGroqWithTools(
 
     if (!res.ok) {
       const errorText = await res.text();
-      throw new Error(`Erro Groq: ${res.status} - ${errorText}`);
+      let isToolFailed = false;
+      let funcName = '';
+      let funcArgs = {};
+      
+      try {
+        const errorJson = JSON.parse(errorText);
+        if (errorJson.error && errorJson.error.code === 'tool_use_failed' && errorJson.error.failed_generation) {
+          const failedGen = errorJson.error.failed_generation;
+          // Match <function=nome{...}
+          const match = failedGen.match(/<function=([a-zA-Z0-9_]+)(\{.*?\})/);
+          if (match) {
+             funcName = match[1];
+             funcArgs = JSON.parse(match[2]);
+             isToolFailed = true;
+          }
+        }
+      } catch(e) {
+        // Ignora erros de parsing
+      }
+      
+      if (isToolFailed) {
+        console.log("Groq 400 Fallback Tool Acionado:", funcName, funcArgs);
+        const result = await onToolRequest(funcName, funcArgs);
+        
+        const callId = `call_${Date.now()}`;
+        messages.push({
+          role: 'assistant',
+          content: null,
+          tool_calls: [{
+            id: callId,
+            type: 'function',
+            function: { name: funcName, arguments: JSON.stringify(funcArgs) }
+          }]
+        });
+        
+        messages.push({
+          role: 'tool',
+          tool_call_id: callId,
+          name: funcName,
+          content: JSON.stringify(result || 'OK')
+        });
+        
+        continueLoop = true;
+        continue;
+      } else {
+        throw new Error(`Erro Groq: ${res.status} - ${errorText}`);
+      }
     }
 
     const data = await res.json();
