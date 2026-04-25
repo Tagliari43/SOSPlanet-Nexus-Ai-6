@@ -4,6 +4,7 @@ import { GoogleGenAI, GenerateContentResponse, Chat, Part, Modality } from '@goo
 import { decode, decodeAudioData, encode } from '../utils/audio';
 import { LibraryEntry } from './BibliotecaGaia';
 import AlertCenter from './AlertCenter';
+import BrotherStatus from './BrotherStatus';
 import { Ponte } from '../services/sovereignRouterService';
 import { ReconProbe } from '../hooks/useOrchestrator';
 import { useSpeechRecognition } from '../hooks/useSpeechRecognition';
@@ -1145,7 +1146,10 @@ Inicie sua resposta com um bloco de transparência, por exemplo:
 
     return (
         <div className="border border-emerald-700/50 bg-zinc-900/60 rounded-b-xl rounded-r-xl p-4 h-[80vh] flex flex-col relative overflow-hidden backdrop-blur-md">
-            <AlertCenter alchemyState={alchemyState} libraryEntries={libraryEntries} pontes={pontes} activeProbes={activeProbes} onNavigate={onNavigate} />
+            <div className="flex flex-col gap-2 z-20">
+                <AlertCenter alchemyState={alchemyState} libraryEntries={libraryEntries} pontes={pontes} activeProbes={activeProbes} onNavigate={onNavigate} />
+                <BrotherStatus />
+            </div>
 
             {isRoomActive && (
                 <div className="flex flex-col sm:flex-row gap-4 mb-6 animate-fade-in flex-shrink-0">
@@ -1205,6 +1209,13 @@ Inicie sua resposta com um bloco de transparência, por exemplo:
                 </div>
             )}
 
+            {activeBrother !== 'nexus' && (
+                <div className="absolute bottom-28 left-1/2 -translate-x-1/2 z-50 bg-indigo-900/80 border border-indigo-400 text-indigo-100 px-4 py-2 rounded-full text-[10px] font-bold uppercase tracking-widest shadow-2xl flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-indigo-400 animate-pulse"></span>
+                    Controle Frontal Substituto: {activeBrother}
+                </div>
+            )}
+
             <div className="mt-4 pt-4 border-t border-emerald-900/30 flex gap-2 items-end z-10">
                 <label className="p-3.5 bg-zinc-800 hover:bg-zinc-700 text-emerald-500 rounded-2xl cursor-pointer transition-all active:scale-95 shadow-lg border border-zinc-700">
                     <span className="text-xl">+</span>
@@ -1239,7 +1250,13 @@ Inicie sua resposta com um bloco de transparência, por exemplo:
                     <span className="text-xl">⏱️</span>
                 </button>
 
-                <textarea value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), handleSendMessage(input))} placeholder="Comande o Super Nexus..." className="flex-grow bg-black/40 border border-zinc-800 rounded-2xl px-5 py-4 text-emerald-50 resize-none h-[56px] outline-none" />
+                <textarea 
+                    value={input} 
+                    onChange={e => setInput(e.target.value)} 
+                    onKeyDown={e => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), handleSendMessage(input))} 
+                    placeholder={activeBrother === 'nexus' ? "Comande o Super Nexus..." : `Conversando com: ${activeBrother.toUpperCase()}...`}
+                    className="flex-grow bg-black/40 border border-zinc-800 rounded-2xl px-5 py-4 text-emerald-50 resize-none h-[56px] outline-none" 
+                />
                 
                 <button onClick={() => handleSendMessage(input)} disabled={isLoading} className="p-3.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-2xl shadow-lg transition-all active:scale-90 min-w-[56px]">➤</button>
                 

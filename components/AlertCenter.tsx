@@ -83,7 +83,7 @@ const AlertCenter: React.FC<AlertCenterProps> = ({
     if (alerts.length === 0) return null;
 
     return (
-        <div className="w-full mb-4 transition-all duration-500 ease-in-out">
+        <div className="w-full mb-0 transition-all duration-500 ease-in-out relative z-20">
             {/* BARRA MINIMIZADA */}
             {!isExpanded ? (
                 <button 
@@ -101,7 +101,7 @@ const AlertCenter: React.FC<AlertCenterProps> = ({
                 </button>
             ) : (
                 /* ESTADO EXPANDIDO */
-                <div className="bg-zinc-900/80 border border-emerald-500/50 rounded-xl p-3 shadow-2xl backdrop-blur-md animate-fade-in">
+                <div className="absolute top-0 left-0 w-full z-30 bg-zinc-900/90 border border-emerald-500/50 rounded-xl p-3 shadow-2xl backdrop-blur-md animate-fade-in">
                     <div className="flex justify-between items-center mb-3 border-b border-emerald-900/30 pb-2">
                         <div className="flex items-center gap-2">
                             <span className="text-sm">🧠</span>

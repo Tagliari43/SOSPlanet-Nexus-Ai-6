@@ -80,26 +80,40 @@ export async function callCerebrasWithTools(
   let responseText = '';
 
   while (continueLoop) {
-    const res = await fetch(API_BASE, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        model: TEXT_MODEL,
-        messages,
-        tools: openAITools.length > 0 ? openAITools : undefined,
-        tool_choice: openAITools.length > 0 ? 'auto' : undefined,
-        max_completion_tokens: 1024,
-        temperature: 0.7
-      })
-    });
+    let res: Response | null = null;
+    let retries = 2; // Tenta até 3 vezes (1 normal + 2 retries)
 
-    if (!res.ok) {
-      const errorText = await res.text();
-      throw new Error(`Erro Cerebras: ${res.status} - ${errorText}`);
+    while (retries >= 0) {
+      res = await fetch(API_BASE, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          model: TEXT_MODEL,
+          messages,
+          tools: openAITools.length > 0 ? openAITools : undefined,
+          tool_choice: openAITools.length > 0 ? 'auto' : undefined,
+          max_completion_tokens: 1024,
+          temperature: 0.7
+        })
+      });
+
+      if (!res.ok) {
+        if (res.status === 503 && retries > 0) {
+            console.warn("Cerebras retornou 503. Retentando em 1 segundo...");
+            await new Promise(r => setTimeout(r, 1000));
+            retries--;
+            continue;
+        }
+        const errorText = await res.text();
+        throw new Error(`Erro Cerebras: ${res.status} - ${errorText}`);
+      }
+      break; 
     }
+
+    if (!res) throw new Error("Erro desconhecido de fetch na Cerebras");
 
     const data = await res.json();
     const choice = data.choices[0];
