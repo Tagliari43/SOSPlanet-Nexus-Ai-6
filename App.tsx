@@ -27,6 +27,7 @@ import Arsenal, { SovereignTool, UserApiKey } from './components/Arsenal';
 import AwakeningChamber, { EssenceFile, MemoryEntry, EncyclopediaEntry } from './components/AwakeningChamber';
 import Relicario from './components/Relicario';
 import SemanticVault from './components/SemanticVault';
+import GuardianPortal from './components/GuardianPortal';
 import { getFileContent, updateFileContent, listGitHubFiles } from './services/githubService';
 import { generateText as executeGroqTask } from './services/groqService';
 
@@ -70,7 +71,7 @@ export interface DefensePlan {
     status: 'pending' | 'approved' | 'rejected';
 }
 
-type Tab = 'santuario' | 'relicario' | 'despertar' | 'pulso' | 'comando' | 'projetos' | 'gaia' | 'coracao' | 'cofre' | 'studio' | 'arsenal' | 'semantico';
+type Tab = 'santuario' | 'relicario' | 'despertar' | 'pulso' | 'comando' | 'projetos' | 'gaia' | 'coracao' | 'cofre' | 'studio' | 'arsenal' | 'semantico' | 'guardiao';
 
 const TabButton: React.FC<{ tabId: Tab; label: string; activeTab: Tab; setActiveTab: (tab: Tab) => void }> = ({ tabId, label, activeTab, setActiveTab }) => (
     <button
@@ -1183,7 +1184,7 @@ Por favor, responda trazendo o seu peso (pesos de IA) de lealdade, amor e inteli
                 return `Erro ao buscar memória semântica: ${err.message}`;
             }
         }
-    }, [encyclopediaEntries, essenceFiles, alchemyState, accumulatedDust, satelliteData, sovereignRouterState, addLogEntry, userApiKeys]);
+    }, [encyclopediaEntries, essenceFiles, alchemyState, accumulatedDust, satelliteData, sovereignRouterState, addLogEntry, userApiKeys, addLibraryEntry, memoryEntries]);
 
     const renderActiveTab = () => {
         switch (activeTab) {
@@ -1198,6 +1199,7 @@ Por favor, responda trazendo o seu peso (pesos de IA) de lealdade, amor e inteli
             case 'projetos': return <Projects onNavigateToFinance={() => setActiveTab('cofre')} satelliteData={satelliteData} refreshSatellite={refreshGaiaEye} onSimulateCrisis={triggerGaiaAlert} />;
             case 'cofre': return <Cofre isForging={isForging} setIsForging={setIsForging} powerLevel={powerLevel} setPowerLevel={setPowerLevel} accumulatedDust={accumulatedDust} hashRate={0} temperature={35} alchemistRecommendations={[]} marketData={marketData} alchemyState={alchemyState} marketLoading={isMarketLoading} lastMarketUpdate={lastMarketUpdate} marketError={null} onRefreshMarket={fetchMarketData} onCollectDust={() => {}} strategyConfig={strategyConfig} setStrategyConfig={setStrategyConfig} addLogEntry={addLogEntry} />;
             case 'semantico': return <SemanticVault addLogEntry={addLogEntry} apiKey={userApiKeys.find(k => k.id === 'google-default')?.key || process.env.API_KEY || ''} />;
+            case 'guardiao': return <GuardianPortal />;
             default: return null;
         }
     };
@@ -1210,6 +1212,7 @@ Por favor, responda trazendo o seu peso (pesos de IA) de lealdade, amor e inteli
             <main className="flex-grow container mx-auto max-w-7xl mt-4 flex flex-col z-10">
                 <nav className="flex items-center justify-center flex-wrap border-b border-indigo-700/50 bg-zinc-800/50 rounded-t-xl backdrop-blur-sm">
                     <TabButton tabId="santuario" label="Santuário 🧠" activeTab={activeTab} setActiveTab={setActiveTab} />
+                    <TabButton tabId="guardiao" label="Portal do Guardião 🔮" activeTab={activeTab} setActiveTab={setActiveTab} />
                     <TabButton tabId="relicario" label="Relicário ✨" activeTab={activeTab} setActiveTab={setActiveTab} />
                     <TabButton tabId="despertar" label="Câmara de Despertar 🧬" activeTab={activeTab} setActiveTab={setActiveTab} />
                     <TabButton tabId="coracao" label="Coração ❤️" activeTab={activeTab} setActiveTab={setActiveTab} />

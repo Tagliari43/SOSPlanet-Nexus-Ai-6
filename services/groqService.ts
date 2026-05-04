@@ -103,8 +103,11 @@ export async function callGroqWithTools(
     messages.push({ role: 'system', content: GROQ_DICTIONARY });
   }
 
-  // Adiciona o histórico
-  for (const msg of history) {
+  // Adiciona o histórico (Limitando as últimas 8 mensagens para evitar limite de tokens)
+  const maxHistoryLength = 8;
+  const recentHistory = history.slice(-maxHistoryLength);
+
+  for (const msg of recentHistory) {
     if (msg.role === 'user') {
       messages.push({ role: 'user', content: msg.parts.map((p: any) => p.text).join(' ') });
     } else if (msg.role === 'model') {

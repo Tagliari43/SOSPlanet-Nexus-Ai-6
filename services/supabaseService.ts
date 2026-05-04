@@ -145,3 +145,39 @@ export async function registrarNoDiarioDeBordo(nota: string, categoria: string =
         return `Falha crítica ao registrar no diário: ${err.message || String(err)}`;
     }
 }
+
+/**
+ * Lê o estado global do portal externo
+ */
+export async function getPortalStateFromSupabase(): Promise<any> {
+    if (!supabase) return null;
+    try {
+        const { data, error } = await supabase
+            .from('portal_state')
+            .select('data')
+            .eq('id', 1)
+            .single();
+        if (error) throw error;
+        return data?.data || null;
+    } catch (e) {
+        console.error("Erro ao buscar portal_state do Supabase:", e);
+        return null;
+    }
+}
+
+/**
+ * Salva o estado global do portal externo
+ */
+export async function savePortalStateToSupabase(stateData: any): Promise<boolean> {
+    if (!supabase) return false;
+    try {
+        const { error } = await supabase
+            .from('portal_state')
+            .upsert({ id: 1, data: stateData, updated_at: new Date().toISOString() });
+        if (error) throw error;
+        return true;
+    } catch (e) {
+        console.error("Erro ao salvar portal_state no Supabase:", e);
+        return false;
+    }
+}

@@ -123,6 +123,27 @@ async function startServer() {
     }
   });
 
+  // Portal State Management
+  app.get("/api/portal-state", async (req, res) => {
+    try {
+      const fs = await import("fs/promises");
+      const data = await fs.readFile("portalState.json", "utf-8");
+      res.json(JSON.parse(data));
+    } catch(e) {
+      res.json({ error: "State not found" });
+    }
+  });
+
+  app.post("/api/portal-state", async (req, res) => {
+    try {
+      const fs = await import("fs/promises");
+      await fs.writeFile("portalState.json", JSON.stringify(req.body, null, 2));
+      res.json({ success: true, state: req.body });
+    } catch(e) {
+      res.status(500).json({ error: "Failed to save state" });
+    }
+  });
+
   // Vite middleware for development
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({
