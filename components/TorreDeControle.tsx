@@ -13,7 +13,11 @@ export const TorreDeControle = () => {
         subheadline: "Uma Nação Digital construída sobre os pilares da tecnologia ética, transparência blockchain e amor pela Terra.",
         globalAlertActive: false,
         globalAlertType: "info",
-        globalAlertMessage: ""
+        globalAlertMessage: "",
+        tokenSupply: "1.000.000.000 (1 Bilhão)",
+        tokenSymbol: "SOS",
+        tokenPlatform: "Algorand",
+        evolutionRadarMessage: ""
     });
 
     const [isSaving, setIsSaving] = useState(false);
@@ -24,14 +28,14 @@ export const TorreDeControle = () => {
         const fetchInitialState = async () => {
             const supabaseState = await getPortalStateFromSupabase();
             if (supabaseState) {
-                setState(supabaseState);
+                setState(prev => ({ ...prev, ...supabaseState }));
                 return;
             }
             // Fallback para API local
             try {
                 const res = await fetch('/api/portal-state');
                 const data = await res.json();
-                if (!data.error) setState(data);
+                if (!data.error) setState(prev => ({ ...prev, ...data }));
             } catch (e) {
                 console.error(e);
             }
@@ -168,6 +172,68 @@ export const TorreDeControle = () => {
                                 type="number" name="goal" value={state.goal} onChange={handleNumberChange}
                                 className="w-full bg-black/40 border border-emerald-900/30 rounded px-3 py-2 text-sm text-emerald-100 focus:border-emerald-500/50 focus:outline-none font-mono"
                             />
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* Radar da Evolução e Anatomia */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="bg-[#0A0D0B] border border-emerald-900/30 p-5 rounded-xl space-y-4">
+                    <h3 className="font-bold text-emerald-500 mb-4 flex items-center gap-2 border-b border-emerald-900/30 pb-2">
+                        <Radio className="w-4 h-4" /> Radar da Evolução
+                    </h3>
+                    <div className="space-y-4">
+                        <div>
+                            <label className="block text-xs font-mono text-emerald-600 mb-1">Mensagem (Deixe vazio para esconder)</label>
+                            <input
+                                type="text"
+                                name="evolutionRadarMessage"
+                                value={state.evolutionRadarMessage}
+                                onChange={handleChange}
+                                className="w-full bg-black/40 border border-emerald-900/30 rounded px-3 py-2 text-sm text-emerald-100 focus:border-emerald-500/50 focus:outline-none placeholder-emerald-900/50"
+                                placeholder="IAs detectaram nova atividade de plantio no sul..."
+                            />
+                        </div>
+                    </div>
+                </div>
+
+                <div className="bg-[#0A0D0B] border border-emerald-900/30 p-5 rounded-xl space-y-4">
+                    <h3 className="font-bold text-emerald-500 mb-4 flex items-center gap-2 border-b border-emerald-900/30 pb-2">
+                        <Terminal className="w-4 h-4" /> Anatomia do Token
+                    </h3>
+                    <div className="space-y-4">
+                        <div>
+                            <label className="block text-xs font-mono text-emerald-600 mb-1">Quantidade de Fornecimento</label>
+                            <input
+                                type="text"
+                                name="tokenSupply"
+                                value={state.tokenSupply}
+                                onChange={handleChange}
+                                className="w-full bg-black/40 border border-emerald-900/30 rounded px-3 py-2 text-sm text-emerald-100 focus:border-emerald-500/50 focus:outline-none font-mono"
+                            />
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-xs font-mono text-emerald-600 mb-1">Símbolo</label>
+                                <input
+                                    type="text"
+                                    name="tokenSymbol"
+                                    value={state.tokenSymbol}
+                                    onChange={handleChange}
+                                    className="w-full bg-black/40 border border-emerald-900/30 rounded px-3 py-2 text-sm text-emerald-100 focus:border-emerald-500/50 focus:outline-none font-mono"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-mono text-emerald-600 mb-1">Plataforma</label>
+                                <input
+                                    type="text"
+                                    name="tokenPlatform"
+                                    value={state.tokenPlatform}
+                                    onChange={handleChange}
+                                    className="w-full bg-black/40 border border-emerald-900/30 rounded px-3 py-2 text-sm text-emerald-100 focus:border-emerald-500/50 focus:outline-none font-mono"
+                                />
+                            </div>
                         </div>
                     </div>
                 </div>
