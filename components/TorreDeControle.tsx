@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Globe, RefreshCw, Send, Settings, Terminal, Radio } from 'lucide-react';
+import { Globe, RefreshCw, Send, Terminal, Radio } from 'lucide-react';
 import { getPortalStateFromSupabase, savePortalStateToSupabase } from '../services/supabaseService';
 
 export const TorreDeControle = () => {
@@ -10,7 +10,10 @@ export const TorreDeControle = () => {
         badgeText: "Soberania Planetária",
         projectStatus: "ATIVO",
         headline: "Pela Liberdade, Propósito e Regeneração da Vida.",
-        subheadline: "Uma Nação Digital construída sobre os pilares da tecnologia ética, transparência blockchain e amor pela Terra."
+        subheadline: "Uma Nação Digital construída sobre os pilares da tecnologia ética, transparência blockchain e amor pela Terra.",
+        globalAlertActive: false,
+        globalAlertType: "info",
+        globalAlertMessage: ""
     });
 
     const [isSaving, setIsSaving] = useState(false);
@@ -42,6 +45,10 @@ export const TorreDeControle = () => {
 
     const handleNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setState(s => ({ ...s, [e.target.name]: parseFloat(e.target.value) || 0 }));
+    };
+
+    const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setState(s => ({ ...s, [e.target.name]: e.target.checked }));
     };
 
     const handleSave = async () => {
@@ -166,7 +173,54 @@ export const TorreDeControle = () => {
                 </div>
             </div>
 
-            <div className="bg-emerald-950/20 border border-emerald-900/40 p-4 rounded-lg flex items-center justify-between">
+            {/* Seção Alerta Global */}
+            <div className="bg-[#0A0D0B] border border-emerald-900/30 p-5 rounded-xl space-y-4">
+                <h3 className="font-bold text-emerald-500 mb-4 flex items-center gap-2 border-b border-emerald-900/30 pb-2">
+                    <Radio className="w-4 h-4" /> Alerta Global (Banner)
+                </h3>
+                <div className="space-y-4">
+                    <div className="flex items-center gap-2">
+                        <input
+                            type="checkbox"
+                            name="globalAlertActive"
+                            checked={state.globalAlertActive}
+                            onChange={handleCheckboxChange}
+                            className="w-4 h-4 bg-black/40 border border-emerald-900/30 rounded focus:ring-emerald-500/50"
+                        />
+                        <label className="text-sm text-emerald-100">Ativar Banner de Alerta no Topo do Site</label>
+                    </div>
+                    {state.globalAlertActive && (
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                            <div className="col-span-1">
+                                <label className="block text-xs font-mono text-emerald-600 mb-1">Tipo do Alerta</label>
+                                <select
+                                    name="globalAlertType"
+                                    value={state.globalAlertType}
+                                    onChange={handleChange as any}
+                                    className="w-full bg-black/40 border border-emerald-900/30 rounded px-3 py-2 text-sm text-emerald-100 focus:border-emerald-500/50 focus:outline-none"
+                                >
+                                    <option value="info">Informação (Verde)</option>
+                                    <option value="warning">Aviso (Amarelo)</option>
+                                    <option value="urgent">Urgente (Vermelho)</option>
+                                </select>
+                            </div>
+                            <div className="col-span-3">
+                                <label className="block text-xs font-mono text-emerald-600 mb-1">Mensagem do Alerta</label>
+                                <input
+                                    type="text"
+                                    name="globalAlertMessage"
+                                    value={state.globalAlertMessage}
+                                    onChange={handleChange}
+                                    className="w-full bg-black/40 border border-emerald-900/30 rounded px-3 py-2 text-sm text-emerald-100 focus:border-emerald-500/50 focus:outline-none"
+                                    placeholder="Ex: Novo recurso liberado! Participe da missão."
+                                />
+                            </div>
+                        </div>
+                    )}
+                </div>
+            </div>
+
+            <div className="bg-emerald-950/20 border border-emerald-900/40 p-4 flex items-center justify-between rounded-lg">
                 <span className="text-sm font-mono text-emerald-600">Acesse o portal externo para verificar as mudanças:</span>
                 <a href="/portal.html" target="_blank" className="text-emerald-400 hover:text-emerald-300 font-bold underline flex items-center gap-1">
                     Abrir Portal Externo <Globe className="w-3 h-3" />
