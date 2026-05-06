@@ -344,14 +344,14 @@ const ConselhoTab = () => {
 
 const ConstelacoesTab = () => {
     // Holographic space map logic simplified for visualization
-    const nodes = React.useMemo(() => Array.from({ length: 15 }).map((_, i) => ({
+    const [nodes] = React.useState(() => Array.from({ length: 15 }).map((_, i) => ({
         id: i,
         x: Math.random() * 80 + 10,
         y: Math.random() * 80 + 10,
         level: Math.floor(Math.random() * 50) + 1,
         duration: Math.random() * 2 + 2,
         address: `0x${Math.random().toString(16).substr(2, 4).toUpperCase()}...${Math.random().toString(16).substr(2, 4).toUpperCase()}`
-    })), []);
+    })));
 
     return (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="w-full h-[600px] bg-[#050806] rounded-2xl relative overflow-hidden border border-white/5">

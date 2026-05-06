@@ -84,6 +84,12 @@ nav a:hover { color: var(--emerald); }
 .progress-bar-fill { background: linear-gradient(90deg, #065f46, var(--emerald)); height: 100%; transition: width 2s cubic-bezier(0.4, 0, 0.2, 1); box-shadow: 0 0 20px rgba(16, 185, 129, 0.4); }
 .progress-footer { display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--text-muted); }
 
+/* Metrics Dashboard */
+.metrics-dashboard { margin-top: 2rem; display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; text-align: center; }
+.metric-box { background: rgba(24, 24, 27, 0.5); padding: 1rem; border-radius: 12px; border: 1px solid rgba(16, 185, 129, 0.2); }
+.metric-box h5 { font-size: 0.875rem; color: #4ade80; margin-bottom: 0.25rem; font-weight: normal; }
+.metric-box p { font-size: 1.5rem; font-weight: bold; color: #fff; letter-spacing: 0.1em; }
+
 /* Contribution */
 .cta-text { font-size: 1.2rem; color: var(--text-muted); margin-bottom: 40px; }
 .wallet-box { background: var(--card); padding: 40px; border-radius: 24px; border: 2px dashed var(--emerald); display: inline-block; max-width: 100%; position: relative; }
@@ -104,4 +110,5 @@ footer { padding: 80px 0 40px; border-top: 1px solid rgba(255,255,255,0.05); }
     .project-info { padding: 30px; }
     .hero-actions { flex-direction: column; }
     .manifesto { font-size: 1.3rem; }
+    .metrics-dashboard { grid-template-columns: repeat(2, 1fr); }
 }
