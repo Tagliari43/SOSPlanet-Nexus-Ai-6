@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Bell, Droplets, Leaf, Palette, Star, Sun, Wind, Sparkles, Sprout, Tent, Users, Coins, Activity, Network, Anchor, Radio, Terminal } from 'lucide-react';
+import { Bell, Droplets, Leaf, Palette, Star, Sun, Wind, Sparkles, Sprout, Tent, Users, Coins, Activity, Network, Anchor, Radio, Terminal, Share2 } from 'lucide-react';
 import { TorreDeControle } from './TorreDeControle';
 import DaoGovernance from './DaoGovernance';
 import ImpactMap from './ImpactMap';
+import PropagadorTab from './PropagadorTab';
+import GaiaFloatChat from './GaiaFloatChat';
 
 // Biome Themes
 const biomes = {
@@ -89,7 +91,8 @@ const GuardianPortal: React.FC = () => {
                     { id: 'diario', label: 'Diário da Vigília', icon: Terminal },
                     { id: 'altar', label: 'O Altar', icon: Droplets },
                     { id: 'conselho', label: 'A Voz do Coletivo', icon: Users },
-                    { id: 'constelacoes', label: 'Mapa de Impacto', icon: Star }
+                    { id: 'constelacoes', label: 'Mapa de Impacto', icon: Star },
+                    { id: 'propagador', label: 'Propagador', icon: Share2 }
                 ].map(tab => (
                     <button
                         key={tab.id}
@@ -119,6 +122,7 @@ const GuardianPortal: React.FC = () => {
                     {activeTab === 'altar' && <AltarTab key="altar" seiva={seiva} setSeiva={setSeiva} />}
                     {activeTab === 'conselho' && <DaoGovernance key="conselho" />}
                     {activeTab === 'constelacoes' && <ImpactMap key="constelacoes" />}
+                    {activeTab === 'propagador' && <PropagadorTab key="propagador" />}
                 </AnimatePresence>
             </div>
 
@@ -126,27 +130,7 @@ const GuardianPortal: React.FC = () => {
             <div className="absolute bottom-6 right-6 z-50">
                 <AnimatePresence>
                     {isGaiaVoiceOpen && (
-                        <motion.div
-                            initial={{ opacity: 0, y: 20, scale: 0.9 }}
-                            animate={{ opacity: 1, y: 0, scale: 1 }}
-                            exit={{ opacity: 0, y: 20, scale: 0.9 }}
-                            className="absolute bottom-16 right-0 w-80 bg-black/60 backdrop-blur-2xl border border-emerald-500/30 rounded-2xl p-5 shadow-2xl mb-4"
-                        >
-                            <h3 className="text-emerald-400 font-bold mb-4 font-mono text-xs uppercase tracking-widest flex items-center gap-2">
-                                <Sparkles className="w-4 h-4" /> Voz de Gaia
-                            </h3>
-                            <div className="space-y-2">
-                                <button className="w-full text-left p-3 rounded-lg bg-emerald-900/20 hover:bg-emerald-800/40 border border-emerald-700/30 text-xs text-emerald-100 transition-colors">
-                                    "Qual o estado da nossa semeadura atual?"
-                                </button>
-                                <button className="w-full text-left p-3 rounded-lg bg-emerald-900/20 hover:bg-emerald-800/40 border border-emerald-700/30 text-xs text-emerald-100 transition-colors">
-                                    "Como posso fortalecer a teia micelial?"
-                                </button>
-                                <button className="w-full text-left p-3 rounded-lg bg-emerald-900/20 hover:bg-emerald-800/40 border border-emerald-700/30 text-xs text-emerald-100 transition-colors">
-                                    "O que os antigos sussurram hoje?"
-                                </button>
-                            </div>
-                        </motion.div>
+                        <GaiaFloatChat onClose={() => setIsGaiaVoiceOpen(false)} />
                     )}
                 </AnimatePresence>
                 

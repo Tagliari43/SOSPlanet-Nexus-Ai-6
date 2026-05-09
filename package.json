@@ -16,6 +16,7 @@
     "@supabase/supabase-js": "^2.100.1",
     "algosdk": "^3.5.2",
     "express": "^5.2.1",
+    "html2canvas": "^1.4.1",
     "leaflet": "^1.9.4",
     "lucide-react": "^0.577.0",
     "motion": "^12.38.0",

@@ -172,3 +172,31 @@ create policy "Permitir leitura de impact_coordinates" on impact_coordinates for
 create policy "Permitir atualização de impact_coordinates" on impact_coordinates for update to anon using (true) with check (true);
 create policy "Permitir deleção de impact_coordinates" on impact_coordinates for delete to anon using (true);
 
+-- Fase 5: O Propagador de Consciência (Referrals & Profiles)
+create table if not exists guardian_profiles (
+  id bigint primary key generated always as identity,
+  wallet_address text not null unique,
+  codename text not null,
+  rank text not null default 'Semeador Novato',
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+alter table guardian_profiles enable row level security;
+create policy "Permitir inserção em guardian_profiles" on guardian_profiles for insert to anon with check (true);
+create policy "Permitir leitura de guardian_profiles" on guardian_profiles for select to anon using (true);
+create policy "Permitir atualização de guardian_profiles" on guardian_profiles for update to anon using (true) with check (true);
+
+create table if not exists referrals (
+  id bigint primary key generated always as identity,
+  inviter_wallet text not null references guardian_profiles(wallet_address) on delete cascade,
+  invited_wallet text not null unique,
+  status text not null default 'PENDING', -- PENDING, COMPLETED
+  reward_paid boolean not null default false,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+alter table referrals enable row level security;
+create policy "Permitir inserção em referrals" on referrals for insert to anon with check (true);
+create policy "Permitir leitura de referrals" on referrals for select to anon using (true);
+create policy "Permitir atualização de referrals" on referrals for update to anon using (true) with check (true);
+
