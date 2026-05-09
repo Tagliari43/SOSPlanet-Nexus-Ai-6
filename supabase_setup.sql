@@ -250,4 +250,47 @@ create policy "Permitir inserção em preservation_zones" on preservation_zones 
 create policy "Permitir leitura de preservation_zones" on preservation_zones for select to anon using (true);
 create policy "Permitir atualização de preservation_zones" on preservation_zones for update to anon using (true) with check (true);
 
+-- Fase 9: A Jornada do Guardião (Gamificação, Quests e Bounties Verdes)
+alter table guardian_profiles add column if not exists total_xp integer not null default 0;
+
+create table if not exists guardian_quests (
+  id bigint primary key generated always as identity,
+  title text not null,
+  description text not null,
+  xp_reward integer not null default 0,
+  requirement_type text not null,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+alter table guardian_quests enable row level security;
+create policy "Permitir inserção em guardian_quests" on guardian_quests for insert to anon with check (true);
+create policy "Permitir leitura de guardian_quests" on guardian_quests for select to anon using (true);
+create policy "Permitir atualização de guardian_quests" on guardian_quests for update to anon using (true) with check (true);
+
+create table if not exists guardian_quest_progress (
+  id bigint primary key generated always as identity,
+  wallet_address text not null,
+  quest_id bigint not null references guardian_quests(id) on delete cascade,
+  status text not null default 'IN_PROGRESS',
+  completed_at timestamp with time zone,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null,
+  unique(wallet_address, quest_id)
+);
+alter table guardian_quest_progress enable row level security;
+create policy "Permitir inserção em guardian_quest_progress" on guardian_quest_progress for insert to anon with check (true);
+create policy "Permitir leitura de guardian_quest_progress" on guardian_quest_progress for select to anon using (true);
+create policy "Permitir atualização de guardian_quest_progress" on guardian_quest_progress for update to anon using (true) with check (true);
+
+create table if not exists guardian_badges (
+  id bigint primary key generated always as identity,
+  wallet_address text not null,
+  badge_name text not null,
+  icon_name text not null,
+  earned_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+alter table guardian_badges enable row level security;
+create policy "Permitir inserção em guardian_badges" on guardian_badges for insert to anon with check (true);
+create policy "Permitir leitura de guardian_badges" on guardian_badges for select to anon using (true);
+create policy "Permitir atualização de guardian_badges" on guardian_badges for update to anon using (true) with check (true);
+
+
 

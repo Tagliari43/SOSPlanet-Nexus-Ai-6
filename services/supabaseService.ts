@@ -84,6 +84,41 @@ export interface PreservationZoneRecord {
   status?: 'ACTIVE' | 'THREATENED' | 'RESTORING';
 }
 
+export interface GuardianProfileRecord {
+  id?: number;
+  wallet_address: string;
+  codename: string;
+  rank: string;
+  total_xp?: number;
+  created_at?: string;
+}
+
+export interface GuardianQuestRecord {
+  id?: number;
+  title: string;
+  description: string;
+  xp_reward: number;
+  requirement_type: string;
+  created_at?: string;
+}
+
+export interface GuardianQuestProgressRecord {
+  id?: number;
+  wallet_address: string;
+  quest_id: number;
+  status: 'IN_PROGRESS' | 'COMPLETED';
+  completed_at?: string;
+  created_at?: string;
+}
+
+export interface GuardianBadgeRecord {
+  id?: number;
+  wallet_address: string;
+  badge_name: string;
+  icon_name: string;
+  earned_at?: string;
+}
+
 /**
  * Salva um log de execução de agente no Supabase
  */
