@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Bell, Droplets, Leaf, Palette, Star, Sun, Wind, Sparkles, Sprout, Tent, Users, Coins, Activity, Network, Anchor, Radio, Terminal } from 'lucide-react';
 import { TorreDeControle } from './TorreDeControle';
+import DaoGovernance from './DaoGovernance';
+import ImpactMap from './ImpactMap';
 
 // Biome Themes
 const biomes = {
@@ -86,8 +88,8 @@ const GuardianPortal: React.FC = () => {
                     { id: 'projetos', label: 'Projetos Semente', icon: Sprout },
                     { id: 'diario', label: 'Diário da Vigília', icon: Terminal },
                     { id: 'altar', label: 'O Altar', icon: Droplets },
-                    { id: 'conselho', label: 'Anciões', icon: Users },
-                    { id: 'constelacoes', label: 'Constelações', icon: Star }
+                    { id: 'conselho', label: 'A Voz do Coletivo', icon: Users },
+                    { id: 'constelacoes', label: 'Mapa de Impacto', icon: Star }
                 ].map(tab => (
                     <button
                         key={tab.id}
@@ -115,8 +117,8 @@ const GuardianPortal: React.FC = () => {
                     {activeTab === 'diario' && <DiarioVigiliaTab key="diario" />}
                     {activeTab === 'bazar' && <BazarTab key="bazar" />}
                     {activeTab === 'altar' && <AltarTab key="altar" seiva={seiva} setSeiva={setSeiva} />}
-                    {activeTab === 'conselho' && <ConselhoTab key="conselho" />}
-                    {activeTab === 'constelacoes' && <ConstelacoesTab key="constelacoes" />}
+                    {activeTab === 'conselho' && <DaoGovernance key="conselho" />}
+                    {activeTab === 'constelacoes' && <ImpactMap key="constelacoes" />}
                 </AnimatePresence>
             </div>
 
