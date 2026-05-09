@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Bell, Droplets, Leaf, Palette, Star, Sun, Wind, Sparkles, Sprout, Tent, Users, Coins, Activity, Network, Anchor, Radio } from 'lucide-react';
+import { Bell, Droplets, Leaf, Palette, Star, Sun, Wind, Sparkles, Sprout, Tent, Users, Coins, Activity, Network, Anchor, Radio, Terminal } from 'lucide-react';
 import { TorreDeControle } from './TorreDeControle';
 
 // Biome Themes
@@ -83,6 +83,8 @@ const GuardianPortal: React.FC = () => {
                     { id: 'tesouraria', label: 'Espelho d\'Água', icon: Anchor },
                     { id: 'rpg', label: 'Trilha do Despertar', icon: Activity },
                     { id: 'bazar', label: 'O Bazar', icon: Tent },
+                    { id: 'projetos', label: 'Projetos Semente', icon: Sprout },
+                    { id: 'diario', label: 'Diário da Vigília', icon: Terminal },
                     { id: 'altar', label: 'O Altar', icon: Droplets },
                     { id: 'conselho', label: 'Anciões', icon: Users },
                     { id: 'constelacoes', label: 'Constelações', icon: Star }
@@ -109,6 +111,8 @@ const GuardianPortal: React.FC = () => {
                     {activeTab === 'ninho' && <NinhoRenovacaoTab key="ninho" />}
                     {activeTab === 'tesouraria' && <EspelhoDAguaTab key="tesouraria" />}
                     {activeTab === 'rpg' && <TrilhaDespertarTab key="rpg" />}
+                    {activeTab === 'projetos' && <ProjetosSementeTab key="projetos" />}
+                    {activeTab === 'diario' && <DiarioVigiliaTab key="diario" />}
                     {activeTab === 'bazar' && <BazarTab key="bazar" />}
                     {activeTab === 'altar' && <AltarTab key="altar" seiva={seiva} setSeiva={setSeiva} />}
                     {activeTab === 'conselho' && <ConselhoTab key="conselho" />}
@@ -161,6 +165,250 @@ const GuardianPortal: React.FC = () => {
 };
 
 // --- Sub-Tabs Components ---
+
+import { supabase } from '../services/supabaseService';
+
+const DiarioVigiliaTab = () => {
+    const [title, setTitle] = useState('');
+    const [content, setContent] = useState('');
+    const [isPublishing, setIsPublishing] = useState(false);
+    const [messages, setMessages] = useState<any[]>([]);
+    const [subscribers, setSubscribers] = useState<any[]>([]);
+
+    useEffect(() => {
+        const fetchData = async () => {
+            const { data: msgs } = await supabase.from('messages_publicas').select('*').order('created_at', { ascending: false });
+            if (msgs) setMessages(msgs);
+            
+            const { data: subs } = await supabase.from('newsletter_subscribers').select('*').order('created_at', { ascending: false });
+            if (subs) setSubscribers(subs);
+        };
+        fetchData();
+    }, []);
+
+    const handlePublish = async () => {
+        if (!title.trim() || !content.trim()) return;
+        setIsPublishing(true);
+        try {
+            const { error } = await supabase.from('messages_publicas').insert([{ title, content, author: 'Nexus (Arquiteto)' }]);
+            if (!error) {
+                setTitle('');
+                setContent('');
+                const { data } = await supabase.from('messages_publicas').select('*').order('created_at', { ascending: false });
+                if (data) setMessages(data);
+            }
+        } catch (e) {
+            console.error(e);
+        }
+        setIsPublishing(false);
+    };
+
+    return (
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex flex-col gap-6 max-w-4xl mx-auto w-full">
+            <h2 className="text-2xl font-bold uppercase tracking-widest text-[#10b981] mb-4 font-mono drop-shadow-[0_0_10px_#10b981]">Central de Comunicações Externas</h2>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="flex flex-col gap-6">
+                    <div className="bg-[#0A0D0B] border border-emerald-900/30 p-5 rounded-xl space-y-4">
+                        <h3 className="font-bold text-emerald-500 mb-4 flex items-center gap-2 border-b border-emerald-900/30 pb-2">
+                            <Terminal className="w-4 h-4" /> Nova Publicação no Diário
+                        </h3>
+                        <div className="space-y-4">
+                            <div>
+                                <label className="block text-xs font-mono text-emerald-600 mb-1">Título da Síntese</label>
+                                <input 
+                                    type="text" value={title} onChange={e => setTitle(e.target.value)}
+                                    className="w-full bg-black/40 border border-emerald-900/30 rounded px-3 py-2 text-sm text-emerald-100 focus:border-emerald-500/50 focus:outline-none"
+                                    placeholder="Ex: Resumo do Conselho #42"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-mono text-emerald-600 mb-1">Conteúdo (Reflexão / Notícia)</label>
+                                <textarea 
+                                    value={content} onChange={e => setContent(e.target.value)} rows={6}
+                                    className="w-full bg-black/40 border border-emerald-900/30 rounded px-3 py-2 text-sm text-emerald-100 focus:border-emerald-500/50 focus:outline-none resize-none"
+                                    placeholder="Escreva a mensagem que ecoará no site público..."
+                                ></textarea>
+                            </div>
+                            <button 
+                                onClick={handlePublish} disabled={isPublishing}
+                                className="w-full py-3 bg-gradient-to-r from-emerald-600 to-green-500 text-white rounded-lg uppercase tracking-widest font-bold shadow-[0_0_20px_rgba(16,185,129,0.2)] hover:shadow-[0_0_30px_rgba(16,185,129,0.4)] disabled:opacity-50 transition-all font-mono text-xs"
+                            >
+                                {isPublishing ? 'Emitindo...' : 'Transmitir ao Publico'}
+                            </button>
+                        </div>
+                    </div>
+
+                    <div className="bg-[#0A0D0B] border border-emerald-900/30 p-5 rounded-xl space-y-4">
+                        <h3 className="font-bold text-emerald-500 mb-4 flex items-center gap-2 border-b border-emerald-900/30 pb-2">
+                            <Terminal className="w-4 h-4" /> Registros Históricos do Diário
+                        </h3>
+                        <div className="space-y-4 max-h-60 overflow-y-auto pr-2 no-scrollbar">
+                            {messages.map(msg => (
+                                <div key={msg.id} className="p-4 bg-black/40 border border-white/5 rounded-lg">
+                                    <h4 className="text-emerald-400 font-bold mb-1">{msg.title}</h4>
+                                    <p className="text-xs text-zinc-400 font-mono mb-2">Por {msg.author} • {new Date(msg.created_at).toLocaleString()}</p>
+                                    <p className="text-sm text-emerald-100/80 whitespace-pre-wrap">{msg.content}</p>
+                                </div>
+                            ))}
+                            {messages.length === 0 && (
+                                <div className="text-center text-emerald-600/50 text-sm py-4 font-mono">Nenhum registro encontrado.</div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+
+                <div className="flex flex-col gap-6">
+                    <div className="bg-[#0A0D0B] border border-cyan-900/30 p-5 rounded-xl space-y-4">
+                        <h3 className="font-bold text-cyan-500 mb-4 flex items-center gap-2 border-b border-cyan-900/30 pb-2">
+                            <Network className="w-4 h-4" /> Radar Escuta (Inscritos)
+                        </h3>
+                        <div className="text-xs font-mono text-cyan-600 mb-4">Total sintonizados: {subscribers.length} terráqueos</div>
+                        <div className="space-y-2 max-h-[500px] overflow-y-auto pr-2 no-scrollbar">
+                            {subscribers.map(sub => (
+                                <div key={sub.id} className="p-3 bg-black/40 border border-cyan-900/30 rounded-lg flex justify-between items-center">
+                                    <span className="text-sm text-cyan-100 font-mono">{sub.email}</span>
+                                    <span className="text-[10px] text-cyan-600/70">{new Date(sub.created_at).toLocaleDateString()}</span>
+                                </div>
+                            ))}
+                            {subscribers.length === 0 && (
+                                <div className="text-center text-cyan-600/50 text-sm py-4 font-mono">Nenhum sinal detectado ainda no radar.</div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </motion.div>
+    );
+};
+
+const ProjetosSementeTab = () => {
+    const [title, setTitle] = useState('');
+    const [description, setDescription] = useState('');
+    const [status, setStatus] = useState('EM PREPARAÇÃO');
+    const [progress, setProgress] = useState(0);
+    const [isPublishing, setIsPublishing] = useState(false);
+    const [projects, setProjects] = useState<any[]>([]);
+
+    useEffect(() => {
+        const fetchProjects = async () => {
+            const { data } = await supabase.from('active_projects').select('*').order('created_at', { ascending: false });
+            if (data) setProjects(data);
+        };
+        fetchProjects();
+    }, []);
+
+    const handlePublish = async () => {
+        if (!title.trim() || !description.trim()) return;
+        setIsPublishing(true);
+        try {
+            const { error } = await supabase.from('active_projects').insert([{ title, description, status, progress }]);
+            if (!error) {
+                setTitle('');
+                setDescription('');
+                setStatus('EM PREPARAÇÃO');
+                setProgress(0);
+                const { data } = await supabase.from('active_projects').select('*').order('created_at', { ascending: false });
+                if (data) setProjects(data);
+            }
+        } catch (e) {
+            console.error(e);
+        }
+        setIsPublishing(false);
+    };
+
+    return (
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex flex-col gap-6 max-w-4xl mx-auto w-full">
+            <h2 className="text-2xl font-bold uppercase tracking-widest text-[#10b981] mb-4 font-mono drop-shadow-[0_0_10px_#10b981]">Projetos em Andamento no Solo</h2>
+            
+            <div className="bg-[#0A0D0B] border border-emerald-900/30 p-5 rounded-xl space-y-4">
+                <h3 className="font-bold text-emerald-500 mb-4 flex items-center gap-2 border-b border-emerald-900/30 pb-2">
+                    <Sprout className="w-4 h-4" /> Plantar Nova Iniciativa
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-4">
+                        <div>
+                            <label className="block text-xs font-mono text-emerald-600 mb-1">Título do Projeto</label>
+                            <input 
+                                type="text" value={title} onChange={e => setTitle(e.target.value)}
+                                className="w-full bg-black/40 border border-emerald-900/30 rounded px-3 py-2 text-sm text-emerald-100 focus:border-emerald-500/50 focus:outline-none"
+                                placeholder="Ex: Projeto Piloto Semente"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-xs font-mono text-emerald-600 mb-1">Status Atual</label>
+                            <select 
+                                value={status} onChange={e => setStatus(e.target.value)}
+                                className="w-full bg-black/40 border border-emerald-900/30 rounded px-3 py-2 text-sm text-emerald-100 focus:border-emerald-500/50 focus:outline-none"
+                            >
+                                <option value="EM PREPARAÇÃO">EM PREPARAÇÃO</option>
+                                <option value="PLANTANDO">PLANTANDO</option>
+                                <option value="EM CRESCIMENTO">EM CRESCIMENTO</option>
+                                <option value="CONCLUÍDO">CONCLUÍDO</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div className="space-y-4">
+                        <div>
+                            <label className="block text-xs font-mono text-emerald-600 mb-1">Progresso (0-100%)</label>
+                            <input 
+                                type="number" min="0" max="100" value={progress} onChange={e => setProgress(Number(e.target.value))}
+                                className="w-full bg-black/40 border border-emerald-900/30 rounded px-3 py-2 text-sm text-emerald-100 focus:border-emerald-500/50 focus:outline-none"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-xs font-mono text-emerald-600 mb-1">Descrição</label>
+                            <textarea 
+                                value={description} onChange={e => setDescription(e.target.value)} rows={3}
+                                className="w-full bg-black/40 border border-emerald-900/30 rounded px-3 py-2 text-sm text-emerald-100 focus:border-emerald-500/50 focus:outline-none resize-none"
+                                placeholder="Descreva os objetivos e conquistas..."
+                            ></textarea>
+                        </div>
+                    </div>
+                </div>
+                <button 
+                    onClick={handlePublish} disabled={isPublishing}
+                    className="w-full mt-4 py-3 bg-gradient-to-r from-emerald-600 to-green-500 text-white rounded-lg uppercase tracking-widest font-bold shadow-[0_0_20px_rgba(16,185,129,0.2)] hover:shadow-[0_0_30px_rgba(16,185,129,0.4)] disabled:opacity-50 transition-all font-mono text-xs"
+                >
+                    {isPublishing ? 'Plantando...' : 'Adicionar ao Solo Público'}
+                </button>
+            </div>
+
+            <div className="bg-[#0A0D0B] border border-emerald-900/30 p-5 rounded-xl space-y-4 mt-6">
+                <h3 className="font-bold text-emerald-500 mb-4 flex items-center gap-2 border-b border-emerald-900/30 pb-2">
+                    <Sprout className="w-4 h-4" /> Projetos Mapeados no Solo
+                </h3>
+                <div className="space-y-4 max-h-96 overflow-y-auto pr-2 no-scrollbar">
+                    {projects.map(proj => (
+                        <div key={proj.id} className="p-4 bg-black/40 border border-white/5 rounded-lg flex flex-col md:flex-row gap-4 items-start md:items-center">
+                            <div className="flex-1">
+                                <h4 className="text-emerald-400 font-bold mb-1">{proj.title}</h4>
+                                <div className="flex gap-2 items-center mb-2">
+                                    <span className="px-2 py-0.5 rounded-full text-[10px] uppercase font-bold border font-mono
+                                        ${proj.status === 'CONCLUÍDO' ? 'border-green-500 text-green-400 bg-green-500/10' : 'border-emerald-500/50 text-emerald-400 bg-emerald-500/10'}">
+                                        {proj.status}
+                                    </span>
+                                    <span className="text-xs text-zinc-400 font-mono">{new Date(proj.created_at).toLocaleDateString()}</span>
+                                </div>
+                                <p className="text-sm text-emerald-100/80 whitespace-pre-wrap">{proj.description}</p>
+                            </div>
+                            <div className="w-full md:w-32 flex flex-col gap-1 items-end shrink-0">
+                                <span className="text-xs font-mono text-emerald-500">{proj.progress}%</span>
+                                <div className="w-full h-2 bg-black rounded-full overflow-hidden border border-emerald-900/50">
+                                    <div className="h-full bg-gradient-to-r from-emerald-600 to-green-400" style={{ width: `${proj.progress}%` }}></div>
+                                </div>
+                            </div>
+                        </div>
+                    ))}
+                    {projects.length === 0 && (
+                        <div className="text-center text-emerald-600/50 text-sm py-4 font-mono">Nenhum projeto plantado ainda.</div>
+                    )}
+                </div>
+            </div>
+
+        </motion.div>
+    );
+};
 
 const BazarTab = () => {
     const [isForging, setIsForging] = useState(false);
@@ -513,61 +761,142 @@ const NinhoRenovacaoTab = () => {
 };
 
 const EspelhoDAguaTab = () => {
+    const [txHash, setTxHash] = useState('');
+    const [type, setType] = useState('IN');
+    const [amount, setAmount] = useState('');
+    const [asset, setAsset] = useState('SOS');
+    const [description, setDescription] = useState('');
+    const [isPublishing, setIsPublishing] = useState(false);
+    const [transactions, setTransactions] = useState<any[]>([]);
+
+    useEffect(() => {
+        const fetchTxs = async () => {
+            const { data } = await supabase.from('treasury_transactions').select('*').order('created_at', { ascending: false });
+            if (data) setTransactions(data);
+        };
+        fetchTxs();
+    }, []);
+
+    const handlePublish = async () => {
+        if (!txHash.trim() || !amount.trim() || !description.trim()) return;
+        setIsPublishing(true);
+        try {
+            const { error } = await supabase.from('treasury_transactions').insert([{ 
+                tx_hash: txHash, 
+                type, 
+                amount: Number(amount), 
+                asset, 
+                description 
+            }]);
+            if (!error) {
+                setTxHash('');
+                setAmount('');
+                setDescription('');
+                const { data } = await supabase.from('treasury_transactions').select('*').order('created_at', { ascending: false });
+                if (data) setTransactions(data);
+            }
+        } catch (e) {
+            console.error(e);
+        }
+        setIsPublishing(false);
+    };
+
     return (
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex flex-col items-center py-8">
-            <h2 className="text-2xl font-bold uppercase tracking-widest text-cyan-400 mb-2 font-mono">Espelho d'Água (Tesouraria)</h2>
-            <p className="text-cyan-600/60 font-mono text-xs mb-12">Lagos de Retenção de Liquidez</p>
-
-            <div className="relative w-full max-w-4xl h-96 flex flex-col items-center justify-start border border-cyan-900/30 rounded-3xl bg-black/40 overflow-hidden">
-                {/* Fundo de ondulação */}
-                <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(ellipse at top, #06b6d4 0%, transparent 60%)' }} />
-
-                {/* Fonte Central */}
-                <motion.div 
-                    animate={{ y: [0, 5, 0] }} transition={{ repeat: Infinity, duration: 4 }}
-                    className="relative w-40 h-24 bg-cyan-950 border border-cyan-500/50 rounded-[40px] mt-8 flex flex-col items-center justify-center z-10 shadow-[0_0_30px_rgba(6,182,212,0.3)]"
-                >
-                    <span className="text-cyan-200 font-mono uppercase text-xs font-bold tracking-widest">Fonte SOS</span>
-                    <span className="text-cyan-400 font-mono text-lg mt-1">$1.4M</span>
-                </motion.div>
-
-                {/* Fluxos d'agua */}
-                <div className="absolute top-32 inset-x-0 bottom-0 flex justify-around">
-                    
-                    {/* Reflorestamento 50% */}
-                    <div className="flex flex-col items-center w-1/3 relative group">
-                        {/* Stream line */}
-                        <div className="absolute top-0 bottom-32 w-1 border-l-2 border-dashed border-emerald-500/30">
-                            <motion.div animate={{ top: ['0%', '100%'], opacity: [0, 1, 0] }} transition={{ repeat: Infinity, duration: 2, ease: "linear" }} className="w-2 h-8 bg-emerald-400 rounded-full absolute -left-1.5 blur-[2px]" />
-                        </div>
-                        <div className="absolute bottom-12 w-40 h-16 bg-emerald-950/80 border border-emerald-500/50 rounded-[50%] flex items-center justify-center shadow-[0_0_20px_rgba(16,185,129,0.2)]">
-                            <span className="text-emerald-400 text-[10px] font-mono tracking-widest uppercase font-bold relative z-10">Reflorestamento</span>
-                            <span className="absolute -top-4 text-emerald-300 font-mono text-[10px] bg-black px-2 py-0.5 rounded-full border border-emerald-800">50%</span>
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex flex-col gap-6 max-w-4xl mx-auto w-full">
+            <h2 className="text-2xl font-bold uppercase tracking-widest text-[#10b981] mb-4 font-mono drop-shadow-[0_0_10px_#10b981]">Tesouraria SOS (Transparência Blockchain)</h2>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="flex flex-col gap-6">
+                    <div className="bg-[#0A0D0B] border border-cyan-900/30 p-5 rounded-xl space-y-4">
+                        <h3 className="font-bold text-cyan-500 mb-4 flex items-center gap-2 border-b border-cyan-900/30 pb-2">
+                            <Anchor className="w-4 h-4" /> Registrar Movimentação
+                        </h3>
+                        <div className="space-y-4">
+                            <div>
+                                <label className="block text-xs font-mono text-cyan-600 mb-1">Hash da Transação (TX ID)</label>
+                                <input 
+                                    type="text" value={txHash} onChange={e => setTxHash(e.target.value)}
+                                    className="w-full bg-black/40 border border-cyan-900/30 rounded px-3 py-2 text-sm text-cyan-100 focus:border-cyan-500/50 focus:outline-none font-mono"
+                                    placeholder="Ex: 5KL9...T2Y"
+                                />
+                            </div>
+                            <div className="grid grid-cols-3 gap-2">
+                                <div>
+                                    <label className="block text-xs font-mono text-cyan-600 mb-1">Tipo</label>
+                                    <select 
+                                        value={type} onChange={e => setType(e.target.value)}
+                                        className="w-full bg-black/40 border border-cyan-900/30 rounded px-3 py-2 text-sm text-cyan-100 focus:border-cyan-500/50 focus:outline-none"
+                                    >
+                                        <option value="IN">Entrada (IN)</option>
+                                        <option value="OUT">Saída (OUT)</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-mono text-cyan-600 mb-1">Moeda</label>
+                                    <select 
+                                        value={asset} onChange={e => setAsset(e.target.value)}
+                                        className="w-full bg-black/40 border border-cyan-900/30 rounded px-3 py-2 text-sm text-cyan-100 focus:border-cyan-500/50 focus:outline-none"
+                                    >
+                                        <option value="SOS">SOS</option>
+                                        <option value="ALGO">ALGO</option>
+                                        <option value="USDC">USDC</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-mono text-cyan-600 mb-1">Quantia</label>
+                                    <input 
+                                        type="number" value={amount} onChange={e => setAmount(e.target.value)}
+                                        className="w-full bg-black/40 border border-cyan-900/30 rounded px-3 py-2 text-sm text-cyan-100 focus:border-cyan-500/50 focus:outline-none font-mono"
+                                        placeholder="0.00"
+                                    />
+                                </div>
+                            </div>
+                            <div>
+                                <label className="block text-xs font-mono text-cyan-600 mb-1">Descrição do Uso</label>
+                                <textarea 
+                                    value={description} onChange={e => setDescription(e.target.value)} rows={3}
+                                    className="w-full bg-black/40 border border-cyan-900/30 rounded px-3 py-2 text-sm text-cyan-100 focus:border-cyan-500/50 focus:outline-none resize-none"
+                                    placeholder="Detalhe o propósito desta movimentação..."
+                                ></textarea>
+                            </div>
+                            <button 
+                                onClick={handlePublish} disabled={isPublishing}
+                                className="w-full py-3 bg-gradient-to-r from-cyan-600 to-blue-500 text-white rounded-lg uppercase tracking-widest font-bold shadow-[0_0_20px_rgba(6,182,212,0.2)] hover:shadow-[0_0_30px_rgba(6,182,212,0.4)] disabled:opacity-50 transition-all font-mono text-xs"
+                            >
+                                {isPublishing ? 'Registrando...' : 'Emitir no Livro Público'}
+                            </button>
                         </div>
                     </div>
+                </div>
 
-                    {/* Liquidez 30% */}
-                    <div className="flex flex-col items-center w-1/3 relative">
-                        <div className="absolute top-0 bottom-32 w-1 border-l-2 border-dashed border-cyan-500/30">
-                            <motion.div animate={{ top: ['0%', '100%'], opacity: [0, 1, 0] }} transition={{ repeat: Infinity, duration: 2.5, ease: "linear" }} className="w-2 h-8 bg-cyan-400 rounded-full absolute -left-1.5 blur-[2px]" />
-                        </div>
-                        <div className="absolute bottom-12 w-40 h-16 bg-cyan-950/80 border border-cyan-500/50 rounded-[50%] flex items-center justify-center shadow-[0_0_20px_rgba(6,182,212,0.2)]">
-                            <span className="text-cyan-400 text-[10px] font-mono tracking-widest uppercase font-bold relative z-10">Liquidez</span>
-                            <span className="absolute -top-4 text-cyan-300 font-mono text-[10px] bg-black px-2 py-0.5 rounded-full border border-cyan-800">30%</span>
+                <div className="flex flex-col gap-6">
+                    <div className="bg-[#0A0D0B] border border-cyan-900/30 p-5 rounded-xl space-y-4">
+                        <h3 className="font-bold text-cyan-500 mb-4 flex items-center gap-2 border-b border-cyan-900/30 pb-2">
+                            <Anchor className="w-4 h-4" /> Ledger de Movimentações
+                        </h3>
+                        <div className="space-y-4 max-h-[500px] overflow-y-auto pr-2 no-scrollbar">
+                            {transactions.map(tx => (
+                                <div key={tx.id} className="p-4 bg-black/40 border border-white/5 rounded-lg">
+                                    <div className="flex justify-between items-start mb-2">
+                                        <div className="flex items-center gap-2">
+                                            <span className={`px-2 py-0.5 rounded text-[10px] uppercase font-bold border font-mono ${tx.type === 'IN' ? 'border-emerald-500/50 text-emerald-400 bg-emerald-500/10' : 'border-red-500/50 text-red-400 bg-red-500/10'}`}>
+                                                {tx.type}
+                                            </span>
+                                            <span className="text-cyan-400 font-bold font-mono">{Number(tx.amount).toLocaleString()} {tx.asset}</span>
+                                        </div>
+                                        <span className="text-[10px] text-cyan-600/70 font-mono">{new Date(tx.created_at).toLocaleDateString()}</span>
+                                    </div>
+                                    <p className="text-xs text-cyan-100/80 mb-2">{tx.description}</p>
+                                    <div className="text-[10px] text-cyan-700 font-mono break-all bg-black/60 p-1.5 rounded">
+                                        TX: {tx.tx_hash}
+                                    </div>
+                                </div>
+                            ))}
+                            {transactions.length === 0 && (
+                                <div className="text-center text-cyan-600/50 text-sm py-4 font-mono">Nenhum registro on-chain mapeado ainda.</div>
+                            )}
                         </div>
                     </div>
-
-                    {/* Inovação 20% */}
-                    <div className="flex flex-col items-center w-1/3 relative">
-                        <div className="absolute top-0 bottom-32 w-1 border-l-2 border-dashed border-purple-500/30">
-                            <motion.div animate={{ top: ['0%', '100%'], opacity: [0, 1, 0] }} transition={{ repeat: Infinity, duration: 3, ease: "linear" }} className="w-2 h-8 bg-purple-400 rounded-full absolute -left-1.5 blur-[2px]" />
-                        </div>
-                        <div className="absolute bottom-12 w-40 h-16 bg-purple-950/80 border border-purple-500/50 rounded-[50%] flex items-center justify-center shadow-[0_0_20px_rgba(168,85,247,0.2)]">
-                            <span className="text-purple-400 text-[10px] font-mono tracking-widest uppercase font-bold relative z-10">Inovação</span>
-                            <span className="absolute -top-4 text-purple-300 font-mono text-[10px] bg-black px-2 py-0.5 rounded-full border border-purple-800">20%</span>
-                        </div>
-                    </div>
-
                 </div>
             </div>
         </motion.div>

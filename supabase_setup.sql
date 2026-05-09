@@ -65,3 +65,59 @@ create policy "Permitir atualização do estado" on portal_state for all to anon
 
 -- Linha inicial (se não existir)
 insert into portal_state (id, data) values (1, '{"arrecadado": 0, "percentual": 0, "goal": 50000, "projectStatus": "ATIVO", "badgeText": "Soberania Planetária"}'::jsonb) on conflict (id) do nothing;
+
+create table if not exists newsletter_subscribers (
+  id bigint primary key generated always as identity,
+  email text not null unique,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+alter table newsletter_subscribers enable row level security;
+create policy "Permitir inserção anônima" on newsletter_subscribers for insert to anon with check (true);
+create policy "Permitir leitura anonima" on newsletter_subscribers for select to anon using (true);
+
+create table if not exists messages_publicas (
+  id bigint primary key generated always as identity,
+  title text not null,
+  content text not null,
+  author text not null default 'Nexus',
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+alter table messages_publicas enable row level security;
+create policy "Permitir inserção autenticada" on messages_publicas for insert to anon with check (true);
+create policy "Permitir leitura anonima" on messages_publicas for select to anon using (true);
+create policy "Permitir atualização anonima" on messages_publicas for update to anon using (true) with check (true);
+create policy "Permitir deleção anonima" on messages_publicas for delete to anon using (true);
+
+create table if not exists active_projects (
+  id bigint primary key generated always as identity,
+  title text not null,
+  description text not null,
+  status text not null,
+  progress integer not null default 0,
+  image_url text,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+alter table active_projects enable row level security;
+create policy "Permitir inserção em projetos" on active_projects for insert to anon with check (true);
+create policy "Permitir leitura de projetos" on active_projects for select to anon using (true);
+create policy "Permitir atualização de projetos" on active_projects for update to anon using (true) with check (true);
+create policy "Permitir deleção de projetos" on active_projects for delete to anon using (true);
+
+create table if not exists treasury_transactions (
+  id bigint primary key generated always as identity,
+  tx_hash text not null,
+  type text not null, -- IN / OUT
+  amount numeric not null,
+  asset text not null, -- SOS, ALGO, USDC
+  description text not null,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+alter table treasury_transactions enable row level security;
+create policy "Permitir inserção em tesouraria" on treasury_transactions for insert to anon with check (true);
+create policy "Permitir leitura de tesouraria" on treasury_transactions for select to anon using (true);
+create policy "Permitir atualização de tesouraria" on treasury_transactions for update to anon using (true) with check (true);
+create policy "Permitir deleção de tesouraria" on treasury_transactions for delete to anon using (true);

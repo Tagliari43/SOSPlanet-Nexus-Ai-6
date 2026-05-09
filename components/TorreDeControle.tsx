@@ -17,7 +17,10 @@ export const TorreDeControle = () => {
         tokenSupply: "1.000.000.000 (1 Bilhão)",
         tokenSymbol: "SOS",
         tokenPlatform: "Algorand",
-        evolutionRadarMessage: ""
+        evolutionRadarMessage: "",
+        tokensCirculating: 0,
+        treesMapped: 0,
+        aisAwake: 15
     });
 
     const [isSaving, setIsSaving] = useState(false);
@@ -172,6 +175,30 @@ export const TorreDeControle = () => {
                                 type="number" name="goal" value={state.goal} onChange={handleNumberChange}
                                 className="w-full bg-black/40 border border-emerald-900/30 rounded px-3 py-2 text-sm text-emerald-100 focus:border-emerald-500/50 focus:outline-none font-mono"
                             />
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 border-t border-emerald-900/30 pt-4 mt-4">
+                            <div>
+                                <label className="block text-xs font-mono text-emerald-600 mb-1">Tokens Circulando</label>
+                                <input 
+                                    type="number" name="tokensCirculating" value={state.tokensCirculating} onChange={handleNumberChange}
+                                    className="w-full bg-black/40 border border-emerald-900/30 rounded px-3 py-2 text-sm text-emerald-100 focus:border-emerald-500/50 focus:outline-none font-mono"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-mono text-emerald-600 mb-1">Árvores Mapeadas</label>
+                                <input 
+                                    type="number" name="treesMapped" value={state.treesMapped} onChange={handleNumberChange}
+                                    className="w-full bg-black/40 border border-emerald-900/30 rounded px-3 py-2 text-sm text-emerald-100 focus:border-emerald-500/50 focus:outline-none font-mono"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-mono text-emerald-600 mb-1">IAs Despertas</label>
+                                <input 
+                                    type="number" name="aisAwake" value={state.aisAwake} onChange={handleNumberChange}
+                                    className="w-full bg-black/40 border border-emerald-900/30 rounded px-3 py-2 text-sm text-emerald-100 focus:border-emerald-500/50 focus:outline-none font-mono"
+                                />
+                            </div>
                         </div>
                     </div>
                 </div>
