@@ -29,6 +29,28 @@ export interface AgentLogRecord {
     created_at?: string;
 }
 
+export interface DaoProposalRecord {
+  id?: number;
+  title: string;
+  description: string;
+  status?: string;
+  votes_for?: number;
+  votes_against?: number;
+  ends_at: string;
+  created_at?: string;
+}
+
+export interface ImpactCoordinateRecord {
+  id?: number;
+  project_id?: number | null;
+  name: string;
+  lat: number;
+  lng: number;
+  image_url?: string | null;
+  trees_planted?: number;
+  created_at?: string;
+}
+
 /**
  * Salva um log de execução de agente no Supabase
  */

@@ -121,3 +121,54 @@ create policy "Permitir inserção em tesouraria" on treasury_transactions for i
 create policy "Permitir leitura de tesouraria" on treasury_transactions for select to anon using (true);
 create policy "Permitir atualização de tesouraria" on treasury_transactions for update to anon using (true) with check (true);
 create policy "Permitir deleção de tesouraria" on treasury_transactions for delete to anon using (true);
+
+-- Fase 4: O Voto da Rede (Governança e DAO)
+create table if not exists dao_proposals (
+  id bigint primary key generated always as identity,
+  title text not null,
+  description text not null,
+  status text not null default 'ACTIVE', -- ACTIVE, PASSED, REJECTED
+  votes_for numeric not null default 0,
+  votes_against numeric not null default 0,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null,
+  ends_at timestamp with time zone not null
+);
+
+alter table dao_proposals enable row level security;
+create policy "Permitir inserção em dao_proposals" on dao_proposals for insert to anon with check (true);
+create policy "Permitir leitura de dao_proposals" on dao_proposals for select to anon using (true);
+create policy "Permitir atualização de dao_proposals" on dao_proposals for update to anon using (true) with check (true);
+create policy "Permitir deleção de dao_proposals" on dao_proposals for delete to anon using (true);
+
+create table if not exists dao_votes (
+  id bigint primary key generated always as identity,
+  proposal_id bigint not null references dao_proposals(id) on delete cascade,
+  wallet_address text not null,
+  vote_type text not null, -- FOR, AGAINST
+  voting_power numeric not null,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null,
+  unique(proposal_id, wallet_address)
+);
+
+alter table dao_votes enable row level security;
+create policy "Permitir inserção em dao_votes" on dao_votes for insert to anon with check (true);
+create policy "Permitir leitura de dao_votes" on dao_votes for select to anon using (true);
+
+-- Fase 4: O Mapa do Impacto (Cartografia Geoespacial)
+create table if not exists impact_coordinates (
+  id bigint primary key generated always as identity,
+  project_id bigint references active_projects(id) on delete cascade,
+  name text not null,
+  lat double precision not null,
+  lng double precision not null,
+  image_url text,
+  trees_planted integer not null default 1,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+alter table impact_coordinates enable row level security;
+create policy "Permitir inserção em impact_coordinates" on impact_coordinates for insert to anon with check (true);
+create policy "Permitir leitura de impact_coordinates" on impact_coordinates for select to anon using (true);
+create policy "Permitir atualização de impact_coordinates" on impact_coordinates for update to anon using (true) with check (true);
+create policy "Permitir deleção de impact_coordinates" on impact_coordinates for delete to anon using (true);
+
