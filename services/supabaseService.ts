@@ -119,6 +119,26 @@ export interface GuardianBadgeRecord {
   earned_at?: string;
 }
 
+export interface RegenMarketItemRecord {
+  id?: number;
+  name: string;
+  description: string;
+  price_sos: number;
+  stock: number;
+  item_type: 'IMPACT_ACTION' | 'NFT' | 'POWERUP';
+  image_url?: string;
+  created_at?: string;
+}
+
+export interface RegenInventoryRecord {
+  id?: number;
+  wallet_address: string;
+  item_id: number;
+  quantity: number;
+  acquired_at?: string;
+  item_details?: RegenMarketItemRecord; // for joined queries
+}
+
 /**
  * Salva um log de execução de agente no Supabase
  */

@@ -292,5 +292,35 @@ create policy "Permitir inserção em guardian_badges" on guardian_badges for in
 create policy "Permitir leitura de guardian_badges" on guardian_badges for select to anon using (true);
 create policy "Permitir atualização de guardian_badges" on guardian_badges for update to anon using (true) with check (true);
 
+-- Fase 10: O Mercado Regen (Bazar de Eco-Ativos e Impacto)
+create table if not exists regen_market_items (
+  id bigint primary key generated always as identity,
+  name text not null,
+  description text not null,
+  price_sos numeric not null default 0,
+  stock integer not null default -1, -- -1 for infinite
+  item_type text not null, -- IMPACT_ACTION, NFT, POWERUP
+  image_url text,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+alter table regen_market_items enable row level security;
+create policy "Permitir inserção em regen_market_items" on regen_market_items for insert to anon with check (true);
+create policy "Permitir leitura de regen_market_items" on regen_market_items for select to anon using (true);
+create policy "Permitir atualização de regen_market_items" on regen_market_items for update to anon using (true) with check (true);
+
+create table if not exists regen_inventory (
+  id bigint primary key generated always as identity,
+  wallet_address text not null,
+  item_id bigint not null references regen_market_items(id) on delete cascade,
+  quantity integer not null default 1,
+  acquired_at timestamp with time zone default timezone('utc'::text, now()) not null,
+  unique(wallet_address, item_id)
+);
+alter table regen_inventory enable row level security;
+create policy "Permitir inserção em regen_inventory" on regen_inventory for insert to anon with check (true);
+create policy "Permitir leitura de regen_inventory" on regen_inventory for select to anon using (true);
+create policy "Permitir atualização de regen_inventory" on regen_inventory for update to anon using (true) with check (true);
+
+
 
 
