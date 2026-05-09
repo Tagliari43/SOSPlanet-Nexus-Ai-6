@@ -51,6 +51,39 @@ export interface ImpactCoordinateRecord {
   created_at?: string;
 }
 
+export interface EmergencyAlertRecord {
+  id?: number;
+  title: string;
+  description: string;
+  severity: 'CRITICAL' | 'HIGH' | 'MEDIUM';
+  lat: number;
+  lng: number;
+  funds_required: number;
+  funds_raised?: number;
+  status?: 'ACTIVE' | 'RESOLVING' | 'RESOLVED';
+  created_at?: string;
+}
+
+export interface EmergencyProofRecord {
+  id?: number;
+  alert_id: number;
+  wallet_address: string;
+  proof_url: string;
+  description?: string;
+  status?: 'PENDING_VERIFICATION' | 'VERIFIED' | 'REJECTED';
+  created_at?: string;
+}
+
+export interface PreservationZoneRecord {
+  id?: number;
+  name: string;
+  description?: string;
+  geojson_polygon: any;
+  area_hectares: number;
+  protected_since?: string;
+  status?: 'ACTIVE' | 'THREATENED' | 'RESTORING';
+}
+
 /**
  * Salva um log de execução de agente no Supabase
  */

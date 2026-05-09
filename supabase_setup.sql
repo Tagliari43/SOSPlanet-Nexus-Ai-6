@@ -200,3 +200,54 @@ create policy "Permitir inserção em referrals" on referrals for insert to anon
 create policy "Permitir leitura de referrals" on referrals for select to anon using (true);
 create policy "Permitir atualização de referrals" on referrals for update to anon using (true) with check (true);
 
+-- Fase 7: O Farol de Emergência (Proof-of-Action & Crises)
+create table if not exists emergency_alerts (
+  id bigint primary key generated always as identity,
+  title text not null,
+  description text not null,
+  severity text not null default 'HIGH', -- CRITICAL, HIGH, MEDIUM
+  lat double precision not null,
+  lng double precision not null,
+  funds_required numeric not null default 0,
+  funds_raised numeric not null default 0,
+  status text not null default 'ACTIVE', -- ACTIVE, RESOLVING, RESOLVED
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+alter table emergency_alerts enable row level security;
+create policy "Permitir inserção em emergency_alerts" on emergency_alerts for insert to anon with check (true);
+create policy "Permitir leitura de emergency_alerts" on emergency_alerts for select to anon using (true);
+create policy "Permitir atualização de emergency_alerts" on emergency_alerts for update to anon using (true) with check (true);
+
+create table if not exists emergency_proofs (
+  id bigint primary key generated always as identity,
+  alert_id bigint not null references emergency_alerts(id) on delete cascade,
+  wallet_address text not null,
+  proof_url text not null,
+  description text,
+  status text not null default 'PENDING_VERIFICATION', -- PENDING_VERIFICATION, VERIFIED, REJECTED
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+alter table emergency_proofs enable row level security;
+create policy "Permitir inserção em emergency_proofs" on emergency_proofs for insert to anon with check (true);
+create policy "Permitir leitura de emergency_proofs" on emergency_proofs for select to anon using (true);
+create policy "Permitir atualização de emergency_proofs" on emergency_proofs for update to anon using (true) with check (true);
+
+-- Fase 8: O Olho de Gaia (Observatório de Impacto Geospacial)
+create table if not exists preservation_zones (
+  id bigint primary key generated always as identity,
+  name text not null,
+  description text,
+  geojson_polygon jsonb not null, -- Stores the coordinates for the polygon
+  area_hectares numeric not null default 0,
+  protected_since timestamp with time zone default timezone('utc'::text, now()) not null,
+  status text not null default 'ACTIVE' -- ACTIVE, THREATENED, RESTORING
+);
+
+alter table preservation_zones enable row level security;
+create policy "Permitir inserção em preservation_zones" on preservation_zones for insert to anon with check (true);
+create policy "Permitir leitura de preservation_zones" on preservation_zones for select to anon using (true);
+create policy "Permitir atualização de preservation_zones" on preservation_zones for update to anon using (true) with check (true);
+
+

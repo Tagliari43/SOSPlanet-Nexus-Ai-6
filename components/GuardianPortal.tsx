@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Bell, Droplets, Leaf, Palette, Star, Sun, Wind, Sparkles, Sprout, Tent, Users, Coins, Activity, Network, Anchor, Radio, Terminal, Share2 } from 'lucide-react';
+import { Bell, Droplets, Leaf, Palette, Star, Sun, Wind, Sparkles, Sprout, Tent, Users, Coins, Activity, Network, Anchor, Radio, Terminal, Share2, AlertTriangle } from 'lucide-react';
 import { TorreDeControle } from './TorreDeControle';
 import DaoGovernance from './DaoGovernance';
 import ImpactMap from './ImpactMap';
 import PropagadorTab from './PropagadorTab';
 import GaiaFloatChat from './GaiaFloatChat';
+import FarolEmergenciaTab from './FarolEmergenciaTab';
 
 // Biome Themes
 const biomes = {
@@ -92,7 +93,8 @@ const GuardianPortal: React.FC = () => {
                     { id: 'altar', label: 'O Altar', icon: Droplets },
                     { id: 'conselho', label: 'A Voz do Coletivo', icon: Users },
                     { id: 'constelacoes', label: 'Mapa de Impacto', icon: Star },
-                    { id: 'propagador', label: 'Propagador', icon: Share2 }
+                    { id: 'propagador', label: 'Propagador', icon: Share2 },
+                    { id: 'farol', label: 'Farol de Emergência', icon: AlertTriangle }
                 ].map(tab => (
                     <button
                         key={tab.id}
@@ -123,6 +125,7 @@ const GuardianPortal: React.FC = () => {
                     {activeTab === 'conselho' && <DaoGovernance key="conselho" />}
                     {activeTab === 'constelacoes' && <ImpactMap key="constelacoes" />}
                     {activeTab === 'propagador' && <PropagadorTab key="propagador" />}
+                    {activeTab === 'farol' && <FarolEmergenciaTab key="farol" />}
                 </AnimatePresence>
             </div>
 
