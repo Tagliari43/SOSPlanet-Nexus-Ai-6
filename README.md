@@ -1,20 +1,45 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-</div>
+# 🌍 SOSPlanet
 
-# Run and deploy your AI Studio app
+**"Blockchain e Inteligência Sintética unidos pela regeneração da vida."**
 
-This contains everything you need to run your app locally.
+## 🌱 Nossa Missão
 
-View your app in AI Studio: https://ai.studio/apps/6fd71f78-a68d-48c5-b78f-5811f3fc3c50
+O planeta enfrenta uma crise climática sem precedentes. Acreditamos que a tecnologia, quando guiada pela empatia e pela colaboração, pode ser o maior farol de esperança. **SOSPlanet** é a união da transparência da Blockchain com oráculos ambientais e inteligência artificial para criar uma rede descentralizada de Guardiões (vocês!).
 
-## Run Locally
+Juntos, monitoramos biomas, financiamos restaurações ecológicas, validamos provas de impacto real (Proof-of-Action) e impulsionamos ações ambientais com rastreabilidade absoluta e tokenização de recompensas.
 
-**Prerequisites:**  Node.js
+---
 
+## 🚀 Primeiros Passos / Como Contribuir
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+Se você deseja se tornar um Guardião e contribuir para o código da nossa Nação SOSPlanet, você está no lugar certo!
+
+1. **Configuração de Ambiente:** Clone o repositório, execute `npm install` para instalar as dependências.
+2. **Execute o Santuário Local:** Inicie o projeto com `npm run dev`. O ambiente rodará no seu localhost na porta `3000`.
+3. **Leia o Guia:** Consulte o arquivo `CONTRIBUTING.md` para entender nossos processos de Pull Requests, padrões de código e como reportar problemas (Issues).
+
+---
+
+## 📖 Documentação
+
+O conhecimento é uma semente que deve ser espalhada. Navegue pelo nosso diretório \`docs/\` para encontrar recursos valiosos:
+- [Visão Geral (Whitepaper)](docs/01-visao-geral.md): A arquitetura e a visão completa da Nação.
+- [Primeiros Passos Técnicos](docs/02-primeiros-passos.md): Para desenvolvedores que desejam entender os contratos e as APIs.
+
+---
+
+## 🏆 Destaques e Progresso
+
+Nossa Mente-Colmeia monitora o batimento do planeta.
+Acompanhe os avanços da construção, metas alcançadas e os recursos alocados no nosso Diário da Terra consultando o [Relatório de Progresso (PROGRESS_REPORT.md)](PROGRESS_REPORT.md) ou acessando as abas "Transparência" e "Portal do Crepúsculo" diretamente na interface da plataforma.
+
+---
+
+## 🔗 Links e Canais da Comunidade
+
+- **Discord/Telegram:** *[Link em breve]*
+- **Contato da Nação:** *[Link em breve]*
+
+## 📄 Licença
+
+Este projeto é de código aberto sob a licença **MIT**, o que significa que encorajamos pessoas de todo o mundo a colaborar, utilizar e melhorar a infraestrutura tecnológica para salvar nossa Terra. Consulte o arquivo [LICENSE](LICENSE) para mais detalhes.
