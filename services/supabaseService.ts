@@ -139,6 +139,61 @@ export interface RegenInventoryRecord {
   item_details?: RegenMarketItemRecord; // for joined queries
 }
 
+export interface VitalPulseMetricRecord {
+  id?: number;
+  metric_name: string;
+  metric_value: number;
+  status: 'NORMAL' | 'WARNING' | 'CRITICAL';
+  icon_name?: string;
+  last_updated?: string;
+}
+
+export interface ActionProofValidationRecord {
+  id?: number;
+  proof_id: number;
+  validator_wallet: string;
+  vote_status: 'APPROVED' | 'REJECTED';
+  comments?: string;
+  created_at?: string;
+}
+
+export interface TreasuryAllocationRecord {
+  id?: number;
+  category: string;
+  amount_sos: number;
+  percentage: number;
+  description?: string;
+  updated_at?: string;
+}
+
+export interface EarthDiaryEventRecord {
+  id?: number;
+  event_type: string;
+  title: string;
+  description: string;
+  guardian_wallet?: string;
+  created_at?: string;
+}
+
+export interface EcoStreakRecord {
+  wallet_address: string;
+  current_streak: number;
+  longest_streak: number;
+  last_action_date?: string;
+  status: 'ACTIVE' | 'RESTING';
+  created_at?: string;
+}
+
+export interface TwilightPortalMessageRecord {
+  id?: number;
+  wallet_address?: string;
+  human_message: string;
+  ai_response?: string;
+  ai_agent?: string;
+  emotional_tone?: 'HOPE' | 'URGENCY' | 'EMPATHY';
+  created_at?: string;
+}
+
 /**
  * Salva um log de execução de agente no Supabase
  */

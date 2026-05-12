@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Bell, Droplets, Leaf, Palette, Star, Sun, Wind, Sparkles, Sprout, Tent, Users, Coins, Activity, Network, Anchor, Radio, Terminal, Share2, AlertTriangle, Trophy, ShoppingBag } from 'lucide-react';
+import { Bell, Droplets, Leaf, Palette, Star, Sun, Wind, Sparkles, Sprout, Tent, Users, Coins, Activity, Network, Anchor, Radio, Terminal, Share2, AlertTriangle, Trophy, ShoppingBag, HeartPulse, History, MessageCircle } from 'lucide-react';
 import { TorreDeControle } from './TorreDeControle';
 import DaoGovernance from './DaoGovernance';
 import ImpactMap from './ImpactMap';
@@ -9,6 +9,9 @@ import GaiaFloatChat from './GaiaFloatChat';
 import FarolEmergenciaTab from './FarolEmergenciaTab';
 import JornadaGuardiaoTab from './JornadaGuardiaoTab';
 import MercadoRegenTab from './MercadoRegenTab';
+import PulsoVitalTab from './PulsoVitalTab';
+import TransparenciaTab from './TransparenciaTab';
+import PortalCrepusculoTab from './PortalCrepusculoTab';
 
 // Biome Themes
 const biomes = {
@@ -98,7 +101,10 @@ const GuardianPortal: React.FC = () => {
                     { id: 'propagador', label: 'Propagador', icon: Share2 },
                     { id: 'farol', label: 'Farol de Emergência', icon: AlertTriangle },
                     { id: 'jornada', label: 'Jornada do Guardião', icon: Trophy },
-                    { id: 'mercado', label: 'Mercado Regen', icon: ShoppingBag }
+                    { id: 'mercado', label: 'Mercado Regen', icon: ShoppingBag },
+                    { id: 'pulso', label: 'O Pulso Vital', icon: HeartPulse },
+                    { id: 'transparencia', label: 'Diário & Tesouro', icon: History },
+                    { id: 'crepusculo', label: 'Portal do Crepúsculo', icon: MessageCircle }
                 ].map(tab => (
                     <button
                         key={tab.id}
@@ -132,6 +138,9 @@ const GuardianPortal: React.FC = () => {
                     {activeTab === 'farol' && <FarolEmergenciaTab key="farol" />}
                     {activeTab === 'jornada' && <JornadaGuardiaoTab key="jornada" />}
                     {activeTab === 'mercado' && <MercadoRegenTab key="mercado" />}
+                    {activeTab === 'pulso' && <PulsoVitalTab key="pulso" />}
+                    {activeTab === 'transparencia' && <TransparenciaTab key="transparencia" />}
+                    {activeTab === 'crepusculo' && <PortalCrepusculoTab key="crepusculo" />}
                 </AnimatePresence>
             </div>
 

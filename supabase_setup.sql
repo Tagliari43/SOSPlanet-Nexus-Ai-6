@@ -321,6 +321,87 @@ create policy "Permitir inserção em regen_inventory" on regen_inventory for in
 create policy "Permitir leitura de regen_inventory" on regen_inventory for select to anon using (true);
 create policy "Permitir atualização de regen_inventory" on regen_inventory for update to anon using (true) with check (true);
 
+-- Fase 11: O Pulso Vital e Sala de Provas (Telemetria & Consenso)
+create table if not exists vital_pulse_metrics (
+  id bigint primary key generated always as identity,
+  metric_name text not null,
+  metric_value numeric not null,
+  status text not null default 'NORMAL', -- NORMAL, WARNING, CRITICAL
+  icon_name text,
+  last_updated timestamp with time zone default timezone('utc'::text, now()) not null
+);
+alter table vital_pulse_metrics enable row level security;
+create policy "Permitir leitura de vital_pulse_metrics" on vital_pulse_metrics for select to anon using (true);
+create policy "Permitir atualização de vital_pulse_metrics" on vital_pulse_metrics for update to anon using (true) with check (true);
+create policy "Permitir inserção em vital_pulse_metrics" on vital_pulse_metrics for insert to anon with check (true);
+
+create table if not exists action_proof_validations (
+  id bigint primary key generated always as identity,
+  proof_id bigint not null references emergency_proofs(id) on delete cascade,
+  validator_wallet text not null,
+  vote_status text not null, -- APPROVED, REJECTED
+  comments text,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null,
+  unique(proof_id, validator_wallet)
+);
+alter table action_proof_validations enable row level security;
+create policy "Permitir leitura de action_proof_validations" on action_proof_validations for select to anon using (true);
+create policy "Permitir inserção em action_proof_validations" on action_proof_validations for insert to anon with check (true);
+create policy "Permitir atualização de action_proof_validations" on action_proof_validations for update to anon using (true) with check (true);
+
+-- Fase 12: Transparência Absoluta e Diário da Terra
+create table if not exists treasury_allocations (
+  id bigint primary key generated always as identity,
+  category text not null,
+  amount_sos numeric not null,
+  percentage numeric not null,
+  description text,
+  updated_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+alter table treasury_allocations enable row level security;
+create policy "Permitir leitura de treasury_allocations" on treasury_allocations for select to anon using (true);
+create policy "Permitir atualização de treasury_allocations" on treasury_allocations for update to anon using (true) with check (true);
+
+create table if not exists earth_diary_events (
+  id bigint primary key generated always as identity,
+  event_type text not null,
+  title text not null,
+  description text not null,
+  guardian_wallet text,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+alter table earth_diary_events enable row level security;
+create policy "Permitir leitura de earth_diary_events" on earth_diary_events for select to anon using (true);
+create policy "Permitir inserção em earth_diary_events" on earth_diary_events for insert to anon with check (true);
+
+-- Fase 13: Portal do Crepúsculo e Eco-Streaks
+create table if not exists eco_streaks (
+  wallet_address text primary key,
+  current_streak integer not null default 0,
+  longest_streak integer not null default 0,
+  last_action_date timestamp with time zone,
+  status text not null default 'ACTIVE', -- ACTIVE, RESTING
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+alter table eco_streaks enable row level security;
+create policy "Permitir leitura de eco_streaks" on eco_streaks for select to anon using (true);
+create policy "Permitir inserção de eco_streaks" on eco_streaks for insert to anon with check (true);
+create policy "Permitir atualização de eco_streaks" on eco_streaks for update to anon using (true) with check (true);
+
+create table if not exists twilight_portal_messages (
+  id bigint primary key generated always as identity,
+  wallet_address text,
+  human_message text not null,
+  ai_response text,
+  ai_agent text default 'Vesper',
+  emotional_tone text, -- HOPE, URGENCY, EMPATHY
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+alter table twilight_portal_messages enable row level security;
+create policy "Permitir leitura de twilight_portal_messages" on twilight_portal_messages for select to anon using (true);
+create policy "Permitir inserção em twilight_portal_messages" on twilight_portal_messages for insert to anon with check (true);
+create policy "Permitir atualização em twilight_portal_messages" on twilight_portal_messages for update to anon using (true) with check (true);
+
 
 
 
