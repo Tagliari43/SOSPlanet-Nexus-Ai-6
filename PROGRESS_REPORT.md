@@ -2,6 +2,11 @@
 
 Este diário mantém o registro das evoluções de engenharia, conquistas da SOSPlanet e atualizações para a Nação de Guardiões.
 
+## Fase 18: Frequência Guardiã (Central Global P2P) ✨
+A rede neural de comunicação da Terra foi ativada. O rádio global operante traz um radar visual "glassmorphic" pulsante, com balões de comunicação reativos e micro-animações acústicas (A Voz de Gaia). Foi integrado o botão de alerta "Convocar Ação" (SOS P2P), permitindo que Guardiões emitam pulsos geolocalizados de emergência no mapa da rede para coordenar ajuda e impacto local em tempo real.
+
+---
+
 ## Fase 17: Epicentro de Missões (O Chamado da Terra) ✨
 O "EcoQuestBoard" foi totalmente integrado à malha central. Guardiões agora podem visualizar missões ("O Chamado da Terra") por níveis de urgência, aceitar tarefas e resgatar recompensas (Claim) gerando explosões de folhas e energia dourada. Synara e Arion foram acoplados aos painéis para emissão de alertas contínuos (Foco Hídrico, Risco Térmico), instruindo prioritariamente a comunidade sobre os "Bounties". Ação e recompensa ecossistêmica foram unificadas.
 
