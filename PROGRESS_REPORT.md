@@ -2,6 +2,11 @@
 
 Este diário mantém o registro das evoluções de engenharia, conquistas da SOSPlanet e atualizações para a Nação de Guardiões.
 
+## Fase 20: Alianças Biocêntricas e GuildHall ✨
+O "Salão das Alianças" foi erguido. Os Guardiões agora podem se unir sob três Estandartes Sagrados: Sentinelas da Amazônia (verde-profundo e texturas contínuas), Guardiões do Cerrado (tons terrosos e laranjas) e Cavaleiros da Mata Atlântica (esmeralda e ciano). Foi forjado também o "Poço de Sinergia", um cálice orgânico com preenchimento líquido animado que unifica as contribuições P2P ecológicas e eleva o espírito de colaboração rumo à META Global.
+
+---
+
 ## Fase 19: A Árvore do Conhecimento (Academia Regen) ✨
 A Forja implantou a Academia Regen diretamente no Passaporte Holográfico. Seguindo a Hierarquia Sagrada, as raízes (Ecologia e Web3) unem-se no tronco (Permacultura) para florescer na copa (DAOs e Sensores de Arion). Adicionamos a Animação Neural, onde nós adormecidos ganham tom noturno e conexões em SVG translúcido que explodem em luz esmeralda aos toques ("Clicks") dos guardiões, dispersando partículas de pólen virtual. Além disso, Fragmentos de Sabedoria influenciam diretamente as métricas do mundo material (multiplicadores do Passaporte).
 
