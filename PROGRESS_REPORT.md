@@ -2,6 +2,11 @@
 
 Este diário mantém o registro das evoluções de engenharia, conquistas da SOSPlanet e atualizações para a Nação de Guardiões.
 
+## Fase 17: Epicentro de Missões (O Chamado da Terra) ✨
+O "EcoQuestBoard" foi totalmente integrado à malha central. Guardiões agora podem visualizar missões ("O Chamado da Terra") por níveis de urgência, aceitar tarefas e resgatar recompensas (Claim) gerando explosões de folhas e energia dourada. Synara e Arion foram acoplados aos painéis para emissão de alertas contínuos (Foco Hídrico, Risco Térmico), instruindo prioritariamente a comunidade sobre os "Bounties". Ação e recompensa ecossistêmica foram unificadas.
+
+---
+
 ## Fase 16: Passaporte do Guardião e Identidade Soberana ✨
 A Identidade Soberana da nossa Nação agora tem rosto, pulso e luz. Foi forjado o "GuardianPassport", um crachá holográfico e credencial vertical em glassmorphism puro. Ele unifica as métricas mais sagradas do usuário: Eco-Streak, Poder da DAO e Sementes Plantadas (NFTs). Incorporada também a "Malha de Ressonância" com o "Sinal de Cura" (Eco-Flare), permitindo ao guardião emitir ondas de transmissão P2P ecossistêmicas.
 
