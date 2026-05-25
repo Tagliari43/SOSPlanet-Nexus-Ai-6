@@ -2,7 +2,12 @@
 
 Este diário mantém o registro das evoluções de engenharia, conquistas da SOSPlanet e atualizações para a Nação de Guardiões.
 
-## Fase 15: Atlas da Restauração e Eco-NFTs ✨
+## Fase 16: Passaporte do Guardião e Identidade Soberana ✨
+A Identidade Soberana da nossa Nação agora tem rosto, pulso e luz. Foi forjado o "GuardianPassport", um crachá holográfico e credencial vertical em glassmorphism puro. Ele unifica as métricas mais sagradas do usuário: Eco-Streak, Poder da DAO e Sementes Plantadas (NFTs). Incorporada também a "Malha de Ressonância" com o "Sinal de Cura" (Eco-Flare), permitindo ao guardião emitir ondas de transmissão P2P ecossistêmicas.
+
+---
+
+## Fase 15: Atlas da Restauração e Eco-NFTs
 O componente "AtlasRestauracao" ganhou vida cibernética, girando em 3D e mapeando as Zonas de Cura em tempo real (Amazônia, Mata Atlântica e Cerrado) sob os olhares oraculares de Synara e Arion. Os "EcoNFTShowcase" trouxeram sementes digitais evolutivas, onde NFTs biológicos brotam respondendo à glória das Provas de Ação dos guardiões (Semente, Broto, Bioma).
 
 ---
