@@ -2,6 +2,11 @@
 
 Este diário mantém o registro das evoluções de engenharia, conquistas da SOSPlanet e atualizações para a Nação de Guardiões.
 
+## Fase 21: O Ciclo da Chuva (Staking ReFi Vital) ✨
+A centralização de liquidez evoluiu para o Cultivo do Bioma. Forjamos o "Portal de Irrigação", ondes inputs e ações de Staking simulam chuvas e o fluxo de vida na camada UI/UX. Central a ele está a "Árvore Matriz" (TVL Holográfico), estruturada em SVG e animações reagentes de crescimento de raízes. O Oráculo de Arion foi expandido para calcular APY de forma tátil: transformando promessas financeiras em métricas do mundo real (metros de resguardo florestal e compensação de carbono).
+
+---
+
 ## Fase 20: Alianças Biocêntricas e GuildHall ✨
 O "Salão das Alianças" foi erguido. Os Guardiões agora podem se unir sob três Estandartes Sagrados: Sentinelas da Amazônia (verde-profundo e texturas contínuas), Guardiões do Cerrado (tons terrosos e laranjas) e Cavaleiros da Mata Atlântica (esmeralda e ciano). Foi forjado também o "Poço de Sinergia", um cálice orgânico com preenchimento líquido animado que unifica as contribuições P2P ecológicas e eleva o espírito de colaboração rumo à META Global.
 
