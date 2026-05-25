@@ -2,6 +2,11 @@
 
 Este diário mantém o registro das evoluções de engenharia, conquistas da SOSPlanet e atualizações para a Nação de Guardiões.
 
+## Fase 19: A Árvore do Conhecimento (Academia Regen) ✨
+A Forja implantou a Academia Regen diretamente no Passaporte Holográfico. Seguindo a Hierarquia Sagrada, as raízes (Ecologia e Web3) unem-se no tronco (Permacultura) para florescer na copa (DAOs e Sensores de Arion). Adicionamos a Animação Neural, onde nós adormecidos ganham tom noturno e conexões em SVG translúcido que explodem em luz esmeralda aos toques ("Clicks") dos guardiões, dispersando partículas de pólen virtual. Além disso, Fragmentos de Sabedoria influenciam diretamente as métricas do mundo material (multiplicadores do Passaporte).
+
+---
+
 ## Fase 18: Frequência Guardiã (Central Global P2P) ✨
 A rede neural de comunicação da Terra foi ativada. O rádio global operante traz um radar visual "glassmorphic" pulsante, com balões de comunicação reativos e micro-animações acústicas (A Voz de Gaia). Foi integrado o botão de alerta "Convocar Ação" (SOS P2P), permitindo que Guardiões emitam pulsos geolocalizados de emergência no mapa da rede para coordenar ajuda e impacto local em tempo real.
 
