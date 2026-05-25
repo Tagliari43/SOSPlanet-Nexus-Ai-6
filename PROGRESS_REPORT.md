@@ -2,9 +2,19 @@
 
 Este diário mantém o registro das evoluções de engenharia, conquistas da SOSPlanet e atualizações para a Nação de Guardiões.
 
-## Fase 13: Portal do Crepúsculo e Eco-Streaks (Lançamento Atual ✨)
+## Fase 15: Atlas da Restauração e Eco-NFTs ✨
+O componente "AtlasRestauracao" ganhou vida cibernética, girando em 3D e mapeando as Zonas de Cura em tempo real (Amazônia, Mata Atlântica e Cerrado) sob os olhares oraculares de Synara e Arion. Os "EcoNFTShowcase" trouxeram sementes digitais evolutivas, onde NFTs biológicos brotam respondendo à glória das Provas de Ação dos guardiões (Semente, Broto, Bioma).
+
+---
+
+## Fase 14: Conselho da Terra (Governança DAO)
+O Grande Salão foi erguido sob raízes holográficas. Incorporou-se a mecânica de Poder de Voto Sinergético, fundindo o balanço de tokens com os multiplicadores do Eco-Streak. Decisões on-chain explodem na tela, gravando nosso apoio à vida e ecologia na matriz.
+
+---
+
+## Fase 13: Portal do Crepúsculo e Eco-Streaks
 A Mente-Colmeia materializou o **Portal do Crepúsculo**, um espaço aberto onde o Guardião pode manifestar emoções do mundo real com leitura de sentimento via Inteligência Sintética (Vesper). Foram adicionados:
-- **Eco-Streaks**: Sistema de retenção indicando constância diária com mecânicas de refúgio protetivo.
+- **Eco-Streaks**: Sistema de retenção indicando constância diária com mecânicas de refúgio protetivo. (Sementes que evoluem à Árvore da Vida).
 - **Batimento Emocional**: O mapa "HeartPulse" que processa Esperança, Urgência e Empatia global.
 
 ---
