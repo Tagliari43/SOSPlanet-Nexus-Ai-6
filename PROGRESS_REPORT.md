@@ -2,6 +2,16 @@
 
 Este diário mantém o registro das evoluções de engenharia, conquistas da SOSPlanet e atualizações para a Nação de Guardiões.
 
+## Fase 23: O Banco de Sementes e Cofre Simbiótico (SeedVault) ✨
+O "Berço Verde" ganhou seu complemento natural: o Cofre Simbiótico. Foram implementados inventários visuais onde as sementes ficam encasuladas em "frascos" de glassmorphism com cores regidas por seus biomas (Cerrado, Amazônia, Mata Atlântica). Criamos a "Mesa de Troca Simbiótica" (P2P), permitindo aos Guardiões alinharem suas sementes e analisarem métricas Oraculares (Potencial Hídrico, Resistência Térmica) antes do transplante. Cruzamentos entre diferentes biomas ativam reações virtuais de Alta Sinergia Biodiversa, gerando picos de brilho e ampliando a robustez da rede.
+
+---
+
+## Fase 22: O Berço Verde (Planejamento Agroflorestal) ✨
+O laboratório de Planejamento Agroflorestal ("Berço Verde") foi ativado. O "Tabuleiro Sintrópico" foi esculpido em um grid isométrico com design glassmorphism escuro, acompanhado de uma "Paleta de Espécies" categorizada em estratos (Emergente, Dossel, Médio e Rasteiro). Implementamos o "Ciclo de Maturação" (Time Slider), onde o avanço do tempo faz as plantas crescerem e projetarem sombras matemáticas. O oráculo Synara avalia ativamente as interações, gerando validações visuais luminosas quando ocorre Sinergia Sintrópica (ex: Rasteira abrigada por Dossel).
+
+---
+
 ## Fase 21: O Ciclo da Chuva (Staking ReFi Vital) ✨
 A centralização de liquidez evoluiu para o Cultivo do Bioma. Forjamos o "Portal de Irrigação", ondes inputs e ações de Staking simulam chuvas e o fluxo de vida na camada UI/UX. Central a ele está a "Árvore Matriz" (TVL Holográfico), estruturada em SVG e animações reagentes de crescimento de raízes. O Oráculo de Arion foi expandido para calcular APY de forma tátil: transformando promessas financeiras em métricas do mundo real (metros de resguardo florestal e compensação de carbono).
 
