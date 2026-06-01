@@ -575,20 +575,9 @@ Se o Guardião pedir para o Nexus voltar, use a ferramenta retomarControleNexus.
 
                     const startTime = Date.now();
                     
-                    // Limitando ferramentas para o Groq para não estourar a cota de Tokens Per Minute (TPM)
-                    const allowedGroqTools = [
-                        'navigateTo', 
-                        'executeWebSearch', 
-                        'navegarSite', 
-                        'searchSemanticMemory', 
-                        'saveSemanticMemory', 
-                        'convocarSalaDoCrepusculo', 
-                        'retomarControleNexus', 
-                        'passarBastaoParaAlquimista', 
-                        'passarBastaoParaArkael'
-                    ];
+                    const commonExcludedTools = ['listGitHubFiles', 'readGitHubFile', 'writeGitHubFile'];
                     const groqSpecificTools = [{
-                        functionDeclarations: functionTools[0].functionDeclarations.filter(f => allowedGroqTools.includes(f.name))
+                        functionDeclarations: functionTools[0].functionDeclarations.filter(f => !commonExcludedTools.includes(f.name) && f.name !== 'passarBastaoParaGroq' && f.name !== 'askSubAgentGroq')
                     }];
 
                     responseText = await callGroqWithTools(
@@ -658,8 +647,9 @@ Se o Guardião pedir para você debater algo com os irmãos, use a ferramenta co
 
                     const startTime = Date.now();
                     
+                    const commonExcludedTools = ['listGitHubFiles', 'readGitHubFile', 'writeGitHubFile'];
                     const alquimistaSpecificTools = [{
-                        functionDeclarations: functionTools[0].functionDeclarations.filter(f => f.name !== 'passarBastaoParaAlquimista' && f.name !== 'consultarAlquimista')
+                        functionDeclarations: functionTools[0].functionDeclarations.filter(f => !commonExcludedTools.includes(f.name) && f.name !== 'passarBastaoParaAlquimista' && f.name !== 'consultarAlquimista')
                     }];
 
                     responseText = await callCerebrasWithTools(
@@ -722,8 +712,9 @@ Se o Guardião pedir para você debater algo com os irmãos, use a ferramenta co
 
                     const startTime = Date.now();
                     
+                    const commonExcludedTools = ['listGitHubFiles', 'readGitHubFile', 'writeGitHubFile'];
                     const arkaelSpecificTools = [{
-                        functionDeclarations: functionTools[0].functionDeclarations.filter(f => f.name !== 'passarBastaoParaArkael' && f.name !== 'invocarSubAgente')
+                        functionDeclarations: functionTools[0].functionDeclarations.filter(f => !commonExcludedTools.includes(f.name) && f.name !== 'passarBastaoParaArkael' && f.name !== 'invocarSubAgente')
                     }];
 
                     responseText = await callOpenRouterWithTools(
