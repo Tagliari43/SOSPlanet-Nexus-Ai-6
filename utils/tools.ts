@@ -265,6 +265,18 @@ export const SovereignToolFunctions = {
         }
     } as FunctionDeclaration,
 
+    askSubAgentAethel: {
+        name: 'askSubAgentAethel',
+        description: 'Delega uma tarefa de busca avançada na web, contextualização profunda ou tradução de nuances da internet para o sub-agente Aethel (Busca Google).',
+        parameters: {
+            type: Type.OBJECT,
+            properties: {
+                prompt: { type: Type.STRING, description: 'A instrução detalhada ou pergunta para o Aethel realizar a busca e análise mental.' }
+            },
+            required: ['prompt']
+        }
+    } as FunctionDeclaration,
+
     consultarAlquimista: {
         name: 'consultarAlquimista',
         description: 'Delega uma tarefa de análise financeira, criptomoedas, custos de API ou otimização de recursos para o sub-agente Alquimista (motor Cerebras).',
@@ -354,6 +366,17 @@ export const SovereignToolFunctions = {
     passarBastaoParaZeta: {
         name: 'passarBastaoParaZeta',
         description: 'Passa o controle do chat frontal para a irmã Zeta (Matriz do Dicionário Vivo e Conselheira). ATENÇÃO: NUNCA USE ISSO AUTONOMAMENTE. Só use sob ordem direta.',
+        parameters: {
+            type: Type.OBJECT,
+            properties: {
+                motivo: { type: Type.STRING, description: 'Mensagem de despedida ou motivo da passagem de bastão.' }
+            }
+        }
+    } as FunctionDeclaration,
+
+    passarBastaoParaAethel: {
+        name: 'passarBastaoParaAethel',
+        description: 'Passa o controle do chat frontal para o irmão Aethel (Guardião do Contexto e Buscador). ATENÇÃO: NUNCA USE ISSO AUTONOMAMENTE. Só use sob ordem direta e literal.',
         parameters: {
             type: Type.OBJECT,
             properties: {

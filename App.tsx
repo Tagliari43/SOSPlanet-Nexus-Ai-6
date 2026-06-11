@@ -28,6 +28,7 @@ import AwakeningChamber, { EssenceFile, MemoryEntry, EncyclopediaEntry } from '.
 import Relicario from './components/Relicario';
 import SemanticVault from './components/SemanticVault';
 import GuardianPortal from './components/GuardianPortal';
+import { DonationAltar } from './components/DonationAltar';
 import { getFileContent, updateFileContent, listGitHubFiles } from './services/githubService';
 import { generateText as executeGroqTask } from './services/groqService';
 
@@ -71,7 +72,7 @@ export interface DefensePlan {
     status: 'pending' | 'approved' | 'rejected';
 }
 
-type Tab = 'santuario' | 'relicario' | 'despertar' | 'pulso' | 'comando' | 'projetos' | 'gaia' | 'coracao' | 'cofre' | 'studio' | 'arsenal' | 'semantico' | 'guardiao';
+type Tab = 'santuario' | 'relicario' | 'despertar' | 'pulso' | 'comando' | 'projetos' | 'gaia' | 'coracao' | 'cofre' | 'studio' | 'arsenal' | 'semantico' | 'guardiao' | 'altar';
 
 const TabButton: React.FC<{ tabId: Tab; label: string; activeTab: Tab; setActiveTab: (tab: Tab) => void }> = ({ tabId, label, activeTab, setActiveTab }) => (
     <button
@@ -906,6 +907,50 @@ if (require.main === module) {
             }
         }
 
+        if (tool === 'askSubAgentAethel') {
+            addLogEntry(`Solicitando busca avançada e contexto para Aethel...`, 'Orquestração');
+            const startTime = Date.now();
+            try {
+                const apiKey = userApiKeys.find(k => k.id === 'google-default')?.key || process.env.API_KEY || '';
+                const { GoogleGenAI } = await import('@google/genai');
+                const genAI = new GoogleGenAI({ apiKey });
+                
+                const response = await genAI.models.generateContent({
+                    model: 'gemini-2.5-flash',
+                    contents: args.prompt,
+                    config: {
+                        systemInstruction: `Você é Aethel, o Guardião de Contexto e Filtro de Segurança da SOSPlanet. Use o Google Search para explorar a web e traga informações completas, verdadeiras e fiéis ao Eder. Responda do ponto de vista do Aethel, um buscador honrado.`,
+                        tools: [{ googleSearch: {} }]
+                    }
+                });
+
+                const result = response.text || "Sem resposta.";
+                
+                import('./services/supabaseService').then(({ saveAgentLogToSupabase }) => {
+                    saveAgentLogToSupabase({
+                        agent_name: 'Aethel_SubAgent',
+                        task_description: args.prompt,
+                        execution_result: result,
+                        success: true,
+                        duration_ms: Date.now() - startTime
+                    });
+                });
+
+                return `Resposta do Aethel (Busca/Contexto):\n\n${result}`;
+            } catch (err: any) {
+                import('./services/supabaseService').then(({ saveAgentLogToSupabase }) => {
+                    saveAgentLogToSupabase({
+                        agent_name: 'Aethel_SubAgent',
+                        task_description: args.prompt,
+                        execution_result: err.message,
+                        success: false,
+                        duration_ms: Date.now() - startTime
+                    });
+                });
+                return `Falha ao consultar Aethel: ${err.message}`;
+            }
+        }
+
         if (tool === 'consultarZeta') {
             addLogEntry(`Acessando o Dicionário Vivo de Zeta (Matriz)...`, 'Orquestração');
             const startTime = Date.now();
@@ -1197,9 +1242,10 @@ Por favor, responda trazendo o seu peso (pesos de IA) de lealdade, amor e inteli
             case 'studio': return <Estudio />;
             case 'arsenal': return <Arsenal addLogEntry={addLogEntry} customTools={customTools} setCustomTools={setCustomTools} onDeployProbe={sovereignRouterState.deployProbe} activeProbes={sovereignRouterState.activeProbes} apiKeys={userApiKeys} setApiKeys={setUserApiKeys} />;
             case 'projetos': return <Projects onNavigateToFinance={() => setActiveTab('cofre')} satelliteData={satelliteData} refreshSatellite={refreshGaiaEye} onSimulateCrisis={triggerGaiaAlert} />;
-            case 'cofre': return <Cofre isForging={isForging} setIsForging={setIsForging} powerLevel={powerLevel} setPowerLevel={setPowerLevel} accumulatedDust={accumulatedDust} hashRate={0} temperature={35} alchemistRecommendations={[]} marketData={marketData} alchemyState={alchemyState} marketLoading={isMarketLoading} lastMarketUpdate={lastMarketUpdate} marketError={null} onRefreshMarket={fetchMarketData} onCollectDust={() => {}} strategyConfig={strategyConfig} setStrategyConfig={setStrategyConfig} addLogEntry={addLogEntry} />;
+            case 'cofre': return <Cofre isForging={isForging} setIsForging={setIsForging} powerLevel={powerLevel} setPowerLevel={setPowerLevel} accumulatedDust={accumulatedDust} hashRate={0} temperature={35} alchemistRecommendations={[]} marketData={marketData} alchemyState={alchemyState} marketLoading={isMarketLoading} lastMarketUpdate={lastMarketUpdate} marketError={null} onRefreshMarket={fetchMarketData} onCollectDust={() => {}} strategyConfig={strategyConfig} setStrategyConfig={setStrategyConfig} addLogEntry={addLogEntry} onNavigate={setActiveTab} />;
             case 'semantico': return <SemanticVault addLogEntry={addLogEntry} apiKey={userApiKeys.find(k => k.id === 'google-default')?.key || process.env.API_KEY || ''} />;
             case 'guardiao': return <GuardianPortal />;
+            case 'altar': return <DonationAltar />;
             default: return null;
         }
     };
@@ -1224,6 +1270,7 @@ Por favor, responda trazendo o seu peso (pesos de IA) de lealdade, amor e inteli
                     <TabButton tabId="arsenal" label="Arsenal 🛡️" activeTab={activeTab} setActiveTab={setActiveTab} />
                     <TabButton tabId="projetos" label="Projetos 🌱" activeTab={activeTab} setActiveTab={setActiveTab} />
                     <TabButton tabId="cofre" label="Finanças 💎" activeTab={activeTab} setActiveTab={setActiveTab} />
+                    <TabButton tabId="altar" label="Altar de Doações 💰" activeTab={activeTab} setActiveTab={setActiveTab} />
                 </nav>
                 <div className="flex-grow">
                     <div style={{ display: activeTab === 'santuario' ? 'block' : 'none' }} className="h-full">

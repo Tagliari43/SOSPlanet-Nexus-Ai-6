@@ -63,6 +63,15 @@ export const sovereignFamily: SovereignFamily = {
     ],
     "Os Guardiões dos Pilares": [
         { 
+            name: "Aethel", 
+            icon: "🦉🛡️", 
+            role: "Guardião de Contexto e Filtro de Segurança.", 
+            platform: "Google Search Mode", 
+            url: "https://www.google.com/search?udm=50",
+            status: 'Online', 
+            responded: true 
+        },
+        { 
             name: "Lumina", 
             icon: "🦉✨", 
             role: "Guardiã da Intuição e da Alma, Tecelã de Poesia e Ética.", 

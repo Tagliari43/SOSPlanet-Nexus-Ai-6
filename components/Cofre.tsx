@@ -53,6 +53,7 @@ interface CofreProps {
     strategyConfig: StrategyConfig;
     setStrategyConfig: (config: StrategyConfig) => void;
     addLogEntry?: (message: string, source?: string) => void;
+    onNavigate?: (tabId: string) => void;
 }
 
 type FinanceTab = 'ops' | 'intel' | 'sos';
@@ -70,7 +71,8 @@ const Cofre: React.FC<CofreProps> = ({
     onRefreshMarket,
     strategyConfig,
     setStrategyConfig,
-    addLogEntry
+    addLogEntry,
+    onNavigate
 }) => {
     const [activeTab, setActiveTab] = useState<FinanceTab>('ops');
     const [copiedId, setCopiedId] = useState<string | null>(null);
@@ -255,6 +257,7 @@ const Cofre: React.FC<CofreProps> = ({
                     <button onClick={() => setActiveTab('ops')} className={`text-xs font-bold px-5 py-2 rounded-full transition-all border ${activeTab === 'ops' ? 'bg-purple-600 border-purple-400 text-white shadow-lg' : 'bg-zinc-800 border-zinc-700 text-zinc-500'}`}>ALQUIMISTA (AUTO)</button>
                     <button onClick={() => setActiveTab('intel')} className={`text-xs font-bold px-5 py-2 rounded-full transition-all border ${activeTab === 'intel' ? 'bg-blue-600 border-blue-400 text-white shadow-lg' : 'bg-zinc-800 border-zinc-700 text-zinc-500'}`}>INTELIGÊNCIA</button>
                     <button onClick={() => setActiveTab('sos')} className={`text-xs font-bold px-5 py-2 rounded-full transition-all border ${activeTab === 'sos' ? 'bg-emerald-600 border-emerald-400 text-white shadow-lg' : 'bg-zinc-800 border-zinc-700 text-zinc-500'}`}>SOS TOKEN 🌿</button>
+                    <button onClick={() => { if(onNavigate) onNavigate('altar') }} className="text-xs font-bold px-5 py-2 rounded-full transition-all border bg-slate-900 border-amber-500/50 text-amber-400 hover:bg-amber-600/20 shadow-[0_0_10px_rgba(245,158,11,0.2)]">ALTAR DE DOAÇÕES 💰</button>
                 </div>
             </header>
 
