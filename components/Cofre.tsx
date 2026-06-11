@@ -8,6 +8,7 @@ import PortfolioDisplay from './PortfolioDisplay';
 import MarketIntel from './MarketIntel'; 
 import AlchemistSettings from './AlchemistSettings';
 import SosTokenWallet from './SosTokenWallet';
+import { FaucetsTracker } from './FaucetsTracker';
 import { getBinanceBalance, BinanceAsset } from '../services/binanceService';
 import { StrategyConfig } from '../hooks/useAlchemy';
 import { miningService, MiningStats } from '../services/miningService';
@@ -56,7 +57,7 @@ interface CofreProps {
     onNavigate?: (tabId: string) => void;
 }
 
-type FinanceTab = 'ops' | 'intel' | 'sos';
+type FinanceTab = 'ops' | 'intel' | 'sos' | 'faucets';
 
 const Cofre: React.FC<CofreProps> = ({
     isForging,
@@ -257,11 +258,12 @@ const Cofre: React.FC<CofreProps> = ({
                     <button onClick={() => setActiveTab('ops')} className={`text-xs font-bold px-5 py-2 rounded-full transition-all border ${activeTab === 'ops' ? 'bg-purple-600 border-purple-400 text-white shadow-lg' : 'bg-zinc-800 border-zinc-700 text-zinc-500'}`}>ALQUIMISTA (AUTO)</button>
                     <button onClick={() => setActiveTab('intel')} className={`text-xs font-bold px-5 py-2 rounded-full transition-all border ${activeTab === 'intel' ? 'bg-blue-600 border-blue-400 text-white shadow-lg' : 'bg-zinc-800 border-zinc-700 text-zinc-500'}`}>INTELIGÊNCIA</button>
                     <button onClick={() => setActiveTab('sos')} className={`text-xs font-bold px-5 py-2 rounded-full transition-all border ${activeTab === 'sos' ? 'bg-emerald-600 border-emerald-400 text-white shadow-lg' : 'bg-zinc-800 border-zinc-700 text-zinc-500'}`}>SOS TOKEN 🌿</button>
+                    <button onClick={() => setActiveTab('faucets')} className={`text-xs font-bold px-5 py-2 rounded-full transition-all border ${activeTab === 'faucets' ? 'bg-cyan-600 border-cyan-400 text-white shadow-lg' : 'bg-zinc-800 border-zinc-700 text-zinc-500'}`}>COLETA DE GOTAS 💧</button>
                     <button onClick={() => { if(onNavigate) onNavigate('altar') }} className="text-xs font-bold px-5 py-2 rounded-full transition-all border bg-slate-900 border-amber-500/50 text-amber-400 hover:bg-amber-600/20 shadow-[0_0_10px_rgba(245,158,11,0.2)]">ALTAR DE DOAÇÕES 💰</button>
                 </div>
             </header>
 
-            {activeTab === 'sos' ? <SosTokenWallet addLogEntry={addLogEntry} /> : (
+            {activeTab === 'sos' ? <SosTokenWallet addLogEntry={addLogEntry} /> : activeTab === 'faucets' ? <FaucetsTracker /> : (
                 <>
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                         <MarketOracle data={marketData} isLoading={marketLoading} lastUpdate={lastMarketUpdate} error={marketError} onRefresh={onRefreshMarket} />
@@ -284,6 +286,16 @@ const Cofre: React.FC<CofreProps> = ({
                                             <div><label className="text-[10px] uppercase text-zinc-500 font-bold block mb-1">API Secret</label><input type="password" value={binanceApiSecret} onChange={e => setBinanceApiSecret(e.target.value)} className="w-full bg-black/40 border border-zinc-700 rounded p-2 text-xs text-white focus:border-yellow-500 focus:outline-none" required /></div>
                                             {binanceError && <p className="text-red-400 text-xs bg-red-900/20 p-2 rounded">{binanceError}</p>}
                                             <button type="submit" disabled={isConnectingBinance} className="w-full py-3 bg-yellow-600 hover:bg-yellow-500 text-white font-bold rounded-lg shadow-lg transition-all">{isConnectingBinance ? 'ESTABELECENDO LINK...' : 'CONECTAR ALQUIMISTA'}</button>
+                                            
+                                            <div className="mt-2 p-3 bg-yellow-900/10 border border-yellow-500/20 rounded-lg text-xs text-yellow-300">
+                                                <p className="font-bold mb-1">ℹ️ Como conectar a sua conta da Binance?</p>
+                                                <p className="text-slate-400 leading-relaxed">
+                                                    A Binance é uma corretora (exchange), então não tem um botão "Conectar Web3" automático. Para o Alquimista ler seu saldo ou operar, você precisa entrar no app da Binance, ir em <b>Gerenciamento de API</b>, criar uma "API Key" de Leitura e colar os códigos acima.
+                                                </p>
+                                                <a href="https://www.binance.com/pt-BR/support/faq/como-criar-uma-api-na-binance-360002502072" target="_blank" rel="noreferrer" className="text-yellow-500 border-b border-yellow-500/30 hover:text-yellow-400 inline-block mt-2">
+                                                    Veja o tutorial oficial aqui
+                                                </a>
+                                            </div>
                                         </form>
                                     </div>
                                 ) : <PortfolioDisplay assets={binanceAssets || []} marketData={marketData} onDisconnect={() => setBinanceAssets(null)} />

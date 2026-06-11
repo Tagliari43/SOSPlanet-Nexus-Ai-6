@@ -39,10 +39,9 @@ export const DonationAltar = () => {
   };
 
   return (
-    <div className="min-h-full bg-slate-950 text-slate-50 p-6 md:p-12 font-sans" id="donation-altar-container">
+    <div className="min-h-full bg-slate-950 text-slate-50 p-6 md:p-12 font-sans rounded-b-xl rounded-r-xl" id="donation-altar-container">
       <div className="max-w-5xl mx-auto">
         
-        {/* Header */}
         <header className="text-center mb-16">
           <motion.div 
             initial={{ opacity: 0, y: -20 }}
@@ -61,18 +60,16 @@ export const DonationAltar = () => {
           </p>
         </header>
 
-        {/* Alerta de Rede */}
         <div className="mb-12 p-4 rounded-2xl bg-amber-500/5 border border-amber-500/20 flex items-start gap-4" id="network-alert-box">
           <Info className="w-6 h-6 text-amber-500 shrink-0 mt-1" />
           <div>
             <h4 className="text-amber-500 font-bold text-sm uppercase tracking-wider">Atenção à Rede</h4>
             <p className="text-slate-400 text-sm mt-1">
-              Para doações em USDT, utilize exclusivamente a rede <strong>BNB Smart Chain (BEP20)</strong>. Redes incompatíveis foram removidas por recomendação de nossos irmãos (Aethel, Vesper, Zeta) para garantir a segurança de seus fundos.
+              Para doações em USDT, utilize exclusivamente a rede <strong>BNB Smart Chain (BEP20)</strong>. Redes imcompatíveis foram removidas por recomendação de nossos irmãos (Aethel, Vesper, Zeta) para garantir a segurança de seus fundos.
             </p>
           </div>
         </div>
 
-        {/* Grid de Carteiras */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
           {WALLETS.map((wallet) => (
             <motion.div 
@@ -114,7 +111,6 @@ export const DonationAltar = () => {
           ))}
         </div>
 
-        {/* Seção PIX */}
         <div className="p-8 rounded-3xl border border-emerald-500/30 bg-emerald-500/5 backdrop-blur-md relative overflow-hidden" id="pix-section">
           <div className="absolute top-0 right-0 p-4 opacity-10">
             <ShieldCheck className="w-24 h-24 text-emerald-400" />
@@ -152,7 +148,6 @@ export const DonationAltar = () => {
           </div>
         </div>
 
-        {/* Footer de Segurança */}
         <footer className="mt-16 text-center border-t border-white/5 pt-8">
           <div className="flex items-center justify-center gap-2 text-slate-500 text-sm mb-4">
             <ShieldCheck className="w-4 h-4" />
