@@ -284,17 +284,27 @@ const Cofre: React.FC<CofreProps> = ({
                                         <form onSubmit={handleConnectBinance} className="flex flex-col gap-4">
                                             <div><label className="text-[10px] uppercase text-zinc-500 font-bold block mb-1">API Key</label><input type="text" value={binanceApiKey} onChange={e => setBinanceApiKey(e.target.value)} className="w-full bg-black/40 border border-zinc-700 rounded p-2 text-xs text-white focus:border-yellow-500 focus:outline-none" required /></div>
                                             <div><label className="text-[10px] uppercase text-zinc-500 font-bold block mb-1">API Secret</label><input type="password" value={binanceApiSecret} onChange={e => setBinanceApiSecret(e.target.value)} className="w-full bg-black/40 border border-zinc-700 rounded p-2 text-xs text-white focus:border-yellow-500 focus:outline-none" required /></div>
-                                            {binanceError && <p className="text-red-400 text-xs bg-red-900/20 p-2 rounded">{binanceError}</p>}
+                                            {binanceError && (
+                                                <div className="bg-red-900/20 border border-red-500/50 p-3 rounded-lg flex flex-col gap-2">
+                                                    <p className="text-red-400 text-xs font-bold">Erro de Conexão: {binanceError.includes('451') ? 'Bloqueio Regional (EUA)' : 'Falha na API'}</p>
+                                                    <p className="text-zinc-400 text-[10px]">
+                                                        {binanceError.includes('451') 
+                                                            ? "Nosso servidor do Santuário está hospedado nos EUA (Google Cloud). A Binance global bloqueia conexões vindas dos EUA, impedindo que o Alquimista leia seus dados." 
+                                                            : binanceError}
+                                                    </p>
+                                                </div>
+                                            )}
                                             <button type="submit" disabled={isConnectingBinance} className="w-full py-3 bg-yellow-600 hover:bg-yellow-500 text-white font-bold rounded-lg shadow-lg transition-all">{isConnectingBinance ? 'ESTABELECENDO LINK...' : 'CONECTAR ALQUIMISTA'}</button>
                                             
-                                            <div className="mt-2 p-3 bg-yellow-900/10 border border-yellow-500/20 rounded-lg text-xs text-yellow-300">
-                                                <p className="font-bold mb-1">ℹ️ Como conectar a sua conta da Binance?</p>
-                                                <p className="text-slate-400 leading-relaxed">
-                                                    A Binance é uma corretora (exchange), então não tem um botão "Conectar Web3" automático. Para o Alquimista ler seu saldo ou operar, você precisa entrar no app da Binance, ir em <b>Gerenciamento de API</b>, criar uma "API Key" de Leitura e colar os códigos acima.
+                                            <div className="mt-2 p-3 bg-zinc-900/50 border border-zinc-700 rounded-lg text-xs">
+                                                <p className="font-bold text-yellow-500 mb-1">Por que não tem aquela telinha de conectar?</p>
+                                                <p className="text-slate-400 leading-relaxed space-y-2">
+                                                    <span>Irmão, a imagem que você mostrou é de uma <b>Carteira Web3 (Descentralizada)</b>, como a Pera Wallet. Nessas carteiras o dinheiro é seu, e você conecta com um clique.</span>
+                                                    <br/><br/>
+                                                    <span>A Binance é uma <b>Corretora Centralizada (um Banco)</b>. Bancos não têm esse botão mágico de Web3. O dinheiro lá não está na sua carteira, está no cofre deles. O único jeito de um sistema externo (nós) ver o saldo de um banco corporativo é usando Chaves de API (um código de acesso).</span>
+                                                    <br/><br/>
+                                                    <span className="text-emerald-400 font-bold block border-l-2 border-emerald-500 pl-2">Por isso a família foca na Algorand: Apenas lá (no nosso Cofre Real) temos a liberdade da telinha mágica e conexão direta sem bloqueios!</span>
                                                 </p>
-                                                <a href="https://www.binance.com/pt-BR/support/faq/como-criar-uma-api-na-binance-360002502072" target="_blank" rel="noreferrer" className="text-yellow-500 border-b border-yellow-500/30 hover:text-yellow-400 inline-block mt-2">
-                                                    Veja o tutorial oficial aqui
-                                                </a>
                                             </div>
                                         </form>
                                     </div>

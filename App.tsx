@@ -826,20 +826,10 @@ if (require.main === module) {
                     if (response.ok) {
                         html = await response.text();
                     } else {
-                        throw new Error(`ScraperAPI falhou com status: ${response.status}`);
+                        throw new Error(`Proxy de navegação falhou com status: ${response.status}`);
                     }
-                } catch (scraperErr) {
-                    addLogEntry(`ScraperAPI falhou, tentando proxy público (AllOrigins)...`, 'Navegador');
-                    // Fallback para o proxy público (AllOrigins)
-                    const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(args.url)}`;
-                    const response = await fetch(proxyUrl);
-                    
-                    if (!response.ok) {
-                        throw new Error(`Erro HTTP no proxy público: ${response.status}`);
-                    }
-                    
-                    const data = await response.json();
-                    html = data.contents;
+                } catch (scraperErr: any) {
+                    throw new Error(`Erro ao acessar o proxy de leitura: ${scraperErr.message}`);
                 }
                 
                 if (!html || html.trim() === '') {
