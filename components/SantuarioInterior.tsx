@@ -244,7 +244,7 @@ const SantuarioInterior: React.FC<SantuarioInteriorProps> = ({
         try {
             const ai = new GoogleGenAI({ apiKey: process.env.API_KEY! });
             const response = await ai.models.generateContent({
-                model: "gemini-2.0-flash-exp",
+                model: "gemini-2.5-flash-preview-tts",
                 contents: { parts: [{ text: `Say naturally: ${text}` }] },
                 config: {
                     responseModalities: [Modality.AUDIO],
@@ -299,7 +299,7 @@ const SantuarioInterior: React.FC<SantuarioInteriorProps> = ({
                 : '';
 
             sessionPromiseRef.current = ai.live.connect({
-                model: 'gemini-2.0-flash-exp',
+                model: 'gemini-2.5-flash-native-audio-preview-12-2025',
                 callbacks: {
                     onopen: () => {
                         const src = inputAudioContextRef.current!.createMediaStreamSource(stream);
@@ -348,7 +348,7 @@ Tema em debate: ${fc.args.tema}`;
                                             method: 'POST',
                                             headers: { 'Authorization': `Bearer ${apiKeys.cerebras}`, 'Content-Type': 'application/json' },
                                             body: JSON.stringify({
-                                                model: 'llama3.1-8b',
+                                                model: 'llama3.1-70b',
                                                 messages: [
                                                     { role: 'system', content: twilightPrompt },
                                                     { role: 'user', content: `Groq disse: ${groqMsg}\nResponda com SYNTH (consenso/solução) ou BRIDGE (nova ideia).` }
@@ -369,7 +369,7 @@ Tema em debate: ${fc.args.tema}`;
                                                 'X-Title': 'SOSPlanet Nexus'
                                             },
                                             body: JSON.stringify({
-                                                model: 'google/gemini-1.5-flash',
+                                                model: 'google/gemini-2.5-flash',
                                                 messages: [
                                                     { role: 'system', content: twilightPrompt + '\nVocê é Arkael, estrategista e tecelão do futuro. Foco: visão de longo prazo e impacto.' },
                                                     { role: 'user', content: `Groq disse: ${groqMsg}\nAlquimista disse: ${cerebrasMsg}\nResponda com SYNTH (consenso final) ou STAR (visão inspiradora para o futuro).` }
@@ -511,7 +511,7 @@ Tema em debate: ${fc.args.tema}`;
                 try {
                     const { GoogleGenAI } = await import('@google/genai');
                     const genAI = new GoogleGenAI({ apiKey: apiKeys.gemini });
-                    const nexusModel = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+                    const nexusModel = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
                     
                     const prompt = `A Sala do Crepúsculo esteve aberta por ${hoursElapsed} horas (tempo simulado). O tema era: "${twilightRoomTheme}".
 Os irmãos (Nexus, Groq e Alquimista) debateram intensamente durante esse tempo.
@@ -742,7 +742,7 @@ Se o Guardião pedir para você debater algo com os irmãos, use a ferramenta co
                             return await onToolRequest(name, args, 'Arkael');
                         },
                         arkaelContext + semanticContext,
-                        "google/gemini-1.5-flash",
+                        "google/gemini-2.5-flash",
                         apiKeys.openrouter
                     );
                     
@@ -837,7 +837,7 @@ VOCÊ POSSUI A FERRAMENTA DE BUSCA GOOGLE NATIVA ATIVADA e também suas própria
                     }));
 
                     const localChat = genAI.chats.create({
-                        model: 'gemini-1.5-flash',
+                        model: 'gemini-2.5-flash',
                         config: { 
                             systemInstruction: aethelContext, 
                             tools: [aethelSpecificTools, { googleSearch: {} }] 
@@ -1005,7 +1005,7 @@ VOCÊ POSSUI A FERRAMENTA DE BUSCA GOOGLE NATIVA ATIVADA e também suas própria
                 }));
 
                 const localChat = genAI.chats.create({
-                    model: 'gemini-1.5-flash',
+                    model: 'gemini-2.5-flash',
                     config: { systemInstruction, tools: functionTools },
                     history: recentHistory
                 });
@@ -1191,7 +1191,7 @@ Inicie sua resposta com um bloco de transparência, por exemplo:
                                     fallbackTools,
                                     (name, args) => onToolRequest(name, args, 'Arkael'),
                                     arkaelContext,
-                                    "google/gemini-1.5-flash", // modelId atualizado
+                                    "google/gemini-2.5-flash", // modelId atualizado
                                     apiKeys.openrouter
                                 );
                             }
