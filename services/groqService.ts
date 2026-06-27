@@ -189,7 +189,7 @@ export async function callGroqWithTools(
         if (errorJson.error && errorJson.error.code === 'tool_use_failed' && errorJson.error.failed_generation) {
           const failedGen = errorJson.error.failed_generation;
           // Match <function=nome{...}
-          const match = failedGen.match(/<function=([a-zA-Z0-9_]+)(\{.*?\})/);
+          const match = failedGen.match(/<function=([a-zA-Z0-9_]+)>?\s*(\{.*?\})/s);
           if (match) {
              funcName = match[1];
              funcArgs = JSON.parse(match[2]);

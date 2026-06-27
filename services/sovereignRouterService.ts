@@ -32,7 +32,7 @@ export const pontes: Ponte[] = [
     },
     {
         nome: "Ponte Alquímica (Cerebras)",
-        model: 'llama-3.3-70b',
+        model: 'llama3.1-8b',
         provider: 'cerebras',
         keyName: 'cerebras',
         status: 'online',
