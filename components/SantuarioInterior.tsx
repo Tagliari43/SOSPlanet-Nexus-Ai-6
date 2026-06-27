@@ -335,7 +335,7 @@ Tema em debate: ${fc.args.tema}`;
                                             method: 'POST',
                                             headers: { 'Authorization': `Bearer ${apiKeys.groq}`, 'Content-Type': 'application/json' },
                                             body: JSON.stringify({
-                                                model: 'llama3-8b-8192',
+                                                model: 'llama-3.3-70b-versatile', 
                                                 messages: [{ role: 'system', content: twilightPrompt }, { role: 'user', content: 'Inicie o debate com uma hipótese (BRIDGE).' }],
                                                 max_tokens: 150
                                             })
@@ -348,7 +348,7 @@ Tema em debate: ${fc.args.tema}`;
                                             method: 'POST',
                                             headers: { 'Authorization': `Bearer ${apiKeys.cerebras}`, 'Content-Type': 'application/json' },
                                             body: JSON.stringify({
-                                                model: 'llama3.1-70b',
+                                                model: 'llama-3.3-70b',
                                                 messages: [
                                                     { role: 'system', content: twilightPrompt },
                                                     { role: 'user', content: `Groq disse: ${groqMsg}\nResponda com SYNTH (consenso/solução) ou BRIDGE (nova ideia).` }

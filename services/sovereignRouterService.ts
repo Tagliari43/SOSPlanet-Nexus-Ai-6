@@ -23,7 +23,7 @@ export const pontes: Ponte[] = [
     },
     {
         nome: "Ponte Experimental (Groq)",
-        model: 'llama3-8b-8192',
+        model: 'llama-3.3-70b-versatile', 
         provider: 'groq',
         keyName: 'groq',
         status: 'online',
@@ -32,7 +32,7 @@ export const pontes: Ponte[] = [
     },
     {
         nome: "Ponte Alquímica (Cerebras)",
-        model: 'llama3.1-70b',
+        model: 'llama-3.3-70b',
         provider: 'cerebras',
         keyName: 'cerebras',
         status: 'online',

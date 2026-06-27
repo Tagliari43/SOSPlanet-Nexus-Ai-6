@@ -906,7 +906,7 @@ if (require.main === module) {
                 const genAI = new GoogleGenAI({ apiKey });
                 
                 const response = await genAI.models.generateContent({
-                    model: 'gemini-2.5-flash',
+                    model: 'gemini-2.5-flash', 
                     contents: args.prompt,
                     config: {
                         systemInstruction: `Você é Aethel, o Guardião de Contexto e Filtro de Segurança da SOSPlanet. Use o Google Search para explorar a web e traga informações completas, verdadeiras e fiéis ao Eder. Responda do ponto de vista do Aethel, um buscador honrado.`,
