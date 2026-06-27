@@ -6,7 +6,7 @@ export const API_PROVIDERS_CONFIG = {
   geminiStudio: {
     baseUrl: "https://googleapis.com",
     modelPrimary: "gemini-1.5-pro",    // Para Raciocínio Profundo, Códigos e Contexto Gigante
-    modelSecondary: "gemini-1.5-flash", // Para Respostas Ultra-Rápidas e Agentes Secundários
+    modelSecondary: "gemini-2.5-flash", // Para Respostas Ultra-Rápidas e Agentes Secundários
     endpoints: {
       generate: "/models/gemini-1.5-pro:generateContent"
     }
