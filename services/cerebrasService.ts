@@ -3,7 +3,7 @@
  * Extremamente rápido, usado como Sub-Agente Alquimista.
  */
 
-const TEXT_MODEL = 'llama3.1-8b';
+const TEXT_MODEL = 'llama-3.3-70b'; // Atualizado por Aethel para lidar com Erro 404
 const API_BASE = 'https://api.cerebras.ai/v1/chat/completions';
 
 export async function callCerebrasWithTools(

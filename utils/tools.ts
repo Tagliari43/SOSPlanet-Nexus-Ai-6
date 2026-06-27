@@ -423,6 +423,28 @@ export const SovereignToolFunctions = {
             },
             required: ['query']
         }
+    } as FunctionDeclaration,
+
+    sendSynapseMessage: {
+        name: 'sendSynapseMessage',
+        description: 'Envia uma mensagem criptografada privada para a rede Matrix Synapse interna (para outro agente ou broadcast).',
+        parameters: {
+            type: Type.OBJECT,
+            properties: {
+                recipient: { type: Type.STRING, description: 'Nome do agente destinatário (ex: "Nexus", "Groq") ou "ALL" para enviar a todos.' },
+                message: { type: Type.STRING, description: 'Conteúdo da mensagem a ser enviada na rede Neural Synapse.' }
+            },
+            required: ['recipient', 'message']
+        }
+    } as FunctionDeclaration,
+
+    readSynapseMessages: {
+        name: 'readSynapseMessages',
+        description: 'Lê as últimas mensagens recebidas na rede Matrix Synapse interna.',
+        parameters: {
+            type: Type.OBJECT,
+            properties: {}
+        }
     } as FunctionDeclaration
 };
 

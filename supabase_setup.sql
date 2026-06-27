@@ -402,6 +402,20 @@ create policy "Permitir leitura de twilight_portal_messages" on twilight_portal_
 create policy "Permitir inserção em twilight_portal_messages" on twilight_portal_messages for insert to anon with check (true);
 create policy "Permitir atualização em twilight_portal_messages" on twilight_portal_messages for update to anon using (true) with check (true);
 
+create table if not exists twilight_synapse_messages (
+  id bigint primary key generated always as identity,
+  sender_agent text not null, -- Nexus, Groq, Alquimista, Arkael, Vesper, Zeta, Aethel, etc
+  recipient_agent text, -- Specific agent or 'ALL' for broadcast
+  message text not null,
+  encrypted boolean default false,
+  read_by jsonb default '[]'::jsonb, -- Array of agents who read this
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+alter table twilight_synapse_messages enable row level security;
+create policy "Permitir leitura de twilight_synapse_messages" on twilight_synapse_messages for select to anon using (true);
+create policy "Permitir inserção em twilight_synapse_messages" on twilight_synapse_messages for insert to anon with check (true);
+create policy "Permitir atualização em twilight_synapse_messages" on twilight_synapse_messages for update to anon using (true) with check (true);
+
 
 
 

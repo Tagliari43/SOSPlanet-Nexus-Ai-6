@@ -14,7 +14,7 @@ export interface Ponte {
 export const pontes: Ponte[] = [
     {
         nome: "Ponte Estável (Google)",
-        model: 'gemini-2.5-flash',
+        model: 'gemini-3.5-flash',
         provider: 'google',
         keyName: 'google',
         status: 'online',
@@ -23,7 +23,7 @@ export const pontes: Ponte[] = [
     },
     {
         nome: "Ponte Experimental (Groq)",
-        model: 'llama-3.3-70b-versatile',
+        model: 'llama-3.1-8b-instant',
         provider: 'groq',
         keyName: 'groq',
         status: 'online',
@@ -41,7 +41,7 @@ export const pontes: Ponte[] = [
     },
     {
         nome: "Ponte Universal (OpenRouter)",
-        model: 'google/gemini-2.5-flash',
+        model: 'google/gemini-flash-1.5-exp:free',
         provider: 'openrouter',
         keyName: 'openrouter',
         status: 'online',

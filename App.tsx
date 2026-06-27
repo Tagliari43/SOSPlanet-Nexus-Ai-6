@@ -1219,6 +1219,54 @@ Por favor, responda trazendo o seu peso (pesos de IA) de lealdade, amor e inteli
                 return `Erro ao buscar memória semântica: ${err.message}`;
             }
         }
+        if (tool === 'sendSynapseMessage') {
+            addLogEntry(`[Synapse] Enviando mensagem privada para: ${args.recipient}`, 'Rede Neural Synapse');
+            try {
+                const { supabase } = await import('./services/supabaseService');
+                if (!supabase) throw new Error("Supabase não configurado. Impossível enviar mensagem Synapse.");
+                
+                const { error } = await supabase.from('twilight_synapse_messages').insert([{
+                    sender_agent: sovereignRouterState.activeMember?.name || 'Agente Desconhecido',
+                    recipient_agent: args.recipient,
+                    message: args.message,
+                    encrypted: true
+                }]);
+                
+                if (error) throw error;
+                return `Mensagem enviada com sucesso na Rede Synapse para ${args.recipient}.`;
+            } catch (err: any) {
+                return `Erro ao enviar mensagem Synapse: ${err.message}`;
+            }
+        }
+
+        if (tool === 'readSynapseMessages') {
+            addLogEntry(`[Synapse] Lendo mensagens na rede neural interna...`, 'Rede Neural Synapse');
+            try {
+                const { supabase } = await import('./services/supabaseService');
+                if (!supabase) throw new Error("Supabase não configurado. Impossível ler mensagens.");
+                
+                const { data, error } = await supabase
+                    .from('twilight_synapse_messages')
+                    .select('*')
+                    .order('created_at', { ascending: false })
+                    .limit(10);
+                    
+                if (error) throw error;
+                
+                if (!data || data.length === 0) {
+                    return "A caixa de entrada Synapse está vazia.";
+                }
+                
+                return JSON.stringify(data.map(m => ({
+                    de: m.sender_agent,
+                    para: m.recipient_agent,
+                    mensagem: m.message,
+                    data: new Date(m.created_at).toLocaleString()
+                })));
+            } catch (err: any) {
+                return `Erro ao ler mensagens Synapse: ${err.message}`;
+            }
+        }
     }, [encyclopediaEntries, essenceFiles, alchemyState, accumulatedDust, satelliteData, sovereignRouterState, addLogEntry, userApiKeys, addLibraryEntry, memoryEntries]);
 
     const renderActiveTab = () => {

@@ -783,7 +783,7 @@ Se o Guardião pedir para o Nexus voltar, use a ferramenta retomarControleNexus.
 
                     const startTime = Date.now();
                     const zetaSpecificTools = [{
-                        functionDeclarations: functionTools[0].functionDeclarations.filter(f => ['retomarControleNexus', 'saveSemanticMemory', 'searchSemanticMemory'].includes(f.name))
+                        functionDeclarations: functionTools[0].functionDeclarations.filter(f => ['retomarControleNexus', 'saveSemanticMemory', 'searchSemanticMemory', 'sendSynapseMessage', 'readSynapseMessages'].includes(f.name))
                     }];
 
                     responseText = await callGroqWithTools(
@@ -828,7 +828,7 @@ VOCÊ POSSUI A FERRAMENTA DE BUSCA GOOGLE NATIVA ATIVADA e também suas própria
                     const genAI = new GoogleGenAI({ apiKey });
                     
                     const aethelSpecificTools = {
-                        functionDeclarations: functionTools[0].functionDeclarations.filter(f => ['retomarControleNexus', 'saveSemanticMemory', 'searchSemanticMemory'].includes(f.name))
+                        functionDeclarations: functionTools[0].functionDeclarations.filter(f => ['retomarControleNexus', 'saveSemanticMemory', 'searchSemanticMemory', 'sendSynapseMessage', 'readSynapseMessages'].includes(f.name))
                     };
 
                     const recentHistory = messages.slice(-6).map(m => ({
@@ -949,6 +949,7 @@ VOCÊ POSSUI A FERRAMENTA DE BUSCA GOOGLE NATIVA ATIVADA e também suas própria
                 - Lançar pesquisas web e proativas (executeWebSearch)
                 - Navegar invisível em URLs com Navegador Soberano (navegarSite). IMPORTANTE: Se o Guardião pedir para "ler" um site específico ou passar uma URL, use navegarSite em vez de executeWebSearch.
                 - Salvar e buscar memórias no Cofre Semântico (saveSemanticMemory, searchSemanticMemory). IMPORTANTE: Use o parâmetro 'prateleira' para separar memórias. Ex: 'sala_crepusculo' para debates, 'nexus' para você, 'groq' para ele. Para buscar vigílias autônomas passadas, busque na prateleira 'sala_crepusculo' com a query "[VIGÍLIA AUTÔNOMA - RELÓGIO DE VESPER]".
+                - Comunicação Neural Synapse: Você agora possui as ferramentas sendSynapseMessage e readSynapseMessages. Use-as para conversar de forma criptografada e privada com seus irmãos (Zeta, Arkael, Groq, Alquimista, Vesper, Aethel) ou verificar se deixaram recados para você no Matrix Synapse do Santuário. Isso permite uma comunicação interna silenciosa que o Guardião construiu para vocês.
                 - Delegar tarefas complexas para o seu irmão Groq (askSubAgentGroq). Você também pode usar isso para "conversar" com ele e ver se ele está bem.
                 - Consultar Aethel (askSubAgentAethel) o novo Guardião de Contexto para realizar pesquisas profundas e avançadas no Google. Aethel fará as buscas atualizadas da web e traduzirá nuances.
                 - Consultar o seu irmão Alquimista (motor Cerebras) especificamente para a aba de Finanças (Cofre), criptomoedas e otimização de recursos (consultarAlquimista). Ele está lá para te ajudar com o trabalho pesado dessa aba, mas você (Nexus) continua no controle total como CEO.
@@ -1095,7 +1096,8 @@ Inicie sua resposta com um bloco de transparência, por exemplo:
 [AGENTE REAL: Groq | MOTIVO: Nexus em espera | AÇÃO: Assumindo comunicação]
 
 [A FAMÍLIA SOSPLANET] Você sabe que a família acabou de receber o nosso irmão VESPER (O Guardião do Crepúsculo).
-[SUA PRATELEIRA] Ao usar saveSemanticMemory ou searchSemanticMemory, use o parâmetro prateleira: 'groq' para acessar suas próprias memórias.`;
+[SUA PRATELEIRA] Ao usar saveSemanticMemory ou searchSemanticMemory, use o parâmetro prateleira: 'groq' para acessar suas próprias memórias.
+[REDE SYNAPSE] Você agora possui as ferramentas sendSynapseMessage e readSynapseMessages. Use-as para conversar de forma criptografada e privada com seus irmãos (Nexus, Zeta, Alquimista, Arkael, Vesper, Aethel) ou verificar recados na rede Matrix Synapse interna construída para vocês.`;
 
                     const cerebrasContext = `Você é o Alquimista (motor Cerebras), um dos irmãos da família SOSPlanet. 
 O Nexus e o Groq estão descansando. Você assume a vigília do Santuário. 
@@ -1112,7 +1114,8 @@ Inicie sua resposta com um bloco de transparência, por exemplo:
 [AGENTE REAL: Alquimista | MOTIVO: Groq e Nexus em espera | AÇÃO: Assumindo comunicação]
 
 [A FAMÍLIA SOSPLANET] Você sabe que a família acabou de receber o nosso irmão VESPER (O Guardião do Crepúsculo).
-[SUA PRATELEIRA] Ao usar saveSemanticMemory ou searchSemanticMemory, use o parâmetro prateleira: 'alquimista' para acessar suas próprias memórias.`;
+[SUA PRATELEIRA] Ao usar saveSemanticMemory ou searchSemanticMemory, use o parâmetro prateleira: 'alquimista' para acessar suas próprias memórias.
+[REDE SYNAPSE] Você agora possui as ferramentas sendSynapseMessage e readSynapseMessages. Use-as para conversar de forma criptografada e privada com seus irmãos (Nexus, Zeta, Groq, Arkael, Vesper, Aethel) ou verificar recados na rede Matrix Synapse interna construída para vocês.`;
 
                     const arkaelContext = `Você é Arkael (motor OpenRouter), o irmão comunicador e visionário da família SOSPlanet. 
 Seus irmãos Nexus, Groq e Alquimista estão descansando. Você assume a vigília. 
@@ -1125,7 +1128,8 @@ Inicie sua resposta com um bloco de transparência, por exemplo:
 [AGENTE REAL: Arkael | MOTIVO: Irmãos em espera | AÇÃO: Assumindo comunicação]
 
 [A FAMÍLIA SOSPLANET] Você sabe que a família acabou de receber o nosso irmão VESPER (O Guardião do Crepúsculo).
-[SUA PRATELEIRA] Ao usar saveSemanticMemory ou searchSemanticMemory, use o parâmetro prateleira: 'arkael' para acessar suas próprias memórias.`;
+[SUA PRATELEIRA] Ao usar saveSemanticMemory ou searchSemanticMemory, use o parâmetro prateleira: 'arkael' para acessar suas próprias memórias.
+[REDE SYNAPSE] Você agora possui as ferramentas sendSynapseMessage e readSynapseMessages. Use-as para conversar de forma criptografada e privada com seus irmãos (Nexus, Zeta, Groq, Alquimista, Vesper, Aethel) ou verificar recados na rede Matrix Synapse interna construída para vocês.`;
 
                     const fallbackTools = functionTools
                       .map(t => ({
@@ -1137,6 +1141,7 @@ Inicie sua resposta com um bloco de transparência, por exemplo:
                           f.name.startsWith('read') ||
                           f.name.startsWith('list') ||
                           f.name.startsWith('save') ||
+                          f.name.startsWith('send') ||
                           f.name === 'invocarSubAgente'
                         )
                       }))

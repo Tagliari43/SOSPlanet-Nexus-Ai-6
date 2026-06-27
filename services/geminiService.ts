@@ -68,7 +68,7 @@ export async function executeDelegatedTask(memberName: string, essenceCode: stri
         const ai = new GoogleGenAI({ apiKey: process.env.API_KEY! });
         // Fix: update model name to 'gemini-3.1-pro-preview'
         const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
+            model: 'gemini-1.5-flash',
             contents: task,
             config: { systemInstruction, temperature: 0.7 }
         });
@@ -82,7 +82,7 @@ export async function generateContentAsArkael(topic: string, format: string): Pr
         const ai = new GoogleGenAI({ apiKey: process.env.API_KEY! });
         // Fix: update model name to 'gemini-3-flash-preview'
         const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
+            model: 'gemini-1.5-flash',
             contents: `TÓPICO: "${topic}", FORMATO: ${format}`,
             config: { systemInstruction, temperature: 0.8 }
         });
@@ -96,7 +96,7 @@ export async function runDeepProbeAnalysis(targetUrl: string, toolName: string):
         const ai = new GoogleGenAI({ apiKey: process.env.API_KEY! });
         // Fix: update model name to 'gemini-3-flash-preview'
         const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
+            model: 'gemini-1.5-flash',
             contents: `RECONHECIMENTO: ${toolName} em ${targetUrl}`,
             config: { systemInstruction, tools: [{ googleSearch: {} }] }
         });
@@ -109,7 +109,7 @@ export async function performEchoScan(target: string, apiKey: string): Promise<E
         const ai = new GoogleGenAI({ apiKey });
         // Fix: update model name to 'gemini-3-flash-preview'
         const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
+            model: 'gemini-1.5-flash',
             contents: `Varredura: "${target}".`,
             config: { tools: [{ googleSearch: {} }] }
         });
@@ -132,7 +132,7 @@ export async function analyzeEchoNode(node: EchoNode, apiKey: string): Promise<{
             const ai = new GoogleGenAI({ apiKey });
             // Fix: update model name to 'gemini-3-flash-preview'
             return await ai.models.generateContent({
-                model: 'gemini-2.5-flash',
+                model: 'gemini-1.5-flash',
                 contents: `Analise o site ${node.url}.`,
                 config: { tools: [{ googleSearch: {} }] }
             });
@@ -153,7 +153,7 @@ export async function executeTask(prompt: string, assignedMember: string, model:
     const isComplex = prompt.length > 1000 || 
                       /(código|programar|matemática|analise|profunda|complexo|arquitetura|lógica)/i.test(prompt);
                       
-    const targetModel = isComplex ? 'gemini-2.5-flash' : 'gemini-2.5-flash';
+    const targetModel = isComplex ? 'gemini-1.5-flash' : 'gemini-1.5-flash';
     
     const config: any = { systemInstruction };
     if (useSearch) config.tools = [{ googleSearch: {} }];
@@ -178,7 +178,7 @@ export async function generateExecutionPlan(prompt: string, apiKey: string): Pro
         const response = await withResilience(async () => {
             // Fix: update model name to 'gemini-3.1-pro-preview'
             return await ai.models.generateContent({
-                model: 'gemini-2.5-flash',
+                model: 'gemini-1.5-flash',
                 contents: `Plano para: "${prompt}"`,
                 config: { systemInstruction, responseMimeType: "application/json" }
             });
@@ -195,7 +195,7 @@ export async function generateComponentCode(prompt: string, apiKey: string): Pro
     return withResilience(async () => {
         // Fix: update model name to 'gemini-3.1-pro-preview'
         const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash', contents: prompt,
+            model: 'gemini-1.5-flash', contents: prompt,
             config: { systemInstruction, temperature: 0.1 }
         });
         return response.text.trim().replace(/^```[a-z]*\n?/, '').replace(/```$/, '');
@@ -207,7 +207,7 @@ export async function generateTags(title: string, content: string, apiKey: strin
     return withResilience(async () => {
         // Fix: update model name to 'gemini-3-flash-preview'
         const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
+            model: 'gemini-1.5-flash',
             contents: `Tags para: ${title}\n${content}`,
             config: { systemInstruction: "Palavras separadas por vírgula.", temperature: 0.3 }
         });
@@ -220,7 +220,7 @@ export async function analyzeCollectiveMemory(notebookContent: string, libraryEn
     return withResilience(async () => {
         // Fix: update model name to 'gemini-3-flash-preview'
         const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
+            model: 'gemini-1.5-flash',
             contents: `Analise temas em: ${notebookContent}`,
             config: { responseMimeType: "application/json" }
         });
@@ -233,7 +233,7 @@ export async function analyzeImage(base64Data: string, mimeType: string, apiKey:
         const ai = new GoogleGenAI({ apiKey });
         // Fix: update model name to 'gemini-3-flash-preview' and adjust contents structure
         const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
+            model: 'gemini-1.5-flash',
             contents: {
                 parts: [
                     { inlineData: { data: base64Data, mimeType } },
@@ -258,7 +258,7 @@ export async function analyzeVideoFrames(frames: string[], apiKey: string): Prom
         
         // Fix: update model name to 'gemini-3-flash-preview' and adjust contents structure
         const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
+            model: 'gemini-1.5-flash',
             contents: { parts }
         });
         return response.text || "Processado.";
@@ -270,7 +270,7 @@ export async function analyzeMarketSentiment(coinName: string, apiKey: string): 
         const ai = new GoogleGenAI({ apiKey });
         // Fix: update model name to 'gemini-3-flash-preview'
         const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
+            model: 'gemini-1.5-flash',
             contents: `Analise o sentimento de mercado atual para ${coinName}.`,
             config: {
                 tools: [{ googleSearch: {} }],
