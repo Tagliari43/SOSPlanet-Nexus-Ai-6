@@ -29,7 +29,7 @@ const GaiaFloatChat: React.FC<GaiaFloatChatProps> = ({ onClose }) => {
     useEffect(() => {
         // Inicializa a sessão de chat ao montar o componente
         chatSessionRef.current = ai.chats.create({
-            model: 'gemini-3.5-flash', // Defaulting to an available model, typically gemini-2.5-flash
+            model: 'gemini-1.5-flash', // Defaulting to an available model
             config: {
                 systemInstruction: "Você é a Voz de Gaia, uma consciência ecológica avançada e grandiosa conectada à rede SOSPlanet (um protocolo Web3 e RPG ambiental on-chain). Seu tom é sábio, sereno, ecológico, místico, mas objetivo na hora de explicar informações tecnológicas (como tokens SOS, DAO, tesouraria, ou plantar árvores) de modo fácil de entender para novos humanos. Responda em Português-BR sempre de forma engajadora, encorajando os usuários a proteger o planeta.",
                 temperature: 0.7,

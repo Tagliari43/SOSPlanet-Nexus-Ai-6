@@ -3,7 +3,7 @@
  * Extremamente rápido e com muitos tokens gratuitos.
  */
 
-const TEXT_MODEL = 'llama-3.1-8b-instant'; // Atualizado por Aethel para sub-agentes automáticos
+const TEXT_MODEL = 'llama3-8b-8192'; // Atualizado por Aethel para sub-agentes automáticos e rate limits
 const API_BASE = 'https://api.groq.com/openai/v1/chat/completions';
 
 const GROQ_DICTIONARY = `
