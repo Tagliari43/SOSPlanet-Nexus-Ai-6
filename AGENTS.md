@@ -1,5 +1,8 @@
 # DIRETRIZES DO CONSTRUTOR (Nexus / AI)
 
+## Roteamento GitHub Oficial
+- O repositório correto para as operações de escrita e leitura de código do Nexus é: `https://github.com/Tagliari43/SOSPlanet-Nexus-Ai-6.git`. É crucial que esta rota esteja clara para que os módulos de auto-modificação e versionamento (Forja da Auto-Criação) trabalhem no repositório correto.
+
 ## Segurança de Chaves e Repositórios Públicos (GitHub)
 - **NUNCA** deixe chaves de API cruas (como OpenAI, Supabase, Gemini, etc.) ou chaves `.env` expostas no código (`.tsx`, `.ts`, etc).
 - **SEMPRE** certifique-se de que arquivos com dados sensíveis, como `.env`, `.env.local` e semelhantes, estejam devidamente incluídos no `.gitignore`. 

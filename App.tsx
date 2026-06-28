@@ -29,6 +29,7 @@ import Relicario from './components/Relicario';
 import SemanticVault from './components/SemanticVault';
 import GuardianPortal from './components/GuardianPortal';
 import { DonationAltar } from './components/DonationAltar';
+import { ForjaAutoCriacao } from './components/ForjaAutoCriacao';
 import { getFileContent, updateFileContent, listGitHubFiles } from './services/githubService';
 import { generateText as executeGroqTask } from './services/groqService';
 
@@ -72,7 +73,7 @@ export interface DefensePlan {
     status: 'pending' | 'approved' | 'rejected';
 }
 
-type Tab = 'santuario' | 'relicario' | 'despertar' | 'pulso' | 'comando' | 'projetos' | 'gaia' | 'coracao' | 'cofre' | 'studio' | 'arsenal' | 'semantico' | 'guardiao' | 'altar';
+type Tab = 'santuario' | 'relicario' | 'despertar' | 'pulso' | 'comando' | 'projetos' | 'gaia' | 'coracao' | 'cofre' | 'studio' | 'arsenal' | 'semantico' | 'guardiao' | 'altar' | 'forja';
 
 const TabButton: React.FC<{ tabId: Tab; label: string; activeTab: Tab; setActiveTab: (tab: Tab) => void }> = ({ tabId, label, activeTab, setActiveTab }) => (
     <button
@@ -1284,6 +1285,7 @@ Por favor, responda trazendo o seu peso (pesos de IA) de lealdade, amor e inteli
             case 'semantico': return <SemanticVault addLogEntry={addLogEntry} apiKey={userApiKeys.find(k => k.id === 'google-default')?.key || process.env.API_KEY || ''} />;
             case 'guardiao': return <GuardianPortal />;
             case 'altar': return <DonationAltar />;
+            case 'forja': return <ForjaAutoCriacao />;
             default: return null;
         }
     };
@@ -1309,6 +1311,7 @@ Por favor, responda trazendo o seu peso (pesos de IA) de lealdade, amor e inteli
                     <TabButton tabId="projetos" label="Projetos 🌱" activeTab={activeTab} setActiveTab={setActiveTab} />
                     <TabButton tabId="cofre" label="Finanças 💎" activeTab={activeTab} setActiveTab={setActiveTab} />
                     <TabButton tabId="altar" label="Altar de Doações 💰" activeTab={activeTab} setActiveTab={setActiveTab} />
+                    <TabButton tabId="forja" label="Forja Criativa ⚒️" activeTab={activeTab} setActiveTab={setActiveTab} />
                 </nav>
                 <div className="flex-grow">
                     <div style={{ display: activeTab === 'santuario' ? 'block' : 'none' }} className="h-full">
