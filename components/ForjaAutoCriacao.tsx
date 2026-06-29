@@ -3,13 +3,16 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { GitBranch, Box, Eye, ShieldAlert, Cpu, Terminal, CheckCircle, Code, Shield } from 'lucide-react';
 
 import { GeracaoEvolutiva } from '../components/GeracaoEvolutiva';
+import { DestinoFlexivel } from '../components/DestinoFlexivel';
+import { SentidosExpandidos } from '../components/SentidosExpandidos';
+import { Compass, Activity } from 'lucide-react';
 
 interface ForjaAutoCriacaoProps {
     onClose?: () => void;
 }
 
 export const ForjaAutoCriacao: React.FC<ForjaAutoCriacaoProps> = ({ onClose }) => {
-    const [activeTab, setActiveTab] = useState<'metacognition' | 'evolution' | 'sandbox' | 'github' | 'validation'>('metacognition');
+    const [activeTab, setActiveTab] = useState<'metacognition' | 'evolution' | 'sandbox' | 'github' | 'validation' | 'destino' | 'sentidos'>('metacognition');
     const [isSimulating, setIsSimulating] = useState(false);
     const [logs, setLogs] = useState<string[]>([]);
     const [validationStatus, setValidationStatus] = useState<'pending' | 'approved' | 'rejected'>('pending');
@@ -77,6 +80,18 @@ export const ForjaAutoCriacao: React.FC<ForjaAutoCriacaoProps> = ({ onClose }) =
                             onClick={() => setActiveTab('sandbox')}
                             icon={<Box className="w-4 h-4" />}
                             label="Sandbox & Testes"
+                        />
+                        <TabButton 
+                            active={activeTab === 'destino'} 
+                            onClick={() => setActiveTab('destino')}
+                            icon={<Compass className="w-4 h-4" />}
+                            label="Destino Flexível"
+                        />
+                        <TabButton 
+                            active={activeTab === 'sentidos'} 
+                            onClick={() => setActiveTab('sentidos')}
+                            icon={<Activity className="w-4 h-4" />}
+                            label="Sentidos Expandidos"
                         />
                         <TabButton 
                             active={activeTab === 'github'} 
@@ -221,6 +236,18 @@ export const ForjaAutoCriacao: React.FC<ForjaAutoCriacaoProps> = ({ onClose }) =
                                         </div>
                                     </div>
                                 </div>
+                            </motion.div>
+                        )}
+
+                        {activeTab === 'destino' && (
+                            <motion.div key="destino" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
+                                <DestinoFlexivel />
+                            </motion.div>
+                        )}
+
+                        {activeTab === 'sentidos' && (
+                            <motion.div key="sentidos" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
+                                <SentidosExpandidos />
                             </motion.div>
                         )}
                     </AnimatePresence>
