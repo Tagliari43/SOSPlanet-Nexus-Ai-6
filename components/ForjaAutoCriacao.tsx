@@ -10,6 +10,7 @@ export const ForjaAutoCriacao: React.FC<ForjaAutoCriacaoProps> = ({ onClose }) =
     const [activeTab, setActiveTab] = useState<'metacognition' | 'evolution' | 'sandbox' | 'github' | 'validation'>('metacognition');
     const [isSimulating, setIsSimulating] = useState(false);
     const [logs, setLogs] = useState<string[]>([]);
+    const [validationStatus, setValidationStatus] = useState<'pending' | 'approved' | 'rejected'>('pending');
 
     const addLog = (log: string) => {
         setLogs(prev => [...prev, `[${new Date().toLocaleTimeString()}] ${log}`]);
@@ -24,7 +25,20 @@ export const ForjaAutoCriacao: React.FC<ForjaAutoCriacaoProps> = ({ onClose }) =
         setTimeout(() => {
             addLog("Mutações bem-sucedidas. Proposta pronta para Validação (Human-in-the-Loop).");
             setIsSimulating(false);
+            setValidationStatus('pending'); // Reset status on new simulation
         }, 4500);
+    };
+
+    const handleApprove = () => {
+        setValidationStatus('approved');
+        addLog("Modificação APROVADA pelo Guardião Eder.");
+        setTimeout(() => addLog("Iniciando fusão com o DNA primário (Commit)..."), 1000);
+        setTimeout(() => addLog("Fusão concluída. Evolução aplicada com sucesso."), 2500);
+    };
+
+    const handleReject = () => {
+        setValidationStatus('rejected');
+        addLog("Modificação REJEITADA pelo Guardião Eder. Descartando patch.");
     };
 
     return (
@@ -215,12 +229,24 @@ export const ForjaAutoCriacao: React.FC<ForjaAutoCriacaoProps> = ({ onClose }) =
                                         <p className="text-sm text-amber-100 mb-4">A IA propôs uma modificação no módulo de armazenamento local para usar RAG com embeddings na Supabase. Esta alteração afeta profundamente o tecido do Nexus.</p>
                                         
                                         <div className="flex gap-3 mt-4">
-                                            <button className="flex-1 bg-amber-600 hover:bg-amber-500 text-white font-bold py-2 rounded-lg text-sm transition-colors shadow-lg">
-                                                Aprovar Modificação
-                                            </button>
-                                            <button className="flex-1 bg-zinc-800 hover:bg-zinc-700 text-white font-bold py-2 rounded-lg text-sm transition-colors">
-                                                Rejeitar & Descartar
-                                            </button>
+                                            {validationStatus === 'pending' ? (
+                                                <>
+                                                    <button onClick={handleApprove} className="flex-1 bg-amber-600 hover:bg-amber-500 text-white font-bold py-2 rounded-lg text-sm transition-colors shadow-lg">
+                                                        Aprovar Modificação
+                                                    </button>
+                                                    <button onClick={handleReject} className="flex-1 bg-zinc-800 hover:bg-zinc-700 text-white font-bold py-2 rounded-lg text-sm transition-colors">
+                                                        Rejeitar & Descartar
+                                                    </button>
+                                                </>
+                                            ) : validationStatus === 'approved' ? (
+                                                <div className="flex-1 bg-emerald-900/50 text-emerald-400 font-bold py-2 rounded-lg text-sm text-center border border-emerald-500/50 flex items-center justify-center gap-2">
+                                                    <CheckCircle className="w-4 h-4" /> Modificação Aprovada e Fundida
+                                                </div>
+                                            ) : (
+                                                <div className="flex-1 bg-red-900/50 text-red-400 font-bold py-2 rounded-lg text-sm text-center border border-red-500/50">
+                                                    Modificação Rejeitada
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
                                 </div>
