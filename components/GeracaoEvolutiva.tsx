@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { processarMutacaoSegura } from '../config/essenciaNexus';
+import { logEvolucaoDNA } from '../services/supabaseService';
 
 export const GeracaoEvolutiva: React.FC = () => {
   const [objetivo, setObjetivo] = useState('');
@@ -9,7 +10,7 @@ export const GeracaoEvolutiva: React.FC = () => {
   // Simulação de geração de patch otimizado pelo Nexus
   const handleGerarMutacao = () => {
     setStatus('gerando');
-    setTimeout(() => {
+    setTimeout(async () => {
       // Código de exemplo gerado que será testado pelo Escudo da Sabedoria
       const patchProposto = `
         // Módulo Otimizado pelo NexusCore
@@ -23,6 +24,9 @@ export const GeracaoEvolutiva: React.FC = () => {
       `;
       setCodigoGerado(patchProposto);
       setStatus('sucesso');
+      
+      // Realiza um INSERT na tabela evolucao_dna_logs do Supabase
+      await logEvolucaoDNA(patchProposto);
     }, 1500);
   };
 

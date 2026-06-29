@@ -311,6 +311,20 @@ export async function registrarNoDiarioDeBordo(nota: string, categoria: string =
     }
 }
 
+export async function logEvolucaoDNA(payload: string): Promise<boolean> {
+    if (!supabase) return false;
+    try {
+        const { error } = await supabase
+            .from('evolucao_dna_logs')
+            .insert({ payload, created_at: new Date().toISOString() });
+        if (error) throw error;
+        return true;
+    } catch (e) {
+        console.error("Erro ao salvar log de evolucao:", e);
+        return false;
+    }
+}
+
 /**
  * Lê o estado global do portal externo
  */
