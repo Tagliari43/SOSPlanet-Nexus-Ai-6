@@ -8,6 +8,9 @@ export const supabase = (supabaseUrl && supabaseAnonKey)
     ? createClient(supabaseUrl, supabaseAnonKey) 
     : null;
 
+// Cache RAM para Memórias (Estágio 2)
+const memoriesRamCache = new Map<string, any>();
+
 export interface MemoryRecord {
     id?: number;
     content: string;
@@ -287,6 +290,61 @@ export async function searchSimilarMemories(queryEmbedding: number[], matchThres
     } catch (err) {
         console.error("Falha crítica ao buscar memórias:", err);
         return [];
+    }
+}
+
+/**
+ * Leitura de memórias com cascata de cache de 3 estágios (Supabase -> RAM -> LocalStorage)
+ */
+export async function getMemoriesWithCache(limit: number = 50): Promise<{ data: any[], stale: boolean, source: string }> {
+    const CACHE_KEY = 'nexus_memories_snapshot';
+    
+    try {
+        if (!supabase) throw new Error("Supabase não inicializado");
+        
+        // Estágio 1: Tentar Supabase (Live)
+        const { data, error } = await supabase
+            .from('memories')
+            .select('*')
+            .order('created_at', { ascending: false })
+            .limit(limit);
+            
+        if (error) throw error;
+        
+        // Sucesso: Atualizar Cache RAM (Estágio 2) e LocalStorage (Estágio 3)
+        memoriesRamCache.set('latest_memories', data);
+        try {
+            localStorage.setItem(CACHE_KEY, JSON.stringify(data));
+        } catch (e) {
+            console.warn("Falha ao salvar no localStorage", e);
+        }
+        
+        return { data: data || [], stale: false, source: 'supabase' };
+    } catch (error) {
+        console.warn("Estágio 1 (Supabase) falhou. Iniciando Fallback...", error);
+        
+        // Estágio 2: Cache RAM Quente
+        if (memoriesRamCache.has('latest_memories')) {
+            console.log("Estágio 2: Recuperado da RAM.");
+            return { data: memoriesRamCache.get('latest_memories'), stale: true, source: 'ram' };
+        }
+        
+        // Estágio 3: Cache LocalStorage Frio
+        try {
+            const localData = localStorage.getItem(CACHE_KEY);
+            if (localData) {
+                console.log("Estágio 3: Recuperado do LocalStorage.");
+                const parsedData = JSON.parse(localData);
+                // Carregar de volta para RAM para agilizar futuras buscas falhas
+                memoriesRamCache.set('latest_memories', parsedData);
+                return { data: parsedData, stale: true, source: 'localstorage' };
+            }
+        } catch (e) {
+            console.error("Estágio 3 falhou. LocalStorage inacessível ou corrompido.", e);
+        }
+        
+        // Falha total
+        return { data: [], stale: true, source: 'none' };
     }
 }
 
