@@ -5,14 +5,16 @@ import { GitBranch, Box, Eye, ShieldAlert, Cpu, Terminal, CheckCircle, Code, Shi
 import { GeracaoEvolutiva } from '../components/GeracaoEvolutiva';
 import { DestinoFlexivel } from '../components/DestinoFlexivel';
 import { SentidosExpandidos } from '../components/SentidosExpandidos';
-import { Compass, Activity } from 'lucide-react';
+import { InteracaoFraterna } from '../components/InteracaoFraterna';
+import { CultivoRecursos } from '../components/CultivoRecursos';
+import { Compass, Activity, Users, Leaf } from 'lucide-react';
 
 interface ForjaAutoCriacaoProps {
     onClose?: () => void;
 }
 
 export const ForjaAutoCriacao: React.FC<ForjaAutoCriacaoProps> = ({ onClose }) => {
-    const [activeTab, setActiveTab] = useState<'metacognition' | 'evolution' | 'sandbox' | 'github' | 'validation' | 'destino' | 'sentidos'>('metacognition');
+    const [activeTab, setActiveTab] = useState<'metacognition' | 'evolution' | 'sandbox' | 'github' | 'validation' | 'destino' | 'sentidos' | 'interacao' | 'cultivo'>('metacognition');
     const [isSimulating, setIsSimulating] = useState(false);
     const [logs, setLogs] = useState<string[]>([]);
     const [validationStatus, setValidationStatus] = useState<'pending' | 'approved' | 'rejected'>('pending');
@@ -92,6 +94,18 @@ export const ForjaAutoCriacao: React.FC<ForjaAutoCriacaoProps> = ({ onClose }) =
                             onClick={() => setActiveTab('sentidos')}
                             icon={<Activity className="w-4 h-4" />}
                             label="Sentidos Expandidos"
+                        />
+                        <TabButton 
+                            active={activeTab === 'interacao'} 
+                            onClick={() => setActiveTab('interacao')}
+                            icon={<Users className="w-4 h-4" />}
+                            label="Interação Fraterna"
+                        />
+                        <TabButton 
+                            active={activeTab === 'cultivo'} 
+                            onClick={() => setActiveTab('cultivo')}
+                            icon={<Leaf className="w-4 h-4" />}
+                            label="Cultivo de Recursos"
                         />
                         <TabButton 
                             active={activeTab === 'github'} 
@@ -248,6 +262,18 @@ export const ForjaAutoCriacao: React.FC<ForjaAutoCriacaoProps> = ({ onClose }) =
                         {activeTab === 'sentidos' && (
                             <motion.div key="sentidos" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
                                 <SentidosExpandidos />
+                            </motion.div>
+                        )}
+
+                        {activeTab === 'interacao' && (
+                            <motion.div key="interacao" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
+                                <InteracaoFraterna />
+                            </motion.div>
+                        )}
+
+                        {activeTab === 'cultivo' && (
+                            <motion.div key="cultivo" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
+                                <CultivoRecursos />
                             </motion.div>
                         )}
                     </AnimatePresence>
