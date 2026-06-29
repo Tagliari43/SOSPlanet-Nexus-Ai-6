@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { GitBranch, Box, Eye, ShieldAlert, Cpu, Terminal, CheckCircle, Code, Shield } from 'lucide-react';
 
+import { GeracaoEvolutiva } from '../components/GeracaoEvolutiva';
+
 interface ForjaAutoCriacaoProps {
     onClose?: () => void;
 }
@@ -126,38 +128,7 @@ export const ForjaAutoCriacao: React.FC<ForjaAutoCriacaoProps> = ({ onClose }) =
 
                         {activeTab === 'evolution' && (
                             <motion.div key="evo" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
-                                <h3 className="text-lg font-bold text-emerald-200 mb-2">2. A Mão do Escultor: Geração Evolutiva</h3>
-                                <p className="text-sm text-zinc-400 mb-6">Programação genética para propor variantes de código, otimizar uso de CPU/tokens e melhorar desempenho utilizando Reforço (RL).</p>
-                                
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div className="bg-black/50 border border-emerald-800/30 rounded-xl p-4">
-                                        <h4 className="text-sm font-bold text-emerald-300 mb-2">Variante A (Atual)</h4>
-                                        <pre className="text-xs text-zinc-400 font-mono">
-{`function processTokens(t) {
-  return t.map(x => x.trim())
-          .filter(Boolean);
-}`}
-                                        </pre>
-                                        <div className="mt-2 text-[10px] text-zinc-500">Desempenho: 45ms</div>
-                                    </div>
-                                    <div className="bg-emerald-900/20 border border-emerald-500/50 rounded-xl p-4 relative">
-                                        <div className="absolute top-2 right-2 flex items-center gap-1 text-[10px] font-bold text-emerald-400 bg-emerald-900/50 px-2 py-1 rounded">
-                                            <CheckCircle className="w-3 h-3" /> OTIMIZADO
-                                        </div>
-                                        <h4 className="text-sm font-bold text-emerald-300 mb-2">Variante B (Mutação)</h4>
-                                        <pre className="text-xs text-zinc-300 font-mono">
-{`function processTokens(t) {
-  const res = [];
-  for(let i=0; i<t.length; i++) {
-    const val = t[i].trim();
-    if(val) res.push(val);
-  }
-  return res;
-}`}
-                                        </pre>
-                                        <div className="mt-2 text-[10px] text-emerald-400">Desempenho: 12ms (-73%)</div>
-                                    </div>
-                                </div>
+                                <GeracaoEvolutiva />
                             </motion.div>
                         )}
 
