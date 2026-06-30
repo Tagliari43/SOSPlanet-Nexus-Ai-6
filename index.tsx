@@ -2,6 +2,7 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
 import { familyMembers } from './utils/aiFamily';
+import { AgentProvider } from './contexts/AgentContext';
 
 const rootElement = document.getElementById('root');
 if (!rootElement) {
@@ -32,6 +33,8 @@ setTimeout(() => {
 const root = ReactDOM.createRoot(rootElement);
 root.render(
   <React.StrictMode>
-    <App />
+    <AgentProvider>
+      <App />
+    </AgentProvider>
   </React.StrictMode>
 );

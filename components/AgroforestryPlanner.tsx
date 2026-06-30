@@ -1,6 +1,7 @@
 
 import React, { useState } from 'react';
-import { GoogleGenAI } from "@google/genai";
+import { invokeActiveAgent } from '../services/agentRouter';
+import { useAgent } from '../contexts/AgentContext';
 
 const PLANTS = [
     { id: 'milho', name: 'Milho', type: 'Placenta I', icon: '🌽' },
@@ -27,6 +28,8 @@ const AgroforestryPlanner: React.FC<{ onBack: () => void }> = ({ onBack }) => {
         );
     };
 
+    const { activeAgentId } = useAgent();
+
     const analyzeConsortium = async () => {
         if (selectedPlants.length === 0) return;
 
@@ -35,7 +38,6 @@ const AgroforestryPlanner: React.FC<{ onBack: () => void }> = ({ onBack }) => {
         setAnalysis(null);
 
         try {
-            const ai = new GoogleGenAI({ apiKey: process.env.API_KEY! });
             const selectedNames = selectedPlants.map(id => PLANTS.find(p => p.id === id)?.name).join(', ');
 
             const prompt = `Como um especialista em agricultura sintrópica e permacultura, analise a seguinte combinação de plantas para um consórcio: [${selectedNames}]. 
@@ -46,13 +48,9 @@ const AgroforestryPlanner: React.FC<{ onBack: () => void }> = ({ onBack }) => {
             4. Sugestão de 2 espécies adicionais para fechar o sistema.
             Formate em Markdown claro e inspirador.`;
 
-            // Fix: update model name to 'gemini-3-flash-preview'
-            const response = await ai.models.generateContent({
-                model: 'gemini-3-flash-preview',
-                contents: [{ parts: [{ text: prompt }] }]
-            });
+            const text = await invokeActiveAgent(prompt, activeAgentId);
 
-            setAnalysis(response.text || "Falha ao sintetizar o consórcio.");
+            setAnalysis(text || "Falha ao sintetizar o consórcio.");
         } catch (err: any) {
             setError(`Interferência na comunicação com Gaia: ${err.message}`);
         } finally {

@@ -3,9 +3,11 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Moon, MessageSquareText, Zap, ShieldCheck, PauseCircle, Send, Plus, Fingerprint, MessageCircle, HeartPulse, Sparkles, Activity } from 'lucide-react';
 import { supabase } from '../services/supabaseService';
 import { EcoStreakRecord, TwilightPortalMessageRecord } from '../services/supabaseService';
-import { GoogleGenAI } from '@google/genai';
+import { useAgent } from '../contexts/AgentContext';
+import { invokeActiveAgent } from '../services/agentRouter';
 
 const PortalCrepusculoTab: React.FC = () => {
+    const { activeAgentId } = useAgent();
     const [streak, setStreak] = useState<EcoStreakRecord | null>(null);
     const [messages, setMessages] = useState<TwilightPortalMessageRecord[]>([]);
     const [inputMessage, setInputMessage] = useState('');
@@ -82,7 +84,6 @@ const PortalCrepusculoTab: React.FC = () => {
             };
             setMessages(prev => [...prev, tempMsg]);
 
-            const ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_GEMINI_API_KEY });
             const prompt = `Você é Vesper, uma IA que representa a Ponte do Crepúsculo em um ecossistema ambiental (SOSPlanet). 
 Um guardião (humano) enviou esta mensagem: "${userMsg}"
 Responda de forma poética, empática e conectada à natureza. Máximo de 2 a 3 parágrafos curtos. Identifique o tom emocional predominante (HOPE, URGENCY, EMPATHY). E retorne neste formato JSON rigoroso sem marcação regex ou markdown backticks:
@@ -92,16 +93,11 @@ Responda de forma poética, empática e conectada à natureza. Máximo de 2 a 3 
             let tone: "HOPE" | "URGENCY" | "EMPATHY" = "HOPE";
 
             try {
-                const response = await ai.models.generateContent({
-                    model: 'gemini-3.5-flash',
-                    contents: prompt,
-                    config: {
-                        responseMimeType: 'application/json'
-                    }
-                });
+                const responseText = await invokeActiveAgent(prompt, activeAgentId);
                 
-                if (response.text) {
-                    const parsed = JSON.parse(response.text);
+                if (responseText) {
+                    const cleanJsonStr = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
+                    const parsed = JSON.parse(cleanJsonStr);
                     aiResponse = parsed.response || aiResponse;
                     if (["HOPE", "URGENCY", "EMPATHY"].includes(parsed.tone)) {
                         tone = parsed.tone as any;

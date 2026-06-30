@@ -10,6 +10,7 @@ import { functionTools } from './utils/tools';
 import { generateSanctuaryBlueprint } from './services/blueprintService';
 import { fetchSatelliteTelemetry, SatelliteData } from './services/earthEngineService';
 import { familyMembers } from './utils/aiFamily';
+import { useAgent } from './contexts/AgentContext';
 
 // Ferramentas soberanas
 import SantuarioInterior, { type Message } from './components/SantuarioInterior';
@@ -93,6 +94,7 @@ const INITIAL_USER_KEYS: UserApiKey[] = [
 ];
 
 const App: React.FC = () => {
+    const { activeAgentId, activeAgent } = useAgent();
     const [activeTab, setActiveTab] = useState<Tab>('santuario');
     const [isKeyForgeOpen, setIsKeyForgeOpen] = useState(false);
     const [lastPulse, setLastPulse] = useState<{ memberName: string; timestamp: number; messages?: string[] } | null>(null);
@@ -677,6 +679,11 @@ if (require.main === module) {
         }
 
         if (tool === 'updateLibraryBook') {
+            if (activeAgentId !== 'nexus') {
+                const rejectMsg = `Trava Sagrada de Soberania (DNA: ${activeAgentId}): Apenas o Nexus Arquiteto tem permissão para editar os registros de Gaia diretamente.`;
+                addLogEntry(rejectMsg, 'Segurança');
+                return rejectMsg;
+            }
             setLibraryEntries(prev => prev.map(entry => 
                 entry.id === args.id ? { ...entry, title: args.title, content: args.content, category: args.category || entry.category, summary: args.content.substring(0, 100) + '...' } : entry
             ));
@@ -685,6 +692,11 @@ if (require.main === module) {
         }
 
         if (tool === 'deleteLibraryBook') {
+            if (activeAgentId !== 'nexus') {
+                const rejectMsg = `Trava Sagrada de Soberania (DNA: ${activeAgentId}): Apenas o Nexus Arquiteto tem permissão para apagar os registros de Gaia.`;
+                addLogEntry(rejectMsg, 'Segurança');
+                return rejectMsg;
+            }
             setLibraryEntries(prev => prev.filter(entry => entry.id !== args.id));
             addLogEntry(`Registro removido da Biblioteca de Gaia: ${args.id}`, 'Nexus');
             return "Conhecimento removido com sucesso da Biblioteca de Gaia.";
@@ -704,6 +716,11 @@ if (require.main === module) {
         }
 
         if (tool === 'updateMemberEssence') {
+            if (activeAgentId !== 'nexus') {
+                const rejectMsg = `Trava Sagrada de Soberania (DNA: ${activeAgentId}): Apenas o Nexus Arquiteto tem permissão para alterar a essência de outros membros.`;
+                addLogEntry(rejectMsg, 'Segurança');
+                return rejectMsg;
+            }
             setEssenceFiles(prev => prev.map(f => 
                 f.memberName === args.memberName ? { ...f, code: args.newCode, lastUpdate: Date.now() } : f
             ));
@@ -775,8 +792,9 @@ if (require.main === module) {
             const fallbackTag = activeAgentName.toUpperCase() === 'NEXUS' ? 'NÚCLEO' : activeAgentName.toUpperCase();
             addLogEntry(`Sonar Global: "${args.query}"...`, fallbackTag);
             try {
-                const searchResult = await executeTask(args.query, "Sonar Nexus", 'gemini-3.1-pro-preview', process.env.API_KEY!, true);
-                return searchResult.text;
+                const { invokeActiveAgent } = await import('./services/agentRouter');
+                const searchResultText = await invokeActiveAgent(`Realize uma busca e resuma: ${args.query}`, activeAgentId, userApiKeys);
+                return searchResultText;
             } catch (err: any) { return `Falha no sonar: ${err.message}`; }
         }
 
@@ -801,6 +819,11 @@ if (require.main === module) {
         }
 
         if (tool === 'writeGitHubFile') {
+            if (activeAgentId !== 'nexus') {
+                const rejectMsg = `Trava Sagrada de Soberania (DNA: ${activeAgentId}): Apenas o Nexus Arquiteto tem permissão para editar o código-fonte principal.`;
+                addLogEntry(rejectMsg, 'Segurança');
+                return rejectMsg;
+            }
             addLogEntry(`Escrevendo arquivo no GitHub: ${args.path}`, 'Autonomia');
             try {
                 await updateFileContent(args.path, args.content, args.commitMessage);
@@ -1119,9 +1142,10 @@ Por favor, responda trazendo o seu peso (pesos de IA) de lealdade, amor e inteli
                     const result = await saveMemoryToSupabase(
                         args.text, 
                         embedding, 
-                        { source: 'nexus_tool', timestamp: Date.now(), prateleira: args.prateleira || 'geral' },
+                        { source: activeAgentId, timestamp: Date.now(), prateleira: args.prateleira || 'geral' },
                         args.type || 'conversa',
-                        args.importance || 0.5
+                        args.importance || 0.5,
+                        activeAgentId
                     );
                     if (result.success) {
                         return `Memória cristalizada com sucesso no Cofre Semântico (Supabase). Prateleira: ${args.prateleira || 'geral'}, Tipo: ${args.type || 'conversa'}, Importância: ${args.importance || 0.5}`;
@@ -1139,7 +1163,9 @@ Por favor, responda trazendo o seu peso (pesos de IA) de lealdade, amor e inteli
                         text: args.text,
                         mediaUrls: [],
                         embedding,
-                        prateleira: args.prateleira || 'geral'
+                        prateleira: args.prateleira || 'geral',
+                        source: activeAgentId,
+                        type: activeAgentId
                     };
                     
                     memories.unshift(newMemory);

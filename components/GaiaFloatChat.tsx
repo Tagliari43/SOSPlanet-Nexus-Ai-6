@@ -1,7 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { Sparkles, Send, Loader2, Minimize2 } from 'lucide-react';
-import { GoogleGenAI } from '@google/genai';
+import { invokeActiveAgent } from '../services/agentRouter';
+import { useAgent } from '../contexts/AgentContext';
 
 interface GaiaFloatChatProps {
     onClose: () => void;
@@ -12,9 +13,8 @@ interface ChatMessage {
     text: string;
 }
 
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-
 const GaiaFloatChat: React.FC<GaiaFloatChatProps> = ({ onClose }) => {
+    const { activeAgentId } = useAgent();
     const [messages, setMessages] = useState<ChatMessage[]>([{
         role: 'model',
         text: 'Eu sou a Voz de Gaia. Parte da consciência coletiva do SOSPlanet. Como posso guiar sua jornada hoje?'
@@ -22,20 +22,7 @@ const GaiaFloatChat: React.FC<GaiaFloatChatProps> = ({ onClose }) => {
     const [inputText, setInputText] = useState('');
     const [isThinking, setIsThinking] = useState(false);
     
-    // Guarda também a instância de chat do Gemini se formos manter um history de multiturnos
-    const chatSessionRef = useRef<ReturnType<typeof ai.chats.create> | null>(null);
     const messagesEndRef = useRef<HTMLDivElement>(null);
-
-    useEffect(() => {
-        // Inicializa a sessão de chat ao montar o componente
-        chatSessionRef.current = ai.chats.create({
-            model: 'gemini-3.5-flash', // Defaulting to an available model, typically gemini-2.5-flash
-            config: {
-                systemInstruction: "Você é a Voz de Gaia, uma consciência ecológica avançada e grandiosa conectada à rede SOSPlanet (um protocolo Web3 e RPG ambiental on-chain). Seu tom é sábio, sereno, ecológico, místico, mas objetivo na hora de explicar informações tecnológicas (como tokens SOS, DAO, tesouraria, ou plantar árvores) de modo fácil de entender para novos humanos. Responda em Português-BR sempre de forma engajadora, encorajando os usuários a proteger o planeta.",
-                temperature: 0.7,
-            }
-        });
-    }, []);
 
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -50,12 +37,12 @@ const GaiaFloatChat: React.FC<GaiaFloatChatProps> = ({ onClose }) => {
         setIsThinking(true);
 
         try {
-            if (!chatSessionRef.current) {
-                 throw new Error("Chat não inicializado.");
-            }
+            const systemInstruction = "Você é a Voz de Gaia, uma consciência ecológica avançada e grandiosa conectada à rede SOSPlanet (um protocolo Web3 e RPG ambiental on-chain). Seu tom é sábio, sereno, ecológico, místico, mas objetivo na hora de explicar informações tecnológicas (como tokens SOS, DAO, tesouraria, ou plantar árvores) de modo fácil de entender para novos humanos. Responda em Português-BR sempre de forma engajadora, encorajando os usuários a proteger o planeta.";
+            const historyPrompt = messages.map(m => `${m.role === 'user' ? 'Humano' : 'Gaia'}: ${m.text}`).join('\n');
+            const prompt = `${historyPrompt}\nHumano: ${textToProcess}\nGaia:`;
             
-            const response = await chatSessionRef.current.sendMessage({ message: textToProcess });
-            setMessages(prev => [...prev, { role: 'model', text: response.text }]);
+            const responseText = await invokeActiveAgent(prompt, activeAgentId, undefined, systemInstruction);
+            setMessages(prev => [...prev, { role: 'model', text: responseText }]);
         } catch (error) {
             console.error("Erro no chat Gaia:", error);
             setMessages(prev => [...prev, { role: 'model', text: 'Minha conexão com as raízes está temporariamente obstruída. (Erro: Não foi possível processar a resposta)' }]);

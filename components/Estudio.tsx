@@ -1,9 +1,11 @@
 
 import React, { useState } from 'react';
-import { generateContentAsArkael } from '../services/geminiService';
+import { invokeActiveAgent } from '../services/agentRouter';
+import { useAgent } from '../contexts/AgentContext';
 import Loader from './Loader';
 
 const Estudio: React.FC = () => {
+    const { activeAgentId } = useAgent();
     const [topic, setTopic] = useState('');
     const [format, setFormat] = useState('Tweet');
     const [result, setResult] = useState('');
@@ -31,10 +33,11 @@ const Estudio: React.FC = () => {
         setResult('');
 
         try {
-            const content = await generateContentAsArkael(topic, format);
+            const prompt = `Gere conteúdo no formato: ${format}\nSobre o tema: ${topic}\nSeja criativo e profundo.`;
+            const content = await invokeActiveAgent(prompt, activeAgentId);
             setResult(content);
         } catch (err: any) {
-            setError(err.message || "Falha na transmissão de Arkael.");
+            setError(err.message || "Falha na transmissão.");
         } finally {
             setIsLoading(false);
         }

@@ -224,11 +224,26 @@ export async function saveAgentLogToSupabase(log: AgentLogRecord): Promise<{succ
 
 /**
  * Salva uma nova memória no Cofre Semântico (Supabase)
+ * Trava Sagrada de Soberania: Força o source e type com o ID do agente ativo.
  */
-export async function saveMemoryToSupabase(content: string, embedding: number[], metadata: Record<string, any> = {}, type: string = 'conversa', importance: number = 0.5): Promise<{success: boolean, error?: string}> {
+export async function saveMemoryToSupabase(
+    content: string, 
+    embedding: number[], 
+    metadata: Record<string, any> = {}, 
+    type: string = 'conversa', 
+    importance: number = 0.5,
+    agentId: string = 'nexus'
+): Promise<{success: boolean, error?: string}> {
     if (!supabase) {
         return { success: false, error: "Supabase não inicializado. Chaves ausentes." };
     }
+
+    // Trava Sagrada de Soberania: Forçar source e type
+    const enforcedMetadata = {
+        ...metadata,
+        source: agentId
+    };
+    const enforcedType = agentId;
 
     try {
         const { error } = await supabase
@@ -237,8 +252,8 @@ export async function saveMemoryToSupabase(content: string, embedding: number[],
                 { 
                     content, 
                     embedding, 
-                    metadata,
-                    type,
+                    metadata: enforcedMetadata,
+                    type: enforcedType,
                     importance
                 }
             ]);

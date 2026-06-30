@@ -15,6 +15,8 @@ import { callCerebrasWithTools } from '../services/cerebrasService';
 import { callOpenRouterWithTools } from '../services/openrouterService';
 import { loadApiKeys } from '../utils/keys';
 
+import { useAgent } from '../contexts/AgentContext';
+
 export interface Message {
     id?: string;
     role: string;
@@ -101,7 +103,9 @@ const SantuarioInterior: React.FC<SantuarioInteriorProps> = ({
     const [error, setError] = useState<string | null>(null);
     const [attachedFile, setAttachedFile] = useState<{ name: string; chunks: string[] } | null>(null);
     const [activeAbility, setActiveAbility] = useState('standard');
-    const [activeBrother, setActiveBrother] = useState<'nexus' | 'groq' | 'alquimista' | 'arkael' | 'zeta'>('nexus');
+    
+    // Agente Global (Pilar 4) - Selecionado na aba Comando
+    const { activeAgentId: activeBrother, setActiveAgentId: setActiveBrother } = useAgent();
     
     // Estados da Sala do Crepúsculo Contínua
     const [isTwilightRoomOpen, setIsTwilightRoomOpen] = useState(() => localStorage.getItem('twilight_open') === 'true');
