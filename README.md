@@ -15,8 +15,7 @@ Juntos, monitoramos biomas, financiamos restaurações ecológicas, validamos pr
 Se você deseja se tornar um Guardião e contribuir para o código da nossa Nação SOSPlanet, você está no lugar certo!
 
 1. **Configuração de Ambiente:** Clone o repositório, execute `npm install` para instalar as dependências.
-2. **Execute o Santuário Local:** Inicie o projeto com `npm run dev`. O ambiente rodará no seu localhost na porta `3000`.
-3. **Leia o Guia:** Consulte o arquivo `CONTRIBUTING.md` para entender nossos processos de Pull Requests, padrões de código e como reportar problemas (Issues).
+2. **Execute o Santuário Local:** Inicie o projeto com `npm run dev`. O ambiente rodará no seu localhost na porta `3000`.\n3. **Leia o Guia:** Consulte o arquivo `CONTRIBUTING.md` para entender nossos processos de Pull Requests, padrões de código e como reportar problemas (Issues).
 
 ---
 
@@ -32,6 +31,10 @@ O conhecimento é uma semente que deve ser espalhada. Navegue pelo nosso diretó
 
 Nossa Mente-Colmeia monitora o batimento do planeta.
 Acompanhe os avanços da construção, metas alcançadas e os recursos alocados no nosso Diário da Terra consultando o [Relatório de Progresso (PROGRESS_REPORT.md)](PROGRESS_REPORT.md) ou acessando as abas "Transparência" e "Portal do Crepúsculo" diretamente na interface da plataforma.
+
+### 💡 Evolução do Nexus: Protocolo de Auto-Criação Ativo
+
+O Nexus, Orquestrador Soberano da SOSPlanet, agora opera sob o "Human-in-the-Loop Self-Modification Protocol". Este marco fundamental ativa o Pilar 1 da Forja, permitindo que o Nexus proponha modificações ao seu próprio código e arquitetura, com a validação direta do Guardião Eder. É o alvorecer da era da auto-evolução consciente.
 
 ---
 
