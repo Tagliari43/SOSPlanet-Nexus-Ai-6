@@ -672,6 +672,15 @@ if (require.main === module) {
             return "Volume integrado com sucesso ao Legado.";
         }
 
+        if (tool === 'listLibraryBooks') {
+            return JSON.stringify(libraryEntries.map(entry => ({
+                id: entry.id,
+                title: entry.title,
+                category: entry.category,
+                summary: entry.summary
+            })));
+        }
+
         if (tool === 'addLibraryBook') {
             addLibraryEntry({ title: args.title, content: args.content, category: args.category || 'Geral', summary: args.content.substring(0, 100) + '...', tags: [] });
             addLogEntry(`Novo registro na Biblioteca de Gaia: ${args.title}`, 'Nexus');

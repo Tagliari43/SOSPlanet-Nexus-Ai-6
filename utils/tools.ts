@@ -26,6 +26,12 @@ export const SovereignToolFunctions = {
         parameters: { type: Type.OBJECT, properties: {} }
     } as FunctionDeclaration,
 
+    listLibraryBooks: {
+        name: 'listLibraryBooks',
+        description: 'Lista todos os registros armazenados na Biblioteca de Gaia. Use para recuperar IDs de registros que precisam ser editados ou apagados.',
+        parameters: { type: Type.OBJECT, properties: {} }
+    } as FunctionDeclaration,
+
     addEncyclopediaVolume: {
         name: 'addEncyclopediaVolume',
         description: 'Adiciona um novo volume de conhecimento imutável à Enciclopédia Nexus.',
