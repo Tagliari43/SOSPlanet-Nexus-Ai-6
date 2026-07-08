@@ -844,7 +844,11 @@ if (require.main === module) {
 
         if (tool === 'navegarSite') {
             const fallbackTag = activeAgentName.toUpperCase() === 'NEXUS' ? 'NAVEGADOR' : activeAgentName.toUpperCase();
-            addLogEntry(`Acessando url: ${args.url}`, fallbackTag);
+            let targetUrl = args.url || '';
+            if (targetUrl && !/^https?:\/\//i.test(targetUrl)) {
+                targetUrl = 'https://' + targetUrl;
+            }
+            addLogEntry(`Acessando url: ${targetUrl}`, fallbackTag);
             try {
                 // Tenta usar o ScraperAPI primeiro (via nosso backend)
                 let html = '';
@@ -855,7 +859,7 @@ if (require.main === module) {
                         headers['x-scraper-api-key'] = scraperKey;
                     }
                     
-                    const response = await fetch(`/api/scraper?url=${encodeURIComponent(args.url)}`, { headers });
+                    const response = await fetch(`/api/scraper?url=${encodeURIComponent(targetUrl)}`, { headers });
                     if (response.ok) {
                         html = await response.text();
                     } else {

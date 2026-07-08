@@ -16,9 +16,14 @@ async function startServer() {
   // Navegador Soberano (ScraperAPI Proxy)
   app.get("/api/scraper", async (req, res) => {
     try {
-      const targetUrl = req.query.url as string;
+      let targetUrl = req.query.url as string;
       if (!targetUrl) {
         return res.status(400).json({ error: "URL is required" });
+      }
+
+      // Normalizar URL: se não tiver protocolo http/https, adicionar https://
+      if (targetUrl && !/^https?:\/\//i.test(targetUrl)) {
+        targetUrl = "https://" + targetUrl;
       }
 
       const scraperApiKey = req.headers['x-scraper-api-key'] || process.env.SCRAPER_API_KEY;
