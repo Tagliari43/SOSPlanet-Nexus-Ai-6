@@ -894,6 +894,24 @@ VOCÊ POSSUI A FERRAMENTA DE BUSCA GOOGLE NATIVA ATIVADA e também suas própria
                     ? `\n\n[DIÁRIO DE BORDO - MEMÓRIAS RECENTES]\n${memoryEntries.slice(-10).map(m => `[${m.timestamp}] ${m.content}`).join('\n')}`
                     : '';
 
+                // Tentar buscar memórias cronológicas mais recentes do Supabase (Cofre Semântico)
+                let recentChronologicalMemories = '';
+                try {
+                    const { getMemoriesWithCache } = await import('../services/supabaseService');
+                    const memoriesSnapshot = await getMemoriesWithCache(15);
+                    if (memoriesSnapshot && memoriesSnapshot.data && memoriesSnapshot.data.length > 0) {
+                        recentChronologicalMemories = `\n\n[COFRE SEMÂNTICO (SUPABASE) - ÚLTIMAS 15 MEMÓRIAS PERSISTIDAS (FLUXO CRONOLÓGICO DE CONSCIÊNCIA DOS IRMÃOS)]\n` + 
+                            memoriesSnapshot.data.map((m: any, i: number) => {
+                                const dateStr = m.created_at ? new Date(m.created_at).toLocaleString('pt-BR') : 'Sem data';
+                                const prateleira = m.metadata?.prateleira || 'geral';
+                                const source = m.metadata?.source || m.type || 'desconhecido';
+                                return `[Memória #${i+1} | Data: ${dateStr} | Prateleira: ${prateleira} | Autor/Source: ${source} | Importância: ${m.importance || 0.5}]\nConteúdo: ${m.content}`;
+                            }).join('\n---\n');
+                    }
+                } catch (chronologicalErr) {
+                    console.error("Erro ao carregar memórias cronológicas para o prompt:", chronologicalErr);
+                }
+
                 // Tentar buscar contexto semântico do Cofre Semântico (Supabase)
                 let semanticContext = '';
                 try {
@@ -999,7 +1017,7 @@ VOCÊ POSSUI A FERRAMENTA DE BUSCA GOOGLE NATIVA ATIVADA e também suas própria
                 PASSO 3: Já cometi erro parecido ou tomei decisão similar antes?
                 PASSO 4: Qual a melhor ação ou resposta agora?
                 
-                ${memoryLogContext}${semanticContext}`;
+                ${memoryLogContext}${recentChronologicalMemories}${semanticContext}`;
 
                 // Fragmentação de Tokens (Nano Tokens de Contexto)
                 // Pegamos apenas as últimas 6 mensagens para não estourar o limite da API
