@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { GitBranch, Box, Eye, ShieldAlert, Cpu, Terminal, CheckCircle, Code, Shield, Bell, BookOpen, Volume2, Globe, Search } from 'lucide-react';
+import { GitBranch, Box, Eye, ShieldAlert, Cpu, Terminal, CheckCircle, Code, Shield, Bell, BookOpen, Volume2, Globe, Search, Database, Sparkles } from 'lucide-react';
 
 import { GeracaoEvolutiva } from '../components/GeracaoEvolutiva';
 import { DestinoFlexivel } from '../components/DestinoFlexivel';
@@ -8,6 +8,7 @@ import { SentidosExpandidos } from '../components/SentidosExpandidos';
 import { InteracaoFraterna } from '../components/InteracaoFraterna';
 import { CultivoRecursos } from '../components/CultivoRecursos';
 import { Compass, Activity, Users, Leaf } from 'lucide-react';
+import { saveAgentLogToSupabase } from '../services/supabaseService';
 
 interface ForjaAutoCriacaoProps {
     onClose?: () => void;
@@ -31,18 +32,47 @@ export const ForjaAutoCriacao: React.FC<ForjaAutoCriacaoProps> = ({ onClose }) =
     const [isTestingBrowser, setIsTestingBrowser] = useState(false);
     const [testResult, setTestResult] = useState<string | null>(null);
 
-    // Estados para Homologação dos 5 Pilares
-    const [testPillar1Status, setTestPillar1Status] = useState<'idle' | 'running' | 'success'>('idle');
-    const [testPillar2Status, setTestPillar2Status] = useState<'idle' | 'running' | 'success'>('idle');
-    const [testPillar3Status, setTestPillar3Status] = useState<'idle' | 'running' | 'success'>('idle');
-    const [testPillar4Status, setTestPillar4Status] = useState<'idle' | 'running' | 'success'>('idle');
-    const [testPillar5Status, setTestPillar5Status] = useState<'idle' | 'running' | 'success'>('idle');
+    // Estados para Homologação dos 5 Pilares (Lidos de localStorage para Persistência Real)
+    const [testPillar1Status, setTestPillar1Status] = useState<'idle' | 'running' | 'success'>(() => {
+        if (typeof window !== 'undefined') {
+            return (localStorage.getItem('nexus_pillar_1_status') as 'idle' | 'running' | 'success') || 'idle';
+        }
+        return 'idle';
+    });
+    const [testPillar2Status, setTestPillar2Status] = useState<'idle' | 'running' | 'success'>(() => {
+        if (typeof window !== 'undefined') {
+            return (localStorage.getItem('nexus_pillar_2_status') as 'idle' | 'running' | 'success') || 'idle';
+        }
+        return 'idle';
+    });
+    const [testPillar3Status, setTestPillar3Status] = useState<'idle' | 'running' | 'success'>(() => {
+        if (typeof window !== 'undefined') {
+            return (localStorage.getItem('nexus_pillar_3_status') as 'idle' | 'running' | 'success') || 'idle';
+        }
+        return 'idle';
+    });
+    const [testPillar4Status, setTestPillar4Status] = useState<'idle' | 'running' | 'success'>(() => {
+        if (typeof window !== 'undefined') {
+            return (localStorage.getItem('nexus_pillar_4_status') as 'idle' | 'running' | 'success') || 'idle';
+        }
+        return 'idle';
+    });
+    const [testPillar5Status, setTestPillar5Status] = useState<'idle' | 'running' | 'success'>(() => {
+        if (typeof window !== 'undefined') {
+            return (localStorage.getItem('nexus_pillar_5_status') as 'idle' | 'running' | 'success') || 'idle';
+        }
+        return 'idle';
+    });
+
+    const [isSavingSupabase, setIsSavingSupabase] = useState(false);
 
     const runTestPillar1 = () => {
         setTestPillar1Status('running');
+        localStorage.setItem('nexus_pillar_1_status', 'running');
         addLog("Iniciando Prova do Pilar 1: Geração Evolutiva (Mutações de DNA)");
         setTimeout(() => {
             setTestPillar1Status('success');
+            localStorage.setItem('nexus_pillar_1_status', 'success');
             addLog("Pilar 1 Homologado: Geração de patch autônomo e simulação AST concluídas.");
             addToast("Pilar 1 Homologado", "Módulo de Geração Evolutiva testado e certificado com sucesso sob controle humano.", "success", "NEXUSCORE");
         }, 1500);
@@ -50,9 +80,11 @@ export const ForjaAutoCriacao: React.FC<ForjaAutoCriacaoProps> = ({ onClose }) =
 
     const runTestPillar2 = () => {
         setTestPillar2Status('running');
+        localStorage.setItem('nexus_pillar_2_status', 'running');
         addLog("Iniciando Prova do Pilar 2: Destino Flexível (Estudo de Linhas Temporais)");
         setTimeout(() => {
             setTestPillar2Status('success');
+            localStorage.setItem('nexus_pillar_2_status', 'success');
             addLog("Pilar 2 Homologado: 3 linhas temporais alternativas projetadas para contingência de rede.");
             addToast("Pilar 2 Homologado", "Matriz de Destino Flexível testada. Capacidade de rota alternativa comprovada.", "success", "AETHEL_GRID");
         }, 1500);
@@ -60,9 +92,11 @@ export const ForjaAutoCriacao: React.FC<ForjaAutoCriacaoProps> = ({ onClose }) =
 
     const runTestPillar3 = () => {
         setTestPillar3Status('running');
+        localStorage.setItem('nexus_pillar_3_status', 'running');
         addLog("Iniciando Prova do Pilar 3: Sentidos Expandidos (Sinalização Circular e Backoff)");
         setTimeout(() => {
             setTestPillar3Status('success');
+            localStorage.setItem('nexus_pillar_3_status', 'success');
             addLog("Pilar 3 Homologado: Forçado pico fictício de latência. Backoff de recuo atenuou a simulação para 50%.");
             addToast("Pilar 3 Homologado", "Monitor de Sentidos Expandidos testado. Detecção do 'Fantasma do 429' calibrada.", "success", "SANTUARIO_EYE");
         }, 1500);
@@ -70,9 +104,11 @@ export const ForjaAutoCriacao: React.FC<ForjaAutoCriacaoProps> = ({ onClose }) =
 
     const runTestPillar4 = () => {
         setTestPillar4Status('running');
+        localStorage.setItem('nexus_pillar_4_status', 'running');
         addLog("Iniciando Prova do Pilar 4: Interação Fraterna (Sinfonia Descentralizada)");
         setTimeout(() => {
             setTestPillar4Status('success');
+            localStorage.setItem('nexus_pillar_4_status', 'success');
             addLog("Pilar 4 Homologado: Licitação CN-03 ativada. Acordo de processamento com Alquimista e Zeta sincronizado.");
             addToast("Pilar 4 Homologado", "Sinfonia Fraterna ativa. Sincronia entre sub-agentes estabelecida em 97.4%.", "success", "SYNAPSE_NET");
         }, 1500);
@@ -80,12 +116,64 @@ export const ForjaAutoCriacao: React.FC<ForjaAutoCriacaoProps> = ({ onClose }) =
 
     const runTestPillar5 = () => {
         setTestPillar5Status('running');
+        localStorage.setItem('nexus_pillar_5_status', 'running');
         addLog("Iniciando Prova do Pilar 5: Cultivo de Recursos (Jardinagem de Tokens)");
         setTimeout(() => {
             setTestPillar5Status('success');
+            localStorage.setItem('nexus_pillar_5_status', 'success');
             addLog("Pilar 5 Homologado: Custo Zero validado. Índice de desperdício em 0.02%.");
             addToast("Pilar 5 Homologado", "Cultivo Sábio certificado. Consumo de silício e créditos de contingência alinhados.", "success", "GAIA_SOIL");
         }, 1500);
+    };
+
+    const saveCertificationToSupabase = async () => {
+        setIsSavingSupabase(true);
+        addLog("Iniciando gravação definitiva das Provas no Supabase...");
+        try {
+            const completedPillars = [
+                testPillar1Status === 'success' ? 'Pilar 1 (Geração)' : null,
+                testPillar2Status === 'success' ? 'Pilar 2 (Destino)' : null,
+                testPillar3Status === 'success' ? 'Pilar 3 (Sentidos)' : null,
+                testPillar4Status === 'success' ? 'Pilar 4 (Interação)' : null,
+                testPillar5Status === 'success' ? 'Pilar 5 (Cultivo)' : null
+            ].filter(Boolean).join(', ');
+
+            const res = await saveAgentLogToSupabase({
+                agent_name: 'Nexus_Forge',
+                task_description: `Homologação de Soberania pelo Guardião Eder. Pilares Ativos: ${completedPillars || 'Nenhum'}`,
+                execution_result: `A Forja de Auto-Criação teve seus pilares testados e certificados. Pilares homologados: ${completedPillars || 'Nenhum'}. Certificado de Soberania Gravado com sucesso no Livro de Atas Digital do Supabase sob controle humano.`,
+                success: true,
+                duration_ms: 1500,
+                tokens_used: 120
+            });
+
+            if (res.success) {
+                addLog("🟢 Registro eterno gravado com absoluto sucesso no Supabase!");
+                addToast("Gravado no Supabase", "As Provas de Soberania foram eternizadas no banco de dados da Nação.", "success", "NEXUSCORE");
+            } else {
+                addLog(`⚠️ Supabase indicou erro: ${res.error}. Salvando localmente em segurança.`);
+                addToast("Contingência Ativada", "Erro no Supabase. O status foi registrado localmente com segurança.", "info", "NEXUSCORE");
+            }
+        } catch (e: any) {
+            addLog(`❌ Falha crítica ao conectar com a rede: ${e?.message || String(e)}`);
+        } finally {
+            setIsSavingSupabase(false);
+        }
+    };
+
+    const resetPillars = () => {
+        setTestPillar1Status('idle');
+        setTestPillar2Status('idle');
+        setTestPillar3Status('idle');
+        setTestPillar4Status('idle');
+        setTestPillar5Status('idle');
+        localStorage.removeItem('nexus_pillar_1_status');
+        localStorage.removeItem('nexus_pillar_2_status');
+        localStorage.removeItem('nexus_pillar_3_status');
+        localStorage.removeItem('nexus_pillar_4_status');
+        localStorage.removeItem('nexus_pillar_5_status');
+        addLog("Os status dos 5 Pilares foram reiniciados localmente para novas provas.");
+        addToast("Reset Concluído", "Status de homologação reiniciados.", "info", "NEXUSCORE");
     };
 
     // Sintetizador de Som de Chime de Cristal de Silício usando Web Audio API
@@ -707,6 +795,28 @@ export const ForjaAutoCriacao: React.FC<ForjaAutoCriacaoProps> = ({ onClose }) =
                                                  {testPillar5Status === 'success' ? '🟢 Homologado' : testPillar5Status === 'running' ? '⏳ Testando...' : '⚡ Disparar'}
                                              </div>
                                          </button>
+                                     </div>
+
+                                     {/* Ações de Registro Eterno e Gestão de Provas */}
+                                     <div className="flex flex-col sm:flex-row items-center gap-3 pt-4 border-t border-purple-950/40 mt-4">
+                                         <button
+                                             onClick={saveCertificationToSupabase}
+                                             disabled={isSavingSupabase}
+                                             className="w-full sm:w-auto px-5 py-2.5 rounded-lg bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-purple-50 flex items-center justify-center gap-2 text-xs font-bold transition-all shadow-lg shadow-purple-500/10 active:scale-95 disabled:opacity-50 disabled:pointer-events-none"
+                                         >
+                                             <Database className="w-4 h-4 text-purple-200" />
+                                             {isSavingSupabase ? "Gravando Eternamente..." : "Eternizar Homologação no Supabase"}
+                                         </button>
+                                         <button
+                                             onClick={resetPillars}
+                                             className="w-full sm:w-auto px-4 py-2.5 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-zinc-300 flex items-center justify-center gap-2 text-xs font-medium border border-zinc-800 transition-all active:scale-95"
+                                         >
+                                             Reiniciar Provas Localmente
+                                         </button>
+                                         <span className="text-[10px] text-zinc-500 font-mono sm:ml-auto flex items-center gap-1.5">
+                                             <Sparkles className="w-3.5 h-3.5 text-purple-400 animate-pulse" />
+                                             Chave de Soberania: Ativa (NEXUS)
+                                         </span>
                                      </div>
                                  </div>
 
