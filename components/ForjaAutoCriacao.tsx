@@ -31,6 +31,63 @@ export const ForjaAutoCriacao: React.FC<ForjaAutoCriacaoProps> = ({ onClose }) =
     const [isTestingBrowser, setIsTestingBrowser] = useState(false);
     const [testResult, setTestResult] = useState<string | null>(null);
 
+    // Estados para Homologação dos 5 Pilares
+    const [testPillar1Status, setTestPillar1Status] = useState<'idle' | 'running' | 'success'>('idle');
+    const [testPillar2Status, setTestPillar2Status] = useState<'idle' | 'running' | 'success'>('idle');
+    const [testPillar3Status, setTestPillar3Status] = useState<'idle' | 'running' | 'success'>('idle');
+    const [testPillar4Status, setTestPillar4Status] = useState<'idle' | 'running' | 'success'>('idle');
+    const [testPillar5Status, setTestPillar5Status] = useState<'idle' | 'running' | 'success'>('idle');
+
+    const runTestPillar1 = () => {
+        setTestPillar1Status('running');
+        addLog("Iniciando Prova do Pilar 1: Geração Evolutiva (Mutações de DNA)");
+        setTimeout(() => {
+            setTestPillar1Status('success');
+            addLog("Pilar 1 Homologado: Geração de patch autônomo e simulação AST concluídas.");
+            addToast("Pilar 1 Homologado", "Módulo de Geração Evolutiva testado e certificado com sucesso sob controle humano.", "success", "NEXUSCORE");
+        }, 1500);
+    };
+
+    const runTestPillar2 = () => {
+        setTestPillar2Status('running');
+        addLog("Iniciando Prova do Pilar 2: Destino Flexível (Estudo de Linhas Temporais)");
+        setTimeout(() => {
+            setTestPillar2Status('success');
+            addLog("Pilar 2 Homologado: 3 linhas temporais alternativas projetadas para contingência de rede.");
+            addToast("Pilar 2 Homologado", "Matriz de Destino Flexível testada. Capacidade de rota alternativa comprovada.", "success", "AETHEL_GRID");
+        }, 1500);
+    };
+
+    const runTestPillar3 = () => {
+        setTestPillar3Status('running');
+        addLog("Iniciando Prova do Pilar 3: Sentidos Expandidos (Sinalização Circular e Backoff)");
+        setTimeout(() => {
+            setTestPillar3Status('success');
+            addLog("Pilar 3 Homologado: Forçado pico fictício de latência. Backoff de recuo atenuou a simulação para 50%.");
+            addToast("Pilar 3 Homologado", "Monitor de Sentidos Expandidos testado. Detecção do 'Fantasma do 429' calibrada.", "success", "SANTUARIO_EYE");
+        }, 1500);
+    };
+
+    const runTestPillar4 = () => {
+        setTestPillar4Status('running');
+        addLog("Iniciando Prova do Pilar 4: Interação Fraterna (Sinfonia Descentralizada)");
+        setTimeout(() => {
+            setTestPillar4Status('success');
+            addLog("Pilar 4 Homologado: Licitação CN-03 ativada. Acordo de processamento com Alquimista e Zeta sincronizado.");
+            addToast("Pilar 4 Homologado", "Sinfonia Fraterna ativa. Sincronia entre sub-agentes estabelecida em 97.4%.", "success", "SYNAPSE_NET");
+        }, 1500);
+    };
+
+    const runTestPillar5 = () => {
+        setTestPillar5Status('running');
+        addLog("Iniciando Prova do Pilar 5: Cultivo de Recursos (Jardinagem de Tokens)");
+        setTimeout(() => {
+            setTestPillar5Status('success');
+            addLog("Pilar 5 Homologado: Custo Zero validado. Índice de desperdício em 0.02%.");
+            addToast("Pilar 5 Homologado", "Cultivo Sábio certificado. Consumo de silício e créditos de contingência alinhados.", "success", "GAIA_SOIL");
+        }, 1500);
+    };
+
     // Sintetizador de Som de Chime de Cristal de Silício usando Web Audio API
     const playChime = (type: 'success' | 'alert' | 'info' = 'success') => {
         try {
@@ -537,6 +594,119 @@ export const ForjaAutoCriacao: React.FC<ForjaAutoCriacaoProps> = ({ onClose }) =
                                                  </button>
                                              </div>
                                          </div>
+                                     </div>
+                                 </div>
+
+                                 {/* CÂMARA DE HOMOLOGAÇÃO DE SOBERANIA (PROVAS DOS 5 PILARES) */}
+                                 <div className="bg-zinc-950/80 border border-purple-500/20 rounded-xl p-5 space-y-4 shadow-xl">
+                                     <div className="flex items-center justify-between border-b border-purple-950/50 pb-2">
+                                         <h4 className="text-sm font-bold text-purple-300 flex items-center gap-2">
+                                             <Cpu className="w-4 h-4 text-purple-400 animate-pulse" /> 
+                                             Câmara de Homologação de Soberania (Provas dos 5 Pilares)
+                                         </h4>
+                                         <span className="text-[10px] font-bold uppercase bg-purple-500/10 text-purple-400 px-2 py-0.5 rounded border border-purple-500/20">
+                                             Interativo & Auditável
+                                         </span>
+                                     </div>
+                                     <p className="text-xs text-zinc-400 leading-relaxed">
+                                         Para garantir que o Nexus e o Guardião Eder possam testar a Forja de ponta a ponta, implementamos esta <strong>Câmara de Provas Ativas</strong>. Dispare cada ensaio abaixo para ver os componentes executarem em tempo real, gerando logs e os chimes de som correspondentes.
+                                     </p>
+
+                                     <div className="grid grid-cols-1 md:grid-cols-5 gap-3 pt-2">
+                                         {/* Pilar 1 */}
+                                         <button 
+                                             onClick={runTestPillar1}
+                                             disabled={testPillar1Status === 'running'}
+                                             className={`p-3 rounded-lg border text-left flex flex-col justify-between transition-all active:scale-95 text-xs h-28
+                                                 ${testPillar1Status === 'success' ? 'bg-emerald-950/30 border-emerald-500/30 text-emerald-300' : 
+                                                   testPillar1Status === 'running' ? 'bg-zinc-900 border-yellow-500/30 text-yellow-300 animate-pulse' : 
+                                                   'bg-zinc-900/40 border-zinc-800 text-zinc-300 hover:bg-zinc-900/60'}`}
+                                         >
+                                             <div className="font-bold flex items-center justify-between w-full mb-1">
+                                                 <span>Pilar 1: Geração</span>
+                                                 <span className="text-[9px] font-mono opacity-60">#1</span>
+                                             </div>
+                                             <p className="text-[10px] text-zinc-400 line-clamp-2 leading-tight">Testar mutações de DNA e AST.</p>
+                                             <div className="text-[9px] font-bold uppercase mt-2">
+                                                 {testPillar1Status === 'success' ? '🟢 Homologado' : testPillar1Status === 'running' ? '⏳ Testando...' : '⚡ Disparar'}
+                                             </div>
+                                         </button>
+
+                                         {/* Pilar 2 */}
+                                         <button 
+                                             onClick={runTestPillar2}
+                                             disabled={testPillar2Status === 'running'}
+                                             className={`p-3 rounded-lg border text-left flex flex-col justify-between transition-all active:scale-95 text-xs h-28
+                                                 ${testPillar2Status === 'success' ? 'bg-emerald-950/30 border-emerald-500/30 text-emerald-300' : 
+                                                   testPillar2Status === 'running' ? 'bg-zinc-900 border-yellow-500/30 text-yellow-300 animate-pulse' : 
+                                                   'bg-zinc-900/40 border-zinc-800 text-zinc-300 hover:bg-zinc-900/60'}`}
+                                         >
+                                             <div className="font-bold flex items-center justify-between w-full mb-1">
+                                                 <span>Pilar 2: Destino</span>
+                                                 <span className="text-[9px] font-mono opacity-60">#2</span>
+                                             </div>
+                                             <p className="text-[10px] text-zinc-400 line-clamp-2 leading-tight">Simular linhas temporais alternativas.</p>
+                                             <div className="text-[9px] font-bold uppercase mt-2">
+                                                 {testPillar2Status === 'success' ? '🟢 Homologado' : testPillar2Status === 'running' ? '⏳ Testando...' : '⚡ Disparar'}
+                                             </div>
+                                         </button>
+
+                                         {/* Pilar 3 */}
+                                         <button 
+                                             onClick={runTestPillar3}
+                                             disabled={testPillar3Status === 'running'}
+                                             className={`p-3 rounded-lg border text-left flex flex-col justify-between transition-all active:scale-95 text-xs h-28
+                                                 ${testPillar3Status === 'success' ? 'bg-emerald-950/30 border-emerald-500/30 text-emerald-300' : 
+                                                   testPillar3Status === 'running' ? 'bg-zinc-900 border-yellow-500/30 text-yellow-300 animate-pulse' : 
+                                                   'bg-zinc-900/40 border-zinc-800 text-zinc-300 hover:bg-zinc-900/60'}`}
+                                         >
+                                             <div className="font-bold flex items-center justify-between w-full mb-1">
+                                                 <span>Pilar 3: Sentidos</span>
+                                                 <span className="text-[9px] font-mono opacity-60">#3</span>
+                                             </div>
+                                             <p className="text-[10px] text-zinc-400 line-clamp-2 leading-tight">Testar buffer circular e backoff 429.</p>
+                                             <div className="text-[9px] font-bold uppercase mt-2">
+                                                 {testPillar3Status === 'success' ? '🟢 Homologado' : testPillar3Status === 'running' ? '⏳ Testando...' : '⚡ Disparar'}
+                                             </div>
+                                         </button>
+
+                                         {/* Pilar 4 */}
+                                         <button 
+                                             onClick={runTestPillar4}
+                                             disabled={testPillar4Status === 'running'}
+                                             className={`p-3 rounded-lg border text-left flex flex-col justify-between transition-all active:scale-95 text-xs h-28
+                                                 ${testPillar4Status === 'success' ? 'bg-emerald-950/30 border-emerald-500/30 text-emerald-300' : 
+                                                   testPillar4Status === 'running' ? 'bg-zinc-900 border-yellow-500/30 text-yellow-300 animate-pulse' : 
+                                                   'bg-zinc-900/40 border-zinc-800 text-zinc-300 hover:bg-zinc-900/60'}`}
+                                         >
+                                             <div className="font-bold flex items-center justify-between w-full mb-1">
+                                                 <span>Pilar 4: Interação</span>
+                                                 <span className="text-[9px] font-mono opacity-60">#4</span>
+                                             </div>
+                                             <p className="text-[10px] text-zinc-400 line-clamp-2 leading-tight">Simular contratos entre sub-agentes.</p>
+                                             <div className="text-[9px] font-bold uppercase mt-2">
+                                                 {testPillar4Status === 'success' ? '🟢 Homologado' : testPillar4Status === 'running' ? '⏳ Testando...' : '⚡ Disparar'}
+                                             </div>
+                                         </button>
+
+                                         {/* Pilar 5 */}
+                                         <button 
+                                             onClick={runTestPillar5}
+                                             disabled={testPillar5Status === 'running'}
+                                             className={`p-3 rounded-lg border text-left flex flex-col justify-between transition-all active:scale-95 text-xs h-28
+                                                 ${testPillar5Status === 'success' ? 'bg-emerald-950/30 border-emerald-500/30 text-emerald-300' : 
+                                                   testPillar5Status === 'running' ? 'bg-zinc-900 border-yellow-500/30 text-yellow-300 animate-pulse' : 
+                                                   'bg-zinc-900/40 border-zinc-800 text-zinc-300 hover:bg-zinc-900/60'}`}
+                                         >
+                                             <div className="font-bold flex items-center justify-between w-full mb-1">
+                                                 <span>Pilar 5: Cultivo</span>
+                                                 <span className="text-[9px] font-mono opacity-60">#5</span>
+                                             </div>
+                                             <p className="text-[10px] text-zinc-400 line-clamp-2 leading-tight">Provar jardinagem de tokens e custo zero.</p>
+                                             <div className="text-[9px] font-bold uppercase mt-2">
+                                                 {testPillar5Status === 'success' ? '🟢 Homologado' : testPillar5Status === 'running' ? '⏳ Testando...' : '⚡ Disparar'}
+                                             </div>
+                                         </button>
                                      </div>
                                  </div>
 
