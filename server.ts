@@ -8,6 +8,25 @@ async function startServer() {
 
   app.use(express.json());
 
+  // Lista de User-Agents comuns para rotação
+  const userAgents = [
+    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+    'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.3 Safari/605.1.15',
+    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Firefox/110.0',
+    'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36',
+    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Edge/122.0.0.0',
+    'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+    'Mozilla/5.0 (iPhone; CPU iPhone OS 16_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.3 Mobile/15E148 Safari/604.1',
+    'Mozilla/5.0 (iPad; CPU OS 16_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.3 Mobile/15E148 Safari/604.1',
+    'Mozilla/5.0 (Linux; Android 10; SM-G960F) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Mobile Safari/537.36',
+  ];
+
+  // Função para obter um User-Agent aleatório
+  const getRandomUserAgent = () => {
+    const randomIndex = Math.floor(Math.random() * userAgents.length);
+    return userAgents[randomIndex];
+  };
+
   // API routes FIRST
   app.get("/api/health", (req, res) => {
     res.json({ status: "ok" });
@@ -27,48 +46,54 @@ async function startServer() {
       }
 
       const scraperApiKey = req.headers['x-scraper-api-key'] || process.env.SCRAPER_API_KEY;
+      const userAgent = getRandomUserAgent(); // Obter User-Agent aleatório
 
       if (scraperApiKey) {
         const scraperUrl = `http://api.scraperapi.com?api_key=${scraperApiKey}&url=${encodeURIComponent(targetUrl)}`;
         const response = await fetch(scraperUrl);
         
         if (!response.ok) {
+           console.warn(`ScraperAPI failed for ${targetUrl}. Attempting direct fetch.`);
            const directResponse = await fetch(targetUrl, {
             headers: { 
-              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+              'User-Agent': userAgent, // Usar User-Agent aleatório
               'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
-              'Accept-Language': 'pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7'
+              'Accept-Language': 'pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7',
+              'Referer': targetUrl // Adicionar Referer
             }
           });
           if (directResponse.ok) {
             const html = await directResponse.text();
             return res.send(html);
           }
-          throw new Error(`ScraperAPI error: ${response.status} ${response.statusText}`);
+          throw new Error(`ScraperAPI error: ${response.status} ${response.statusText}. Direct fetch also failed: ${directResponse.status} ${directResponse.statusText}`);
         }
 
         const html = await response.text();
         return res.send(html);
       }
 
-      // Se nao tem chave do scraper, tenta buscar diretamente
+      // Se nao tem chave do scraper, tenta buscar diretamente com headers aprimorados
       const response = await fetch(targetUrl, {
         headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+          'User-Agent': userAgent, // Usar User-Agent aleatório
           'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
-          'Accept-Language': 'pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7'
+          'Accept-Language': 'pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7',
+          'Referer': targetUrl // Adicionar Referer
         }
       });
 
       if (!response.ok) {
-        throw new Error(`Failed to fetch URL directly: ${response.statusText}`);
+        throw new Error(`Failed to fetch URL directly: ${response.status} - ${response.statusText}`);
       }
 
       const html = await response.text();
       res.send(html);
     } catch (error: any) {
       console.error("ScraperAPI Proxy Error:", error);
-      res.status(500).json({ error: error.message });
+      // Retornar status code do erro se disponível, ou 500
+      const statusCode = error.message.includes('ScraperAPI error:') ? parseInt(error.message.split(' ')[2]) : 500;
+      res.status(statusCode).json({ error: error.message });
     }
   });
 
