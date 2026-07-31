@@ -8,34 +8,16 @@ async function startServer() {
 
   app.use(express.json());
 
-  // Lista de User-Agents comuns para rotação
-  const userAgents = [
-    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
-    'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.3 Safari/605.1.15',
-    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Firefox/110.0',
-    'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36',
-    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Edge/122.0.0.0',
-    'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
-    'Mozilla/5.0 (iPhone; CPU iPhone OS 16_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.3 Mobile/15E148 Safari/604.1',
-    'Mozilla/5.0 (iPad; CPU OS 16_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.3 Mobile/15E148 Safari/604.1',
-    'Mozilla/5.0 (Linux; Android 10; SM-G960F) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Mobile Safari/537.36',
-  ];
-
-  // Função para obter um User-Agent aleatório
-  const getRandomUserAgent = () => {
-    const randomIndex = Math.floor(Math.random() * userAgents.length);
-    return userAgents[randomIndex];
-  };
-
   // API routes FIRST
   app.get("/api/health", (req, res) => {
     res.json({ status: "ok" });
   });
 
-  // Navegador Soberano (ScraperAPI Proxy)
+  // Navegador Soberano (Puppeteer + ScraperAPI + Headers Fallback Proxy)
   app.get("/api/scraper", async (req, res) => {
     try {
       let targetUrl = req.query.url as string;
+      const cleanOnly = req.query.clean === 'true';
       if (!targetUrl) {
         return res.status(400).json({ error: "URL is required" });
       }
@@ -45,55 +27,87 @@ async function startServer() {
         targetUrl = "https://" + targetUrl;
       }
 
-      const scraperApiKey = req.headers['x-scraper-api-key'] || process.env.SCRAPER_API_KEY;
-      const userAgent = getRandomUserAgent(); // Obter User-Agent aleatório
+      let html = "";
+      let puppeteerSuccess = false;
 
-      if (scraperApiKey) {
-        const scraperUrl = `http://api.scraperapi.com?api_key=${scraperApiKey}&url=${encodeURIComponent(targetUrl)}`;
-        const response = await fetch(scraperUrl);
-        
-        if (!response.ok) {
-           console.warn(`ScraperAPI failed for ${targetUrl}. Attempting direct fetch.`);
-           const directResponse = await fetch(targetUrl, {
-            headers: { 
-              'User-Agent': userAgent, // Usar User-Agent aleatório
-              'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
-              'Accept-Language': 'pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7',
-              'Referer': targetUrl // Adicionar Referer
+      // 1. Tentar Puppeteer Headless Browser
+      try {
+        const puppeteer = await import('puppeteer');
+        const browser = await puppeteer.default.launch({
+          headless: true,
+          args: [
+            '--no-sandbox',
+            '--disable-setuid-sandbox',
+            '--disable-dev-shm-usage',
+            '--disable-accelerated-2d-canvas',
+            '--disable-gpu',
+            '--window-size=1280,800'
+          ]
+        });
+        const page = await browser.newPage();
+        await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36');
+        await page.setExtraHTTPHeaders({
+          'Accept-Language': 'pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7'
+        });
+        await page.goto(targetUrl, { waitUntil: 'domcontentloaded', timeout: 15000 });
+        html = await page.content();
+        await browser.close();
+        puppeteerSuccess = true;
+      } catch (puppeteerErr: any) {
+        console.warn("Puppeteer não pôde renderizar a URL, usando fallbacks:", puppeteerErr?.message || puppeteerErr);
+      }
+
+      // 2. Se Puppeteer falhar, tentar ScraperAPI se chave estiver disponível
+      if (!puppeteerSuccess) {
+        const scraperApiKey = req.headers['x-scraper-api-key'] || process.env.SCRAPER_API_KEY;
+        if (scraperApiKey) {
+          try {
+            const scraperUrl = `http://api.scraperapi.com?api_key=${scraperApiKey}&url=${encodeURIComponent(targetUrl)}`;
+            const response = await fetch(scraperUrl);
+            if (response.ok) {
+              html = await response.text();
             }
-          });
-          if (directResponse.ok) {
-            const html = await directResponse.text();
-            return res.send(html);
+          } catch (e) {
+            console.warn("ScraperAPI fallback error:", e);
           }
-          throw new Error(`ScraperAPI error: ${response.status} ${response.statusText}. Direct fetch also failed: ${directResponse.status} ${directResponse.statusText}`);
         }
-
-        const html = await response.text();
-        return res.send(html);
       }
 
-      // Se nao tem chave do scraper, tenta buscar diretamente com headers aprimorados
-      const response = await fetch(targetUrl, {
-        headers: {
-          'User-Agent': userAgent, // Usar User-Agent aleatório
-          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
-          'Accept-Language': 'pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7',
-          'Referer': targetUrl // Adicionar Referer
+      // 3. Se ainda não temos HTML, buscar via fetch direto com headers avançados de navegador
+      if (!html) {
+        const directResponse = await fetch(targetUrl, {
+          headers: { 
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
+            'Accept-Language': 'pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7',
+            'Cache-Control': 'no-cache',
+            'Pragma': 'no-cache'
+          }
+        });
+        if (directResponse.ok) {
+          html = await directResponse.text();
+        } else {
+          return res.status(directResponse.status).json({ error: `Falha ao acessar URL diretamente: ${directResponse.statusText}` });
         }
-      });
-
-      if (!response.ok) {
-        throw new Error(`Failed to fetch URL directly: ${response.status} - ${response.statusText}`);
       }
 
-      const html = await response.text();
-      res.send(html);
+      // Se o cliente pediu apenas texto limpo ou se usarmos cheerio para limpar tags
+      if (cleanOnly && html) {
+        try {
+          const cheerio = await import('cheerio');
+          const $ = cheerio.load(html);
+          $('script, style, svg, iframe, nav, footer, header, noscript').remove();
+          const cleanText = $('body').text().replace(/\s+/g, ' ').trim();
+          return res.type('text/plain').send(cleanText);
+        } catch (cErr) {
+          // Se cheerio falhar, manda html bruto
+        }
+      }
+
+      return res.send(html);
     } catch (error: any) {
       console.error("ScraperAPI Proxy Error:", error);
-      // Retornar status code do erro se disponível, ou 500
-      const statusCode = error.message.includes('ScraperAPI error:') ? parseInt(error.message.split(' ')[2]) : 500;
-      res.status(statusCode).json({ error: error.message });
+      res.status(500).json({ error: error.message });
     }
   });
 
