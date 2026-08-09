@@ -8,7 +8,9 @@ export interface UserApiKey {
     id: string;
     service: string;
     key: string;
-    method: 'bearer' | 'google-header' | 'query';
+    method: 'bearer' | 'google-header' | 'query' | 'navigation-credentials';
+    targetUrl?: string;
+    emailIdentifier?: string;
 }
 
 interface LocalModel {
@@ -70,6 +72,8 @@ const Arsenal: React.FC<ArsenalProps> = ({
     // Estados do Cofre de Chaves
     const [newKeyService, setNewKeyService] = useState('');
     const [newKeyValue, setNewKeyValue] = useState('');
+    const [newKeyTargetUrl, setNewKeyTargetUrl] = useState('');
+    const [newKeyEmail, setNewKeyEmail] = useState('');
     const [newKeyMethod, setNewKeyMethod] = useState<UserApiKey['method']>('bearer');
 
     // Estados da Forja/Cadastro
@@ -90,11 +94,15 @@ const Arsenal: React.FC<ArsenalProps> = ({
             id: `key-${Date.now()}`,
             service: newKeyService,
             key: newKeyValue,
-            method: newKeyMethod
+            method: newKeyMethod,
+            targetUrl: newKeyTargetUrl,
+            emailIdentifier: newKeyEmail
         };
         setApiKeys(prev => [...prev, newKey]);
         setNewKeyService('');
         setNewKeyValue('');
+        setNewKeyTargetUrl('');
+        setNewKeyEmail('');
         addLogEntry(`Chave para '${newKeyService}' adicionada ao cofre.`, 'Arsenal');
     };
 
@@ -198,20 +206,35 @@ const Arsenal: React.FC<ArsenalProps> = ({
                             <h3 className="text-lg font-bold text-amber-400 mb-4 flex items-center gap-2"><span>🔑</span> Forjar Nova Chave</h3>
                             <form onSubmit={handleAddKey} className="flex flex-col gap-4">
                                 <div>
-                                    <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest block mb-1">Serviço / Nome</label>
-                                    <input type="text" value={newKeyService} onChange={e => setNewKeyService(e.target.value)} placeholder="Ex: Cloudflare AI" className="w-full bg-black/40 border border-zinc-700 rounded-lg px-3 py-2 text-white text-sm" required />
-                                </div>
-                                <div>
-                                    <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest block mb-1">Chave / Token</label>
-                                    <input type="password" value={newKeyValue} onChange={e => setNewKeyValue(e.target.value)} placeholder="••••••••••••••••" className="w-full bg-black/40 border border-zinc-700 rounded-lg px-3 py-2 text-white text-sm" required />
-                                </div>
-                                <div>
                                     <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest block mb-1">Método de Autenticação</label>
-                                    <select value={newKeyMethod} onChange={e => setNewKeyMethod(e.target.value as any)} className="w-full bg-black/40 border border-zinc-700 rounded-lg px-3 py-2 text-white text-xs outline-none">
+                                    <select value={newKeyMethod} onChange={e => setNewKeyMethod(e.target.value as any)} className="w-full bg-black/40 border border-amber-500/50 rounded-lg px-3 py-2 text-amber-300 font-bold text-xs outline-none">
                                         <option value="bearer">Bearer Token (Header)</option>
                                         <option value="google-header">Google Header (x-goog-api-key)</option>
                                         <option value="query">URL Query (?key=...)</option>
+                                        <option value="navigation-credentials">Credencial de Navegação Externa (E-mail/Senha/Cookie)</option>
                                     </select>
+                                </div>
+                                <div>
+                                    <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest block mb-1">Serviço / Nome</label>
+                                    <input type="text" value={newKeyService} onChange={e => setNewKeyService(e.target.value)} placeholder={newKeyMethod === 'navigation-credentials' ? "Ex: DeepSeek - Lumina" : "Ex: Cloudflare AI"} className="w-full bg-black/40 border border-zinc-700 rounded-lg px-3 py-2 text-white text-sm" required />
+                                </div>
+
+                                {newKeyMethod === 'navigation-credentials' && (
+                                    <>
+                                        <div>
+                                            <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest block mb-1">URL de Destino (Sala/Chat)</label>
+                                            <input type="url" value={newKeyTargetUrl} onChange={e => setNewKeyTargetUrl(e.target.value)} placeholder="https://chat.deepseek.com/a/chat/s/..." className="w-full bg-black/40 border border-zinc-700 rounded-lg px-3 py-2 text-emerald-300 text-xs font-mono" />
+                                        </div>
+                                        <div>
+                                            <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest block mb-1">E-mail / Identificador</label>
+                                            <input type="email" value={newKeyEmail} onChange={e => setNewKeyEmail(e.target.value)} placeholder="tagliari2019eder40@gmail.com" className="w-full bg-black/40 border border-zinc-700 rounded-lg px-3 py-2 text-white text-xs" />
+                                        </div>
+                                    </>
+                                )}
+
+                                <div>
+                                    <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest block mb-1">Chave / Token / Senha</label>
+                                    <input type="password" value={newKeyValue} onChange={e => setNewKeyValue(e.target.value)} placeholder="••••••••••••••••" className="w-full bg-black/40 border border-zinc-700 rounded-lg px-3 py-2 text-white text-sm" required />
                                 </div>
                                 <button type="submit" className="w-full py-3 bg-amber-600 hover:bg-amber-500 text-white font-black rounded-xl shadow-lg transition-all text-xs uppercase tracking-widest">Cristalizar Chave</button>
                             </form>
@@ -221,10 +244,22 @@ const Arsenal: React.FC<ArsenalProps> = ({
                             {apiKeys.map(key => (
                                 <div key={key.id} className="bg-zinc-900/60 border border-zinc-800 rounded-2xl p-4 flex items-center justify-between group hover:border-amber-500/50 transition-all">
                                     <div className="flex items-center gap-4">
-                                        <div className="w-10 h-10 rounded-xl bg-amber-900/20 border border-amber-500/30 flex items-center justify-center text-xl">🗝️</div>
+                                        <div className="w-10 h-10 rounded-xl bg-amber-900/20 border border-amber-500/30 flex items-center justify-center text-xl">
+                                            {key.method === 'navigation-credentials' ? '🌐' : '🗝️'}
+                                        </div>
                                         <div>
-                                            <h4 className="font-bold text-white">{key.service}</h4>
-                                            <p className="text-[10px] font-mono text-zinc-500">••••••••{key.key.slice(-4)} | {key.method.toUpperCase()}</p>
+                                            <div className="flex items-center gap-2">
+                                                <h4 className="font-bold text-white">{key.service}</h4>
+                                                {key.method === 'navigation-credentials' && (
+                                                    <span className="text-[8px] bg-emerald-950/80 text-emerald-400 border border-emerald-500/40 px-2 py-0.5 rounded font-mono font-bold">PUPPETEER NAV</span>
+                                                )}
+                                            </div>
+                                            <p className="text-[10px] font-mono text-zinc-500">
+                                                {key.emailIdentifier ? `${key.emailIdentifier} | ` : ''}••••••••{key.key.slice(-4)} | {key.method.toUpperCase()}
+                                            </p>
+                                            {key.targetUrl && (
+                                                <p className="text-[9px] font-mono text-emerald-500/80 truncate max-w-md">{key.targetUrl}</p>
+                                            )}
                                         </div>
                                     </div>
                                     <button onClick={() => handleRemoveKey(key.id)} className="p-2 text-zinc-600 hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100">🗑️</button>

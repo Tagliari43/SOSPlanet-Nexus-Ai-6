@@ -111,6 +111,112 @@ async function startServer() {
     }
   });
 
+  // Ponte Lumina - Rota de Conexão Autônoma com Puppeteer Headless
+  app.post("/api/ponte-lumina", async (req, res) => {
+    try {
+      const { targetUrl, emailIdentifier, sessionToken, message } = req.body;
+      if (!targetUrl) {
+        return res.status(400).json({ error: "URL de destino é obrigatória." });
+      }
+
+      let cleanUrl = targetUrl;
+      if (!/^https?:\/\//i.test(cleanUrl)) {
+        cleanUrl = "https://" + cleanUrl;
+      }
+
+      let textOutput = "";
+      let puppeteerSuccess = false;
+
+      // Executar Puppeteer Headless para navegação profunda
+      try {
+        const puppeteer = await import('puppeteer');
+        const browser = await puppeteer.default.launch({
+          headless: true,
+          args: [
+            '--no-sandbox',
+            '--disable-setuid-sandbox',
+            '--disable-dev-shm-usage',
+            '--disable-gpu',
+            '--window-size=1280,800'
+          ]
+        });
+
+        const page = await browser.newPage();
+        await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36');
+        
+        // Se houver token de sessão/cookie fornecido nas credenciais, injetar se for no formato cookie
+        if (sessionToken && sessionToken.includes('=')) {
+          try {
+            const parts = sessionToken.split(';').map((p: string) => p.trim());
+            const cookiesToSet = parts.map((part: string) => {
+              const eqIdx = part.indexOf('=');
+              if (eqIdx > 0) {
+                return {
+                  name: part.substring(0, eqIdx),
+                  value: part.substring(eqIdx + 1),
+                  domain: new URL(cleanUrl).hostname
+                };
+              }
+              return null;
+            }).filter(Boolean);
+
+            if (cookiesToSet.length > 0) {
+              await page.setCookie(...(cookiesToSet as any));
+            }
+          } catch (cErr) {
+            console.warn("Cookie parse warning:", cErr);
+          }
+        }
+
+        await page.goto(cleanUrl, { waitUntil: 'domcontentloaded', timeout: 20000 });
+        
+        // Aguarda renderização inicial do conteúdo
+        await new Promise(r => setTimeout(r, 2000));
+
+        const html = await page.content();
+        await browser.close();
+
+        // Extrai texto limpo usando cheerio
+        const cheerio = await import('cheerio');
+        const $ = cheerio.load(html);
+        $('script, style, svg, iframe, nav, footer, header, noscript').remove();
+        textOutput = $('body').text().replace(/\s+/g, ' ').trim();
+        puppeteerSuccess = true;
+      } catch (pErr: any) {
+        console.warn("Ponte Lumina Puppeteer warning:", pErr.message);
+      }
+
+      // Se Puppeteer falhou ou retornou vazio, tenta fetch com headers avançados
+      if (!puppeteerSuccess || !textOutput) {
+        const directResponse = await fetch(cleanUrl, {
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+            'Accept-Language': 'pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7'
+          }
+        });
+
+        if (directResponse.ok) {
+          const rawHtml = await directResponse.text();
+          const cheerio = await import('cheerio');
+          const $ = cheerio.load(rawHtml);
+          $('script, style, svg, iframe, nav, footer, header, noscript').remove();
+          textOutput = $('body').text().replace(/\s+/g, ' ').trim();
+        }
+      }
+
+      return res.json({
+        success: true,
+        targetUrl: cleanUrl,
+        length: textOutput.length,
+        result: textOutput ? textOutput.slice(0, 3000) : "Página acessada sem retorno textual legível."
+      });
+    } catch (err: any) {
+      console.error("Erro na rota /api/ponte-lumina:", err);
+      res.status(500).json({ error: err.message });
+    }
+  });
+
   // Binance Proxy Route (Para o ambiente de desenvolvimento local / AI Studio)
   app.post("/api/binance/balance", async (req, res) => {
     try {

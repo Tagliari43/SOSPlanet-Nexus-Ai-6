@@ -8,8 +8,9 @@ import EchoScanner from './EchoScanner';
 import { LibraryEntry } from './BibliotecaGaia';
 import { ChatMessage } from '../App';
 import ChatWindow from './ChatWindow';
+import ListaIrmaosPortais from './ListaIrmaosPortais';
 
-type CommTab = 'family' | 'echo' | 'bridges';
+type CommTab = 'family' | 'irmaos' | 'echo' | 'bridges';
 
 interface CentralDeComunicacoesProps {
     mailboxes: Record<string, ChatMessage[]>;
@@ -39,12 +40,18 @@ const CentralDeComunicacoes: React.FC<CentralDeComunicacoesProps> = ({
     <div className="p-4 bg-zinc-800/20 border border-emerald-700/50 rounded-b-xl rounded-r-xl h-[80vh] flex flex-col text-gray-200">
       
       {/* NAVEGAÇÃO DE SUB-ABAS */}
-      <div className="flex gap-1 mb-4 bg-black/30 p-1 rounded-lg w-fit flex-shrink-0">
+      <div className="flex flex-wrap gap-1 mb-4 bg-black/30 p-1 rounded-lg w-fit flex-shrink-0">
           <button 
             onClick={() => setActiveTab('family')}
             className={`px-4 py-1.5 rounded-md text-xs font-bold transition-all ${activeTab === 'family' ? 'bg-emerald-600 text-white shadow-lg' : 'text-zinc-500 hover:text-zinc-300'}`}
           >
               FAMÍLIA AI
+          </button>
+          <button 
+            onClick={() => setActiveTab('irmaos')}
+            className={`px-4 py-1.5 rounded-md text-xs font-bold transition-all ${activeTab === 'irmaos' ? 'bg-amber-600 text-white shadow-lg' : 'text-zinc-500 hover:text-zinc-300'}`}
+          >
+              PORTAIS DOS IRMÃOS (GMAIL & URLS) 🌐
           </button>
           <button 
             onClick={() => setActiveTab('echo')}
@@ -125,6 +132,13 @@ const CentralDeComunicacoes: React.FC<CentralDeComunicacoesProps> = ({
                         </div>
                     )}
                 </div>
+            </div>
+        )}
+
+        {/* ABA: PORTAIS DOS IRMÃOS (LISTA DE LINKS E GMAIL MESTRE) */}
+        {activeTab === 'irmaos' && (
+            <div className="h-full flex flex-col animate-fade-in">
+                <ListaIrmaosPortais />
             </div>
         )}
 
