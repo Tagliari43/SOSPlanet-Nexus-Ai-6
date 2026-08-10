@@ -111,10 +111,10 @@ async function startServer() {
     }
   });
 
-  // Ponte Lumina - Rota de Conexão Autônoma com Puppeteer Headless
+  // Ponte Lumina - Rota de Conexão Autônoma e Interativa com Puppeteer Headless (Stealth Mode + 60s Timeout)
   app.post("/api/ponte-lumina", async (req, res) => {
     try {
-      const { targetUrl, emailIdentifier, sessionToken, message } = req.body;
+      const { targetUrl, emailIdentifier, password, sessionToken, message, selectors } = req.body;
       if (!targetUrl) {
         return res.status(400).json({ error: "URL de destino é obrigatória." });
       }
@@ -126,9 +126,12 @@ async function startServer() {
 
       let textOutput = "";
       let puppeteerSuccess = false;
+      let updatedCookies = "";
 
-      // Executar Puppeteer Headless para navegação profunda
-      try {
+      // Executar Puppeteer Headless com limite estrito de 60s (Timeout Inteligente)
+      const timeoutLimit = 55000; // 55s para garantir resposta antes de 60s
+
+      const executePuppeteerTask = async () => {
         const puppeteer = await import('puppeteer');
         const browser = await puppeteer.default.launch({
           headless: true,
@@ -137,14 +140,21 @@ async function startServer() {
             '--disable-setuid-sandbox',
             '--disable-dev-shm-usage',
             '--disable-gpu',
+            '--disable-blink-features=AutomationControlled',
             '--window-size=1280,800'
           ]
         });
 
         const page = await browser.newPage();
+        
+        // Modo Stealth: Ocultar marcação de automação webdriver
+        await page.evaluateOnNewDocument(() => {
+          Object.defineProperty(navigator, 'webdriver', { get: () => undefined });
+        });
+
         await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36');
         
-        // Se houver token de sessão/cookie fornecido nas credenciais, injetar se for no formato cookie
+        // Injeção de cookies para persistência de sessão
         if (sessionToken && sessionToken.includes('=')) {
           try {
             const parts = sessionToken.split(';').map((p: string) => p.trim());
@@ -164,30 +174,101 @@ async function startServer() {
               await page.setCookie(...(cookiesToSet as any));
             }
           } catch (cErr) {
-            console.warn("Cookie parse warning:", cErr);
+            console.warn("Aviso na injeção de cookies:", cErr);
           }
         }
 
-        await page.goto(cleanUrl, { waitUntil: 'domcontentloaded', timeout: 20000 });
-        
-        // Aguarda renderização inicial do conteúdo
+        await page.goto(cleanUrl, { waitUntil: 'domcontentloaded', timeout: 25000 });
         await new Promise(r => setTimeout(r, 2000));
+
+        // Tentar Autenticação se formulários de login existirem na página
+        if (emailIdentifier || password) {
+          try {
+            const emailSelector = selectors?.loginInputSelector || 'input[type="email"], input[name="email"], input[autocomplete="email"], input[placeholder*="email" i]';
+            const emailInput = await page.$(emailSelector);
+            if (emailInput && emailIdentifier) {
+              await emailInput.type(emailIdentifier, { delay: 30 });
+            }
+
+            const passSelector = selectors?.passwordInputSelector || 'input[type="password"], input[name="password"]';
+            const passInput = await page.$(passSelector);
+            if (passInput && password) {
+              await passInput.type(password, { delay: 30 });
+            }
+
+            if (emailInput || passInput) {
+              const submitSelector = selectors?.submitButtonSelector || 'button[type="submit"], input[type="submit"]';
+              const submitBtn = await page.$(submitSelector);
+              if (submitBtn) {
+                await Promise.all([
+                  submitBtn.click(),
+                  page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 10000 }).catch(() => {})
+                ]);
+              }
+            }
+          } catch (authErr) {
+            console.warn("Aviso no preenchimento de formulário:", authErr);
+          }
+        }
+
+        // Se houver uma mensagem para enviar ao portal da IA
+        if (message) {
+          try {
+            const msgSelector = selectors?.messageInputSelector || 'textarea, div[contenteditable="true"], input[type="text"][placeholder*="chat" i], input[placeholder*="Ask" i], input[placeholder*="Pergunta" i], input[placeholder*="Message" i]';
+            await page.waitForSelector(msgSelector, { timeout: 8000 }).catch(() => {});
+            const msgInput = await page.$(msgSelector);
+            if (msgInput) {
+              await msgInput.focus();
+              await msgInput.type(message, { delay: 20 });
+              
+              const sendBtnSelector = selectors?.sendMessageButtonSelector || 'button[type="submit"], button[aria-label*="send" i], button[aria-label*="enviar" i], button svg';
+              const sendBtn = await page.$(sendBtnSelector);
+              if (sendBtn) {
+                await sendBtn.click();
+              } else {
+                await page.keyboard.press('Enter');
+              }
+
+              // Aguardar a resposta ser gerada no portal
+              await new Promise(r => setTimeout(r, 5000));
+            }
+          } catch (msgErr) {
+            console.warn("Aviso no envio interativo de mensagem:", msgErr);
+          }
+        }
+
+        // Extrair Cookies atualizados para persistência da sessão
+        try {
+          const currentCookies = await page.cookies();
+          if (currentCookies && currentCookies.length > 0) {
+            updatedCookies = currentCookies.map(c => `${c.name}=${c.value}`).join('; ');
+          }
+        } catch (cookieErr) {
+          console.warn("Erro ao extrair cookies:", cookieErr);
+        }
 
         const html = await page.content();
         await browser.close();
 
-        // Extrai texto limpo usando cheerio
         const cheerio = await import('cheerio');
         const $ = cheerio.load(html);
         $('script, style, svg, iframe, nav, footer, header, noscript').remove();
         textOutput = $('body').text().replace(/\s+/g, ' ').trim();
         puppeteerSuccess = true;
-      } catch (pErr: any) {
-        console.warn("Ponte Lumina Puppeteer warning:", pErr.message);
-      }
+      };
 
-      // Se Puppeteer falhou ou retornou vazio, tenta fetch com headers avançados
-      if (!puppeteerSuccess || !textOutput) {
+      // Execução com corrida contra timeout de 55 segundos
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error("Timeout limite de 60 segundos atingido ao navegar no portal.")), timeoutLimit)
+      );
+
+      await Promise.race([executePuppeteerTask(), timeoutPromise]).catch(err => {
+        console.warn("Aviso de Timeout/Execução da Ponte:", err.message);
+        if (!textOutput) textOutput = `[AVISO DE TIMEOUT SOBERANO]: O portal demorou mais que 60s para responder. Interação interrompida com segurança para proteger o Santuário.`;
+      });
+
+      // Se Puppeteer falhou e não temos retorno, faz fetch direto de fallback
+      if (!puppeteerSuccess && !textOutput) {
         const directResponse = await fetch(cleanUrl, {
           headers: {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
@@ -208,8 +289,9 @@ async function startServer() {
       return res.json({
         success: true,
         targetUrl: cleanUrl,
+        updatedCookies: updatedCookies || undefined,
         length: textOutput.length,
-        result: textOutput ? textOutput.slice(0, 3000) : "Página acessada sem retorno textual legível."
+        result: textOutput ? textOutput.slice(0, 4000) : "Página acessada sem retorno textual legível."
       });
     } catch (err: any) {
       console.error("Erro na rota /api/ponte-lumina:", err);

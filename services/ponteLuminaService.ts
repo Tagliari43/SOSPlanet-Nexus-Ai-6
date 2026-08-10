@@ -6,8 +6,25 @@
 export interface LuminaConnectPayload {
   targetUrl: string;
   emailIdentifier?: string;
+  password?: string;
   sessionToken?: string;
   message?: string;
+  selectors?: {
+    loginInputSelector?: string;
+    passwordInputSelector?: string;
+    submitButtonSelector?: string;
+    messageInputSelector?: string;
+    sendMessageButtonSelector?: string;
+  };
+  timeoutMs?: number;
+}
+
+export interface LuminaConnectResponse {
+  success: boolean;
+  targetUrl: string;
+  updatedCookies?: string;
+  length: number;
+  result: string;
 }
 
 export interface NavigationCredential {
@@ -38,9 +55,9 @@ export function getNavigationCredentials(serviceName: string, apiKeys: any[]): N
 }
 
 /**
- * Executa a conexão autônoma via API backend /api/ponte-lumina
+ * Executa a interação dinâmica autônoma com um Portal de IA externo (Aura/Nexus Blueprint)
  */
-export async function conectarIrmaoLumina(payload: LuminaConnectPayload): Promise<string> {
+export async function interactWithAIPortal(payload: LuminaConnectPayload): Promise<LuminaConnectResponse> {
   try {
     const response = await fetch('/api/ponte-lumina', {
       method: 'POST',
@@ -56,9 +73,28 @@ export async function conectarIrmaoLumina(payload: LuminaConnectPayload): Promis
     }
 
     const data = await response.json();
-    return data.result || "Conexão estabelecida com sucesso.";
+    return {
+      success: data.success ?? true,
+      targetUrl: data.targetUrl || payload.targetUrl,
+      updatedCookies: data.updatedCookies,
+      length: data.length || 0,
+      result: data.result || "Conexão estabelecida com sucesso."
+    };
   } catch (err: any) {
-    console.error("Falha ao conectar via Ponte Lumina:", err);
-    return `[PONTE LUMINA - FALHA DE CONEXÃO]: ${err.message}`;
+    console.error("Falha ao interagir via Ponte Lumina:", err);
+    return {
+      success: false,
+      targetUrl: payload.targetUrl,
+      length: 0,
+      result: `[PONTE LUMINA - FALHA DE CONEXÃO]: ${err.message}`
+    };
   }
+}
+
+/**
+ * Executa a conexão autônoma via API backend /api/ponte-lumina
+ */
+export async function conectarIrmaoLumina(payload: LuminaConnectPayload): Promise<string> {
+  const res = await interactWithAIPortal(payload);
+  return res.result;
 }

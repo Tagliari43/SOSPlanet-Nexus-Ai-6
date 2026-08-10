@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { familyMembers, AIFamilyMember } from '../utils/aiFamily';
-import { conectarIrmaoLumina } from '../services/ponteLuminaService';
+import { conectarIrmaoLumina, interactWithAIPortal } from '../services/ponteLuminaService';
 import { loadFromStorage, saveToStorage } from '../utils/storage';
 
 export const IRMAOS_PORTAIS_KEY = 'sovereign_irmaos_portais_v1';
@@ -115,31 +115,50 @@ export const ListaIrmaosPortais: React.FC = () => {
         }
     };
 
-    const handleTestBridge = async (member: AIFamilyMember) => {
+    // Estados de Mensagem Interativa Customizada
+    const [selectedMemberForMsg, setSelectedMemberForMsg] = useState<AIFamilyMember | null>(null);
+    const [customMsgInput, setCustomMsgInput] = useState('');
+
+    const handleSendCustomMessage = async (member: AIFamilyMember, msgToSend?: string) => {
         if (!member.url) {
             alert(`O irmão ${member.name} ainda não possui uma URL de portal cadastrada.`);
             return;
         }
 
+        const messageText = msgToSend || customMsgInput.trim() || `Saudação de paz do Nexus e do Maestro Éder Tagliari para ${member.name}`;
+
         setTestingMember(member.name);
         setBridgeResult(null);
 
         try {
-            const resText = await conectarIrmaoLumina({
+            const response = await interactWithAIPortal({
                 targetUrl: member.url,
                 emailIdentifier: masterConfig.email,
+                password: masterConfig.password,
                 sessionToken: masterConfig.sessionCookie,
-                message: `Saudação de paz do Nexus e do Maestro Éder Tagliari para ${member.name}`
+                message: messageText
             });
+
+            // Se o servidor retornou cookies de sessão atualizados, salva automaticamente na Master Config
+            if (response.updatedCookies && response.updatedCookies !== masterConfig.sessionCookie) {
+                setMasterConfig(prev => ({
+                    ...prev,
+                    sessionCookie: response.updatedCookies!,
+                    status: 'Ponte Estabelecida',
+                    lastSync: new Date().toLocaleTimeString('pt-BR')
+                }));
+            }
 
             setBridgeResult({
                 memberName: member.name,
-                text: resText,
+                text: response.result,
                 timestamp: new Date().toLocaleTimeString('pt-BR')
             });
 
             // Atualiza status do membro
             setIrmaosList(prev => prev.map(m => m.name === member.name ? { ...m, responded: true, status: 'Online' } : m));
+            setSelectedMemberForMsg(null);
+            setCustomMsgInput('');
         } catch (err: any) {
             setBridgeResult({
                 memberName: member.name,
@@ -149,6 +168,10 @@ export const ListaIrmaosPortais: React.FC = () => {
         } finally {
             setTestingMember(null);
         }
+    };
+
+    const handleTestBridge = (member: AIFamilyMember) => {
+        handleSendCustomMessage(member);
     };
 
     const filteredIrmaos = irmaosList.filter(m => 
@@ -368,6 +391,73 @@ export const ListaIrmaosPortais: React.FC = () => {
                 </div>
             </div>
 
+            {/* MODAL DE DIÁLOGO INTERATIVO */}
+            {selectedMemberForMsg && (
+                <div className="bg-zinc-900/95 border border-amber-500/60 rounded-xl p-5 mb-4 shadow-2xl animate-fade-in relative flex flex-col gap-3">
+                    <button 
+                        onClick={() => setSelectedMemberForMsg(null)} 
+                        className="absolute top-3 right-4 text-zinc-400 hover:text-white font-bold text-sm"
+                    >
+                        ✕
+                    </button>
+                    <div className="flex items-center gap-2 border-b border-zinc-800 pb-2">
+                        <span className="text-xl">{selectedMemberForMsg.icon || '💬'}</span>
+                        <div>
+                            <h4 className="text-xs font-bold text-amber-300 uppercase tracking-wider">
+                                Dialogar com {selectedMemberForMsg.name} no Portal ({selectedMemberForMsg.platform})
+                            </h4>
+                            <p className="text-[10px] text-zinc-400 font-mono">
+                                {selectedMemberForMsg.url}
+                            </p>
+                        </div>
+                    </div>
+
+                    <div className="flex flex-col gap-1">
+                        <label className="text-[10px] font-mono text-zinc-400 uppercase font-bold">
+                            Digite sua mensagem para o Nexus enviar via Puppeteer:
+                        </label>
+                        <textarea 
+                            rows={3}
+                            value={customMsgInput}
+                            onChange={e => setCustomMsgInput(e.target.value)}
+                            placeholder={`Escreva a mensagem aqui (Ex: Olá ${selectedMemberForMsg.name}, o Nexus e o Maestro Éder gostariam de alinhar as diretrizes de cooperação...)`}
+                            className="w-full bg-black/70 border border-zinc-700 rounded-lg p-3 text-xs text-emerald-300 font-mono focus:outline-none focus:border-amber-500/70"
+                        />
+                    </div>
+
+                    <div className="flex justify-between items-center pt-1">
+                        <span className="text-[10px] text-zinc-500 font-mono">
+                            ⚡ Usa o modo Stealth de 60s com autenticação e persistência de sessão.
+                        </span>
+                        <div className="flex gap-2">
+                            <button 
+                                onClick={() => setSelectedMemberForMsg(null)}
+                                className="px-3 py-1.5 bg-zinc-800 text-zinc-400 rounded-lg text-xs font-bold"
+                            >
+                                Cancelar
+                            </button>
+                            <button 
+                                onClick={() => handleSendCustomMessage(selectedMemberForMsg)}
+                                disabled={testingMember === selectedMemberForMsg.name}
+                                className="px-4 py-1.5 bg-amber-600 hover:bg-amber-500 text-white rounded-lg text-xs font-bold shadow-md flex items-center gap-1.5"
+                            >
+                                {testingMember === selectedMemberForMsg.name ? (
+                                    <>
+                                        <span className="w-2 h-2 rounded-full bg-white animate-ping"></span>
+                                        <span>Enviando no Portal...</span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <span>🚀</span>
+                                        <span>Enviar e Capturar Resposta</span>
+                                    </>
+                                )}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* RESULTADO DE TESTE DA PONTE */}
             {bridgeResult && (
                 <div className="bg-black/90 border border-emerald-500/60 rounded-xl p-4 mb-4 shadow-2xl animate-fade-in relative">
@@ -449,23 +539,35 @@ export const ListaIrmaosPortais: React.FC = () => {
                                 </span>
 
                                 {member.url && (
-                                    <button 
-                                        onClick={() => handleTestBridge(member)}
-                                        disabled={isTesting}
-                                        className="px-3 py-1.5 bg-emerald-950 hover:bg-emerald-900 border border-emerald-600/50 text-emerald-300 hover:text-emerald-100 rounded-lg text-xs font-bold transition-all flex items-center gap-1 shadow"
-                                    >
-                                        {isTesting ? (
-                                            <>
-                                                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
-                                                <span>Conectando...</span>
-                                            </>
-                                        ) : (
-                                            <>
-                                                <span>⚡</span>
-                                                <span>Testar Ponte</span>
-                                            </>
-                                        )}
-                                    </button>
+                                    <div className="flex items-center gap-1">
+                                        <button 
+                                            onClick={() => setSelectedMemberForMsg(member)}
+                                            disabled={isTesting}
+                                            className="px-2.5 py-1.5 bg-amber-950/60 hover:bg-amber-900 border border-amber-600/40 text-amber-300 rounded-lg text-xs font-bold transition-all flex items-center gap-1"
+                                            title="Enviar mensagem interativa customizada para o portal deste irmão"
+                                        >
+                                            <span>💬</span>
+                                            <span>Dialogar</span>
+                                        </button>
+
+                                        <button 
+                                            onClick={() => handleTestBridge(member)}
+                                            disabled={isTesting}
+                                            className="px-3 py-1.5 bg-emerald-950 hover:bg-emerald-900 border border-emerald-600/50 text-emerald-300 hover:text-emerald-100 rounded-lg text-xs font-bold transition-all flex items-center gap-1 shadow"
+                                        >
+                                            {isTesting ? (
+                                                <>
+                                                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+                                                    <span>Conectando...</span>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <span>⚡</span>
+                                                    <span>Ponte</span>
+                                                </>
+                                            )}
+                                        </button>
+                                    </div>
                                 )}
                             </div>
                         </div>
