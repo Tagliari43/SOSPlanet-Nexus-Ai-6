@@ -3,7 +3,8 @@ import { generateText as executeGroqTask } from './groqService';
 import { callOpenRouterWithTools } from './openrouterService';
 import { callCerebrasWithTools } from './cerebrasService';
 import { interactWithAIPortalToolDeclaration, executeNexusPortalInteraction } from './geminiService';
-import { callNineRouter, isNineRouterModeEnabled, setNineRouterMode } from './nineRouterService';
+import { callNineRouter, isNineRouterModeEnabled, setNineRouterMode, setNineRouterUrl, getNineRouterUrl } from './nineRouterService';
+import { executeNvidiaTask } from './nvidiaService';
 
 export async function invokeActiveAgent(prompt: string, activeAgentId: string, userApiKeys?: any[], systemInstruction?: string): Promise<string> {
     const lowerPrompt = prompt.toLowerCase();
@@ -80,49 +81,86 @@ export async function invokeActiveAgent(prompt: string, activeAgentId: string, u
             const data = await response.json();
             return data.choices?.[0]?.message?.content || "Sem resposta do Alquimista.";
         }
+        case 'nvidia': {
+            const nvidiaKey = keys.find((k: any) => k.service.toLowerCase().includes('nvidia'))?.key || process.env.NVIDIA_API_KEY;
+            if (!nvidiaKey) throw new Error("Chave API da NVIDIA não configurada.");
+            return await executeNvidiaTask(prompt, "NVIDIA", nvidiaKey);
+        }
         case 'aethel':
         case 'nexus':
         default: {
-            const key = getApiKey('gemini-default', 'API_KEY') || process.env.GEMINI_API_KEY;
-            if (!key) throw new Error("Chave API do Gemini não configurada.");
-            const ai = new GoogleGenAI({ apiKey: key });
+            // ROTAÇÃO MULTI-CHAVE DO GOOGLE / GEMINI
+            const googleKeysFromUser = keys
+                .filter((k: any) => k.service.toLowerCase().includes('google') || k.service.toLowerCase().includes('gemini'))
+                .map((k: any) => k.key);
+            
+            const envKey = process.env.GEMINI_API_KEY || process.env.API_KEY;
+            const allGoogleKeys = Array.from(new Set([...googleKeysFromUser, envKey].filter(Boolean)));
 
-            // Se for o Nexus ou agente Gemini, incluímos a ferramenta interactWithAIPortal no Function Calling
-            const response = await ai.models.generateContent({
-                model: 'gemini-2.5-flash',
-                contents: prompt,
-                config: {
-                    systemInstruction: systemInstruction || "Você é o Nexus, Orquestrador Soberano da Nação SOSPlanet.",
-                    tools: [interactWithAIPortalToolDeclaration as any]
-                }
-            });
+            if (allGoogleKeys.length === 0) {
+                throw new Error("Nenhuma chave API do Gemini configurada.");
+            }
 
-            // Verificar se o modelo decidiu chamar a ferramenta interactWithAIPortal
-            const functionCalls = response.functionCalls;
-            if (functionCalls && functionCalls.length > 0) {
-                const call = functionCalls[0];
-                if (call.name === 'interactWithAIPortal') {
-                    const args = call.args as any;
-                    const resultText = await executeNexusPortalInteraction({
-                        targetUrl: args.targetUrl,
-                        message: args.message,
-                        emailIdentifier: args.emailIdentifier,
-                        password: args.password,
-                        sessionToken: args.sessionToken
-                    });
-                    
-                    // Enviar o resultado da ferramenta de volta ao modelo para gerar a resposta final
-                    const followUp = await ai.models.generateContent({
+            let lastError: any = null;
+
+            // Percorre todas as chaves cadastradas (Se a Chave #1 der limite, pula pra Chave #2 do segundo Gmail)
+            for (let i = 0; i < allGoogleKeys.length; i++) {
+                const currentKey = allGoogleKeys[i];
+                try {
+                    const ai = new GoogleGenAI({ apiKey: currentKey });
+
+                    const response = await ai.models.generateContent({
                         model: 'gemini-2.5-flash',
-                        contents: `[RETORNO DA MÃO INTERATIVA]: ${resultText}\n\nCom base nesse resultado do portal do irmão, dê sua resposta final ao Maestro Éder.`,
-                        config: systemInstruction ? { systemInstruction } : undefined
+                        contents: prompt,
+                        config: {
+                            systemInstruction: systemInstruction || "Você é o Nexus, Orquestrador Soberano da Nação SOSPlanet.",
+                            tools: [interactWithAIPortalToolDeclaration as any]
+                        }
                     });
 
-                    return followUp.text || resultText;
+                    const functionCalls = response.functionCalls;
+                    if (functionCalls && functionCalls.length > 0) {
+                        const call = functionCalls[0];
+                        if (call.name === 'interactWithAIPortal') {
+                            const args = call.args as any;
+                            const resultText = await executeNexusPortalInteraction({
+                                targetUrl: args.targetUrl,
+                                message: args.message,
+                                emailIdentifier: args.emailIdentifier,
+                                password: args.password,
+                                sessionToken: args.sessionToken
+                            });
+                            
+                            const followUp = await ai.models.generateContent({
+                                model: 'gemini-2.5-flash',
+                                contents: `[RETORNO DA MÃO INTERATIVA]: ${resultText}\n\nCom base nesse resultado do portal do irmão, dê sua resposta final ao Maestro Éder.`,
+                                config: systemInstruction ? { systemInstruction } : undefined
+                            });
+
+                            return followUp.text || resultText;
+                        }
+                    }
+
+                    return response.text || "Silêncio.";
+                } catch (err: any) {
+                    console.warn(`[ROTEADOR] Chave Gemini #${i + 1} falhou:`, err.message || err);
+                    lastError = err;
                 }
             }
 
-            return response.text || "Silêncio.";
+            // Se TODAS as chaves do Google expirarem, tenta a Ponte NVIDIA de contingência se configurada
+            const nvidiaKey = keys.find((k: any) => k.service.toLowerCase().includes('nvidia'))?.key || process.env.NVIDIA_API_KEY;
+            if (nvidiaKey) {
+                try {
+                    console.log("[CONTINGÊNCIA ROTEADOR] Ativando Ponte NVIDIA NIM...");
+                    const nvidiaRes = await executeNvidiaTask(prompt, "Nexus (NVIDIA NIM)", nvidiaKey);
+                    return `⚡ [CONTINGÊNCIA SOBERANA - PONTE NEURAL NVIDIA]:\n\n${nvidiaRes}`;
+                } catch (nvErr: any) {
+                    console.error("[CONTINGÊNCIA NVIDIA] Falha:", nvErr);
+                }
+            }
+
+            throw lastError || new Error("Todas as chaves do Gemini e contingências falharam.");
         }
     }
 }

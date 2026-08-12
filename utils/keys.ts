@@ -10,10 +10,12 @@ export interface CloudflareKeys {
 
 export interface ApiKeys {
     google?: string;
+    googleKeys?: string[];
     groq?: string;
     github?: string;
     cerebras?: string;
     openrouter?: string;
+    nvidia?: string;
 }
 
 /**
@@ -27,18 +29,28 @@ export function loadApiKeys(): ApiKeys {
         if (saved) userKeys = JSON.parse(saved);
     } catch (e) {}
 
-    // Busca chaves específicas nos registros do usuário
-    const googleKey = userKeys.find(k => k.service.toLowerCase().includes('google'))?.key || process.env.GEMINI_API_KEY || process.env.API_KEY || sovereignKeys.google;
+    // Coleta TODAS as chaves do Google salvas no Arsenal
+    const googleUserKeys = userKeys
+        .filter(k => k.service.toLowerCase().includes('google') || k.service.toLowerCase().includes('gemini'))
+        .map(k => k.key);
+
+    const envGoogle = process.env.GEMINI_API_KEY || process.env.API_KEY || sovereignKeys.google;
+    const allGoogleKeys = Array.from(new Set([...googleUserKeys, envGoogle].filter(Boolean)));
+
+    const googleKey = allGoogleKeys[0] || '';
     const groqKey = userKeys.find(k => k.service.toLowerCase().includes('groq'))?.key || process.env.GROQ_API_KEY || sovereignKeys.groq;
     const githubKey = userKeys.find(k => k.id === 'github-autonomy-token')?.key || process.env.GITHUB_TOKEN;
     const cerebrasKey = userKeys.find(k => k.service.toLowerCase().includes('cerebras'))?.key || process.env.CEREBRAS_API_KEY;
     const openrouterKey = userKeys.find(k => k.service.toLowerCase().includes('openrouter'))?.key || process.env.OPENROUTER_API_KEY;
+    const nvidiaKey = userKeys.find(k => k.service.toLowerCase().includes('nvidia'))?.key || process.env.NVIDIA_API_KEY;
 
     return {
         google: googleKey,
+        googleKeys: allGoogleKeys,
         groq: groqKey,
         github: githubKey,
         cerebras: cerebrasKey,
-        openrouter: openrouterKey
+        openrouter: openrouterKey,
+        nvidia: nvidiaKey
     };
 }

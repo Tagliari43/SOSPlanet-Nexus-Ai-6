@@ -4,8 +4,8 @@ import { ApiKeys } from "../utils/keys";
 export interface Ponte {
     nome: string;
     model: string;
-    provider: 'google' | 'groq' | 'cerebras' | 'openrouter';
-    keyName: keyof ApiKeys | 'cerebras' | 'openrouter';
+    provider: 'google' | 'groq' | 'cerebras' | 'openrouter' | 'nvidia';
+    keyName: keyof ApiKeys | 'cerebras' | 'openrouter' | 'nvidia';
     status: 'online' | 'offline';
     limiteDiario: number;
     usoDiario: number;
@@ -19,6 +19,15 @@ export const pontes: Ponte[] = [
         keyName: 'google',
         status: 'online',
         limiteDiario: 150,
+        usoDiario: 0
+    },
+    {
+        nome: "Ponte Neural (NVIDIA)",
+        model: 'meta/llama-3.3-70b-instruct',
+        provider: 'nvidia',
+        keyName: 'nvidia',
+        status: 'online',
+        limiteDiario: 1000,
         usoDiario: 0
     },
     {

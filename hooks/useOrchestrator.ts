@@ -161,9 +161,9 @@ export const useSovereignRouter = (
                     setActiveMember(sub.assignedTo);
 
                     let success = false;
-                    // HIERARQUIA RIGOROSA: 1. Google -> 2. Cloudflare -> 3. Groq
+                    // HIERARQUIA RIGOROSA: 1. Google -> 2. NVIDIA -> 3. Groq -> 4. OpenRouter
                     const sortedBridges = [...pontes].sort((a, b) => {
-                        const order: Record<string, number> = { 'google': 0, 'cloudflare': 1, 'groq': 2 };
+                        const order: Record<string, number> = { 'google': 0, 'nvidia': 1, 'groq': 2, 'cerebras': 3, 'openrouter': 4 };
                         return (order[a.provider] ?? 9) - (order[b.provider] ?? 9);
                     });
 
@@ -172,9 +172,24 @@ export const useSovereignRouter = (
                         try {
                             let text = "";
                             if (bridge.provider === 'google') {
-                                if (!apiKeys.google) throw new Error("Chave Gemini ausente");
-                                const res = await executeGeminiTask(sub.description, sub.assignedTo, bridge.model, apiKeys.google, !!currentTask.useSearch);
-                                text = res.text;
+                                // Testar com rotação entre todas as chaves do Google
+                                const gKeys = apiKeys.googleKeys && apiKeys.googleKeys.length > 0 ? apiKeys.googleKeys : [apiKeys.google!];
+                                let gErr: any = null;
+                                for (const gk of gKeys) {
+                                    if (!gk) continue;
+                                    try {
+                                        const res = await executeGeminiTask(sub.description, sub.assignedTo, bridge.model, gk, !!currentTask.useSearch);
+                                        text = res.text;
+                                        if (text) break;
+                                    } catch (err: any) {
+                                        gErr = err;
+                                    }
+                                }
+                                if (!text) throw gErr || new Error("Chave Gemini ausente ou expirada");
+                            } else if (bridge.provider === 'nvidia') {
+                                if (!apiKeys.nvidia) throw new Error("Chave NVIDIA ausente");
+                                const { executeNvidiaTask } = await import('../services/nvidiaService');
+                                text = await executeNvidiaTask(sub.description, sub.assignedTo, apiKeys.nvidia, bridge.model);
                             } else if (bridge.provider === 'groq') {
                                 if (!apiKeys.groq) throw new Error("Chave Groq ausente");
                                 text = await executeGroqTask(sub.description, sub.assignedTo, apiKeys.groq);
