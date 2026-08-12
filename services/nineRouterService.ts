@@ -12,11 +12,20 @@ export function setNineRouterMode(enabled: boolean): void {
     localStorage.setItem('modo_laboratorio_9router', enabled ? 'true' : 'false');
 }
 
+export function getNineRouterUrl(): string {
+    return localStorage.getItem('9router_url') || 'http://localhost:20128/v1';
+}
+
+export function setNineRouterUrl(url: string): void {
+    localStorage.setItem('9router_url', url);
+}
+
 export async function checkNineRouterHealth(): Promise<boolean> {
+    const url = getNineRouterUrl();
     try {
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 1500);
-        const res = await fetch('http://localhost:20128/v1/models', {
+        const res = await fetch(`${url}/models`, {
             method: 'GET',
             signal: controller.signal
         });
@@ -32,41 +41,53 @@ export async function callNineRouter(prompt: string, systemInstruction?: string)
         return null; // Modo Laboratório desligado
     }
 
-    try {
-        const key = localStorage.getItem('9router_key') || 'sk-93594fc';
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 20000); // 20s timeout
+    const key = localStorage.getItem('9router_key') || 'sk-93594fc';
+    const primaryUrl = getNineRouterUrl(); // Default: http://localhost:20128/v1
+    const backupTunnelUrl = 'https://rkjcu2n.abc-tunnel.us/v1'; // Tunnel from 9Router dashboard
 
-        const response = await fetch('http://localhost:20128/v1/chat/completions', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${key}`
-            },
-            body: JSON.stringify({
-                model: 'gemini/gemini-3.6-flash',
-                messages: [
-                    ...(systemInstruction ? [{ role: 'system', content: systemInstruction }] : []),
-                    { role: 'user', content: prompt }
-                ]
-            }),
-            signal: controller.signal
-        });
-        clearTimeout(timeoutId);
-
-        if (!response.ok) {
-            console.warn('[9ROUTER] Servidor local retornou status HTTP', response.status, '- Fallback para roteador nativo');
-            return null;
-        }
-
-        const data = await response.json();
-        const content = data.choices?.[0]?.message?.content;
-        if (content) {
-            return `⚡ [MODO LABORATÓRIO - 9ROUTER LOCAL]:\n\n${content}`;
-        }
-        return null;
-    } catch (error) {
-        console.warn('[9ROUTER] Falha na conexão com http://localhost:20128 - Ativando fallback para o roteador do Santuário.');
-        return null; // Fallback automático e transparente
+    const urlsToTry = [primaryUrl];
+    if (primaryUrl !== backupTunnelUrl) {
+        urlsToTry.push(backupTunnelUrl);
     }
+
+    for (const baseUrl of urlsToTry) {
+        try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 15000); // 15s timeout per attempt
+
+            const cleanBase = baseUrl.replace(/\/$/, '');
+            const response = await fetch(`${cleanBase}/chat/completions`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${key}`
+                },
+                body: JSON.stringify({
+                    model: 'gemini/gemini-3.6-flash',
+                    messages: [
+                        ...(systemInstruction ? [{ role: 'system', content: systemInstruction }] : []),
+                        { role: 'user', content: prompt }
+                    ]
+                }),
+                signal: controller.signal
+            });
+            clearTimeout(timeoutId);
+
+            if (!response.ok) {
+                console.warn(`[9ROUTER] Servidor local (${cleanBase}) retornou status HTTP ${response.status}`);
+                continue;
+            }
+
+            const data = await response.json();
+            const content = data.choices?.[0]?.message?.content;
+            if (content) {
+                return `⚡ [MODO LABORATÓRIO - 9ROUTER LOCAL]:\n\n${content}`;
+            }
+        } catch (error) {
+            console.warn(`[9ROUTER] Falha na conexão com ${baseUrl} - Tentando próxima rota de laboratório...`);
+        }
+    }
+
+    console.warn('[9ROUTER] Nenhuma rota de laboratório respondeu. Ativando fallback para o roteador do Santuário.');
+    return null; // Fallback automático e transparente para o Roteador Nativo
 }
