@@ -90,12 +90,13 @@ export async function invokeActiveAgent(prompt: string, activeAgentId: string, u
         case 'nexus':
         default: {
             // ROTAÇÃO MULTI-CHAVE DO GOOGLE / GEMINI
+            const envKey1 = process.env.GEMINI_API_KEY || process.env.API_KEY;
+            const envKey2 = process.env.GEMINI_API_KEY_2 || process.env.GEMINI_API_KEY_SOSPLANET;
             const googleKeysFromUser = keys
                 .filter((k: any) => k.service.toLowerCase().includes('google') || k.service.toLowerCase().includes('gemini'))
                 .map((k: any) => k.key);
             
-            const envKey = process.env.GEMINI_API_KEY || process.env.API_KEY;
-            const allGoogleKeys = Array.from(new Set([...googleKeysFromUser, envKey].filter(Boolean)));
+            const allGoogleKeys = Array.from(new Set([envKey1, envKey2, ...googleKeysFromUser].filter(Boolean)));
 
             if (allGoogleKeys.length === 0) {
                 throw new Error("Nenhuma chave API do Gemini configurada.");

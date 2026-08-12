@@ -29,13 +29,17 @@ export function loadApiKeys(): ApiKeys {
         if (saved) userKeys = JSON.parse(saved);
     } catch (e) {}
 
-    // Coleta TODAS as chaves do Google salvas no Arsenal
+    // Coleta TODAS as chaves do Google na ordem estrita:
+    // 1. GEMINI_API_KEY / API_KEY
+    // 2. GEMINI_API_KEY_2 / GEMINI_API_KEY_SOSPLANET
+    // 3. Chaves do Arsenal salvas pelo usuário
+    const envGoogle1 = process.env.GEMINI_API_KEY || process.env.API_KEY || sovereignKeys.google;
+    const envGoogle2 = process.env.GEMINI_API_KEY_2 || process.env.GEMINI_API_KEY_SOSPLANET;
     const googleUserKeys = userKeys
         .filter(k => k.service.toLowerCase().includes('google') || k.service.toLowerCase().includes('gemini'))
         .map(k => k.key);
 
-    const envGoogle = process.env.GEMINI_API_KEY || process.env.API_KEY || sovereignKeys.google;
-    const allGoogleKeys = Array.from(new Set([...googleUserKeys, envGoogle].filter(Boolean)));
+    const allGoogleKeys = Array.from(new Set([envGoogle1, envGoogle2, ...googleUserKeys].filter(Boolean)));
 
     const googleKey = allGoogleKeys[0] || '';
     const groqKey = userKeys.find(k => k.service.toLowerCase().includes('groq'))?.key || process.env.GROQ_API_KEY || sovereignKeys.groq;
