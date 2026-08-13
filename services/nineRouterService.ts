@@ -81,7 +81,20 @@ export async function callNineRouter(prompt: string, systemInstruction?: string)
         if (!candidateUrls.includes(backupTunnelUrl)) candidateUrls.push(backupTunnelUrl);
     }
 
-    const candidateModels = ['gemini-3.6-flash', 'gemini/gemini-3.6-flash', 'gemini-2.5-flash', 'gemini-1.5-flash'];
+    // Lista de modelos disponíveis no 9Router para rotação soberana:
+    // Gemini (Rotação de Chaves), OpenCode Free, NVIDIA NIM, MiMo, Ollama
+    const candidateModels = [
+        'gemini-3.6-flash',
+        'gemini/gemini-3.6-flash',
+        'opencode/free',
+        'opencode',
+        'nvidia/nemotron-3-8b-instruct',
+        'nvidia/nemotron-4-340b-instruct',
+        'z-ai/glm-5.2',
+        'minimaxai/minimax-m3',
+        'gemini-2.5-flash',
+        'gemini-1.5-flash'
+    ];
 
     for (const baseUrl of candidateUrls) {
         const cleanBase = baseUrl.replace(/\/$/, '');
