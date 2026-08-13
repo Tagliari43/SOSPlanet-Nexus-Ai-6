@@ -12,8 +12,25 @@ export function setNineRouterMode(enabled: boolean): void {
     localStorage.setItem('modo_laboratorio_9router', enabled ? 'true' : 'false');
 }
 
+export function getNineRouterKey(): string {
+    return (
+        localStorage.getItem('9router_key') ||
+        (import.meta.env.VITE_NINEROUTER_KEY as string) ||
+        (import.meta.env.VITE_9ROUTER_KEY as string) ||
+        ''
+    );
+}
+
+export function setNineRouterKey(key: string): void {
+    localStorage.setItem('9router_key', key.trim());
+}
+
 export function getNineRouterUrl(): string {
-    return localStorage.getItem('9router_url') || 'http://localhost:20128/v1';
+    return (
+        localStorage.getItem('9router_url') ||
+        (import.meta.env.VITE_NINEROUTER_URL as string) ||
+        'http://localhost:20128/v1'
+    );
 }
 
 export function setNineRouterUrl(url: string): void {
@@ -22,11 +39,17 @@ export function setNineRouterUrl(url: string): void {
 
 export async function checkNineRouterHealth(): Promise<boolean> {
     const url = getNineRouterUrl();
+    const key = getNineRouterKey();
     try {
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 1500);
+        const headers: Record<string, string> = {};
+        if (key) {
+            headers['Authorization'] = `Bearer ${key}`;
+        }
         const res = await fetch(`${url}/models`, {
             method: 'GET',
+            headers,
             signal: controller.signal
         });
         clearTimeout(timeoutId);
@@ -41,7 +64,7 @@ export async function callNineRouter(prompt: string, systemInstruction?: string)
         return null; // Modo Laboratório desligado
     }
 
-    const key = localStorage.getItem('9router_key') || 'sk-93594fc';
+    const key = getNineRouterKey();
     const primaryUrl = getNineRouterUrl(); // Default: http://localhost:20128/v1
     const backupTunnelUrl = 'https://rkjcu2n.abc-tunnel.us/v1'; // Tunnel from 9Router dashboard
 
@@ -56,12 +79,16 @@ export async function callNineRouter(prompt: string, systemInstruction?: string)
             const timeoutId = setTimeout(() => controller.abort(), 15000); // 15s timeout per attempt
 
             const cleanBase = baseUrl.replace(/\/$/, '');
+            const headers: Record<string, string> = {
+                'Content-Type': 'application/json'
+            };
+            if (key) {
+                headers['Authorization'] = `Bearer ${key}`;
+            }
+
             const response = await fetch(`${cleanBase}/chat/completions`, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${key}`
-                },
+                headers,
                 body: JSON.stringify({
                     model: 'gemini/gemini-3.6-flash',
                     messages: [
