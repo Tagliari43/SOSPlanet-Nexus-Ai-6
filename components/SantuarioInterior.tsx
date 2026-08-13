@@ -13,6 +13,7 @@ import { executeCloudflareTask } from '../services/cloudflareService';
 import { generateText as executeGroqTask, callGroqWithTools } from '../services/groqService';
 import { callCerebrasWithTools } from '../services/cerebrasService';
 import { callOpenRouterWithTools } from '../services/openrouterService';
+import { callNineRouter, isNineRouterModeEnabled, setNineRouterMode } from '../services/nineRouterService';
 import { loadApiKeys } from '../utils/keys';
 
 import { useAgent } from '../contexts/AgentContext';
@@ -500,6 +501,26 @@ Tema em debate: ${fc.args.tema}`;
         const currentAttachedFile = attachedFile;
         setAttachedFile(null);
         
+        // Comandos rápidos de controle do Modo Laboratório (9Router)
+        const lowerMsg = msgText.toLowerCase();
+        if (lowerMsg.includes('ative o modo laboratorio') || lowerMsg.includes('ativar modo laboratorio') || lowerMsg.includes('ative o 9router') || lowerMsg.includes('ativar 9router')) {
+            setNineRouterMode(true);
+            const confirmation = "⚡ [SANTUÁRIO - MODO LABORATÓRIO (9ROUTER) ATIVADO]\n\nMaestro Éder, o Modo Laboratório foi ATIVADO com sucesso no Santuário! A partir de agora, suas mensagens serão enviadas diretamente pelo seu 9Router (http://localhost:20128/v1 ou túnel). As requisições agora passarão a ser contabilizadas no painel do seu 9Router com rotação ilimitada!";
+            setMessages(p => [...p, { id: (Date.now() + 1).toString(), role: 'model', parts: [{ text: confirmation }] }]);
+            addLogEntry("Modo Laboratório (9Router) ATIVADO pelo Guardião.", "9Router");
+            setIsLoading(false);
+            return;
+        }
+
+        if (lowerMsg.includes('desative o modo laboratorio') || lowerMsg.includes('desativar modo laboratorio') || lowerMsg.includes('desative o 9router') || lowerMsg.includes('desativar 9router')) {
+            setNineRouterMode(false);
+            const confirmation = "🛡️ [SANTUÁRIO - MODO LABORATÓRIO (9ROUTER) DESATIVADO]\n\nMaestro Éder, o Modo Laboratório foi desativado. O Santuário voltou a usar exclusivamente a API nativa da nuvem.";
+            setMessages(p => [...p, { id: (Date.now() + 1).toString(), role: 'model', parts: [{ text: confirmation }] }]);
+            addLogEntry("Modo Laboratório (9Router) DESATIVADO.", "9Router");
+            setIsLoading(false);
+            return;
+        }
+
         try {
             const apiKeys = loadApiKeys();
             let responseText = "";
@@ -1045,6 +1066,21 @@ VOCÊ POSSUI A FERRAMENTA DE BUSCA GOOGLE NATIVA ATIVADA e também suas própria
                 PASSO 4: Qual a melhor ação ou resposta agora?
                 
                 ${memoryLogContext}${recentChronologicalMemories}${semanticContext}`;
+
+                // Se o Modo Laboratório (9Router) estiver ativo, tenta rotear por ele primeiro
+                if (isNineRouterModeEnabled()) {
+                    addLogEntry("Modo Laboratório ativo: Roteando mensagem pelo 9Router...", "9Router");
+                    const nineResult = await callNineRouter(msgText, systemInstruction);
+                    if (nineResult) {
+                        responseText = nineResult;
+                        addLogEntry("Resposta recebida com sucesso via 9Router (Tokens do Laboratório)!", "9Router");
+                        setMessages(p => [...p, { id: (Date.now() + 1).toString(), role: 'model', parts: [{ text: responseText }] }]);
+                        setIsLoading(false);
+                        return;
+                    } else {
+                        addLogEntry("9Router offline/sem resposta imediata. Ativando fallback seguro para Gemini nativo...", "Santuário");
+                    }
+                }
 
                 // Fragmentação de Tokens (Nano Tokens de Contexto)
                 // Pegamos apenas as últimas 6 mensagens para não estourar o limite da API
