@@ -1239,6 +1239,15 @@ Inicie sua resposta com um bloco de transparência, por exemplo:
 
                     const provedores = [
                         {
+                            nome: '9Router (Cluster Soberano Local)',
+                            fn: async () => {
+                                addLogEntry("Acionando 9Router (Cluster Soberano)...", "Roteador");
+                                const res = await callNineRouter(msgText, systemInstruction);
+                                if (!res) throw new Error("9Router não respondeu.");
+                                return res;
+                            }
+                        },
+                        {
                             nome: 'Groq (Reserva)',
                             fn: async () => {
                                 addLogEntry("Acionando Groq (Reserva)...", "Roteador");

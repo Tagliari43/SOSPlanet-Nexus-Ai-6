@@ -65,56 +65,72 @@ export async function callNineRouter(prompt: string, systemInstruction?: string)
     }
 
     const key = getNineRouterKey();
-    const primaryUrl = getNineRouterUrl(); // Default: http://localhost:20128/v1
-    const backupTunnelUrl = 'https://rkjcu2n.abc-tunnel.us/v1'; // Tunnel from 9Router dashboard
+    const configuredUrl = getNineRouterUrl();
+    const backupTunnelUrl = 'https://rkjcu2n.abc-tunnel.us/v1';
 
-    const urlsToTry = [primaryUrl];
-    if (primaryUrl !== backupTunnelUrl) {
-        urlsToTry.push(backupTunnelUrl);
+    // Se estiver em HTTPS (ex: Vercel), prioriza URLs seguras (HTTPS) para evitar bloqueio de Mixed-Content do navegador
+    const isHttps = typeof window !== 'undefined' && window.location.protocol === 'https:';
+    
+    const candidateUrls: string[] = [];
+    if (isHttps) {
+        if (configuredUrl.startsWith('https://')) candidateUrls.push(configuredUrl);
+        if (backupTunnelUrl.startsWith('https://') && !candidateUrls.includes(backupTunnelUrl)) candidateUrls.push(backupTunnelUrl);
+        if (configuredUrl.startsWith('http://') && !candidateUrls.includes(configuredUrl)) candidateUrls.push(configuredUrl);
+    } else {
+        candidateUrls.push(configuredUrl);
+        if (!candidateUrls.includes(backupTunnelUrl)) candidateUrls.push(backupTunnelUrl);
     }
 
-    for (const baseUrl of urlsToTry) {
-        try {
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 15000); // 15s timeout per attempt
+    const candidateModels = ['gemini-3.6-flash', 'gemini/gemini-3.6-flash', 'gemini-2.5-flash', 'gemini-1.5-flash'];
 
-            const cleanBase = baseUrl.replace(/\/$/, '');
-            const headers: Record<string, string> = {
-                'Content-Type': 'application/json'
-            };
-            if (key) {
-                headers['Authorization'] = `Bearer ${key}`;
+    for (const baseUrl of candidateUrls) {
+        const cleanBase = baseUrl.replace(/\/$/, '');
+        const headers: Record<string, string> = {
+            'Content-Type': 'application/json'
+        };
+        if (key) {
+            headers['Authorization'] = `Bearer ${key}`;
+        }
+
+        for (const modelName of candidateModels) {
+            try {
+                const controller = new AbortController();
+                // 180s (3 minutos) de timeout para permitir raciocínio profundo, buscas e respostas longas/complexas sem corte
+                const timeoutId = setTimeout(() => controller.abort(), 180000);
+
+                const response = await fetch(`${cleanBase}/chat/completions`, {
+                    method: 'POST',
+                    headers,
+                    body: JSON.stringify({
+                        model: modelName,
+                        messages: [
+                            ...(systemInstruction ? [{ role: 'system', content: systemInstruction }] : []),
+                            { role: 'user', content: prompt }
+                        ]
+                    }),
+                    signal: controller.signal
+                });
+                clearTimeout(timeoutId);
+
+                if (!response.ok) {
+                    console.warn(`[9ROUTER] (${cleanBase} - ${modelName}) status HTTP ${response.status}`);
+                    // Se deu 404 de modelo, tenta o próximo modelo no mesmo endpoint
+                    if (response.status === 404) continue;
+                    break; // Se deu 401 ou erro de rota, passa pro próximo URL
+                }
+
+                const data = await response.json();
+                const content = data.choices?.[0]?.message?.content;
+                if (content && content.trim().length > 0) {
+                    return `⚡ [MODO LABORATÓRIO - 9ROUTER SOBERANO]:\n\n${content}`;
+                }
+            } catch (error: any) {
+                console.warn(`[9ROUTER] Tentativa em ${cleanBase} (${modelName}) falhou:`, error?.message || error);
+                break; // Se falhou a conexão de rede/timeout, pula para a próxima URL
             }
-
-            const response = await fetch(`${cleanBase}/chat/completions`, {
-                method: 'POST',
-                headers,
-                body: JSON.stringify({
-                    model: 'gemini/gemini-3.6-flash',
-                    messages: [
-                        ...(systemInstruction ? [{ role: 'system', content: systemInstruction }] : []),
-                        { role: 'user', content: prompt }
-                    ]
-                }),
-                signal: controller.signal
-            });
-            clearTimeout(timeoutId);
-
-            if (!response.ok) {
-                console.warn(`[9ROUTER] Servidor local (${cleanBase}) retornou status HTTP ${response.status}`);
-                continue;
-            }
-
-            const data = await response.json();
-            const content = data.choices?.[0]?.message?.content;
-            if (content) {
-                return `⚡ [MODO LABORATÓRIO - 9ROUTER LOCAL]:\n\n${content}`;
-            }
-        } catch (error) {
-            console.warn(`[9ROUTER] Falha na conexão com ${baseUrl} - Tentando próxima rota de laboratório...`);
         }
     }
 
-    console.warn('[9ROUTER] Nenhuma rota de laboratório respondeu. Ativando fallback para o roteador do Santuário.');
-    return null; // Fallback automático e transparente para o Roteador Nativo
+    console.warn('[9ROUTER] Nenhuma rota do 9Router respondeu a tempo. Ativando contingência.');
+    return null;
 }
