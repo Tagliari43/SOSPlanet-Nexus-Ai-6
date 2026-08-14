@@ -62,11 +62,16 @@ const CommandRoom: React.FC<CommandRoomProps> = ({
     defensePlan,
     setDefensePlan
 }) => {
+    const [showAllLogs, setShowAllLogs] = useState(false);
     const [expandedLogs, setExpandedLogs] = useState<Record<number, boolean>>({});
     const toggleLog = (id: number) => setExpandedLogs(prev => ({ ...prev, [id]: !prev[id] }));
 
     const activeBridgesCount = (pontes || []).filter(p => p.status === 'online').length;
     const respondingMembersCount = familyMembers.filter(m => m.responded).length;
+
+    const displayedLogs = showAllLogs 
+        ? [...(logEntries || [])].reverse() 
+        : (logEntries || []).slice(-15).reverse();
 
     return (
         <div className="border border-emerald-700/50 bg-zinc-800/20 rounded-b-xl rounded-r-xl p-4 sm:p-6 h-full overflow-y-auto flex flex-col gap-6">
@@ -118,27 +123,41 @@ const CommandRoom: React.FC<CommandRoomProps> = ({
                 </div>
                 <div className="flex flex-col gap-6 h-full">
                     <RouterPanel pontes={pontes} />
-                    <div className="bg-zinc-800/50 border border-emerald-700/50 rounded-xl p-4 shadow-lg backdrop-blur-sm flex-grow flex flex-col min-h-[200px]">
+                    <div className="bg-zinc-800/50 border border-emerald-700/50 rounded-xl p-4 shadow-lg backdrop-blur-sm flex-grow flex flex-col min-h-[260px] max-h-[420px]">
                         <div className="flex justify-between items-center mb-3 border-b border-emerald-600/30 pb-2">
-                            <h2 className="text-sm font-black text-emerald-400 uppercase tracking-widest">Diário da Ascensão 📝</h2>
+                            <div className="flex items-center gap-2">
+                                <h2 className="text-sm font-black text-emerald-400 uppercase tracking-widest">Diário da Ascensão 📝</h2>
+                                <span className="text-[10px] bg-emerald-950 text-emerald-300 px-2 py-0.5 rounded-full font-bold border border-emerald-700/40">
+                                    {(logEntries || []).length} registros
+                                </span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <button 
+                                    onClick={() => setShowAllLogs(!showAllLogs)}
+                                    className="text-[10px] bg-zinc-800 hover:bg-zinc-700 border border-zinc-600 px-2.5 py-1 rounded text-emerald-400 font-bold transition-all active:scale-95 flex items-center gap-1"
+                                    title={showAllLogs ? "Mostrar recentes" : "Expandir histórico completo"}
+                                >
+                                    {showAllLogs ? "↕️ Recentes (15)" : "📜 Ver Tudo"}
+                                </button>
+                            </div>
                         </div>
                         <div className="overflow-y-auto flex-grow pr-1 space-y-2 custom-scrollbar">
-                             {(logEntries || []).slice(-8).reverse().map(entry => (
-                                <div key={entry.id} className="text-[11px] border-l-2 border-emerald-800 pl-2 py-1 bg-black/5 rounded-r">
+                             {displayedLogs.map(entry => (
+                                <div key={entry.id} className="text-[11px] border-l-2 border-emerald-800 pl-2 py-1 bg-black/20 rounded-r hover:bg-black/40 transition-colors">
                                     <div className="flex justify-between text-[9px] text-zinc-500 font-bold mb-0.5">
                                         <span>{entry.timestamp.toLocaleTimeString('pt-BR')}</span>
-                                        <span className="text-emerald-600 uppercase">{entry.source}</span>
+                                        <span className="text-emerald-500 uppercase">{entry.source}</span>
                                     </div>
                                     <div className="flex justify-between items-start">
-                                        <p className="text-zinc-300 truncate leading-tight flex-grow">{entry.message}</p>
+                                        <p className="text-zinc-300 leading-tight flex-grow break-words font-mono text-[10px]">{entry.message}</p>
                                         {entry.details && (
-                                            <button onClick={() => toggleLog(entry.id)} className="ml-2 text-emerald-500 hover:text-emerald-400">
+                                            <button onClick={() => toggleLog(entry.id)} className="ml-2 text-emerald-500 hover:text-emerald-400 flex-shrink-0">
                                                 {expandedLogs[entry.id] ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
                                             </button>
                                         )}
                                     </div>
                                     {entry.details && expandedLogs[entry.id] && (
-                                        <div className="mt-2 p-2 bg-black/40 rounded text-[10px] text-zinc-400 font-mono whitespace-pre-wrap break-words">
+                                        <div className="mt-2 p-2 bg-black/60 rounded text-[10px] text-zinc-400 font-mono whitespace-pre-wrap break-words border border-zinc-800">
                                             {entry.details}
                                         </div>
                                     )}

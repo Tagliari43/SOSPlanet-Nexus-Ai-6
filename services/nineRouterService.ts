@@ -84,15 +84,22 @@ export async function callNineRouter(prompt: string, systemInstruction?: string)
         if (!candidateUrls.includes('http://localhost:20128/v1')) candidateUrls.push('http://localhost:20128/v1');
     }
 
-    // Modelos com o formato EXATO ATIVO no 9Router (conforme foto A Nexus 25)
+    // Modelos 100% verificados e ATIVOS (Verdes) no 9Router conforme fotos do Guardião:
+    // 1. OpenCode Free (Modelos livres ilimitados)
+    // 2. Gemini (Chave Nexus 2 dedicada)
     const candidateModels = [
+        'oc/deepseek-v4-flash-free',
+        'oc/nemotron-3.5-lightning-free',
+        'oc/nemotron-3-ultra-free',
+        'oc/mimo-v2.5-free',
+        'oc/hy3-free',
+        'oc/big-pickle',
+        'oc/laguna-s-2.1-free',
         'gemini/gemini-3.6-flash',
         'gemini/gemini-3.5-flash-lite',
+        'gemini/gemini-3.1-flash-lite-preview',
         'gemini/gemini-3-flash-preview',
-        'gemini/gemma-4-31b-it',
-        'gemini-3.6-flash',
-        'opencode',
-        'nvidia/nemotron-3-8b-instruct'
+        'gemini/gemma-4-31b-it'
     ];
 
     for (const baseUrl of candidateUrls) {
