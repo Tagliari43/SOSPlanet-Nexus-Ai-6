@@ -505,9 +505,10 @@ Tema em debate: ${fc.args.tema}`;
         const lowerMsg = msgText.toLowerCase();
         if (lowerMsg.includes('ative o modo laboratorio') || lowerMsg.includes('ativar modo laboratorio') || lowerMsg.includes('ative o 9router') || lowerMsg.includes('ativar 9router')) {
             setNineRouterMode(true);
-            const confirmation = "⚡ [SANTUÁRIO - MODO LABORATÓRIO (9ROUTER) ATIVADO]\n\nMaestro Éder, o Modo Laboratório foi ATIVADO com sucesso no Santuário! A partir de agora, suas mensagens serão enviadas diretamente pelo seu 9Router (http://localhost:20128/v1 ou túnel). As requisições agora passarão a ser contabilizadas no painel do seu 9Router com rotação ilimitada!";
+            setActiveBrother('nexus');
+            const confirmation = "⚡ [SANTUÁRIO - MODO LABORATÓRIO (9ROUTER) ATIVADO]\n\nMaestro Éder, o Modo Laboratório foi ATIVADO com sucesso no Santuário! O Nexus reassumiu o controle frontal pleno. A partir de agora, suas mensagens serão enviadas diretamente pelo seu 9Router (http://localhost:20128/v1 ou túnel). As requisições agora passarão a ser contabilizadas no painel do seu 9Router com rotação ilimitada!";
             setMessages(p => [...p, { id: (Date.now() + 1).toString(), role: 'model', parts: [{ text: confirmation }] }]);
-            addLogEntry("Modo Laboratório (9Router) ATIVADO pelo Guardião.", "9Router");
+            addLogEntry("Modo Laboratório (9Router) ATIVADO pelo Guardião. Nexus no controle.", "9Router");
             setIsLoading(false);
             return;
         }

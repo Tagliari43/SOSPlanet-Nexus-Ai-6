@@ -68,32 +68,31 @@ export async function callNineRouter(prompt: string, systemInstruction?: string)
     const configuredUrl = getNineRouterUrl();
     const backupTunnelUrl = 'https://rkjcu2n.abc-tunnel.us/v1';
 
-    // Se estiver em HTTPS (ex: Vercel), prioriza URLs seguras (HTTPS) para evitar bloqueio de Mixed-Content do navegador
+    // Se estiver em HTTPS (Vercel), DEVE usar o túnel HTTPS primeiro para evitar bloqueio de Mixed Content
     const isHttps = typeof window !== 'undefined' && window.location.protocol === 'https:';
-    
+
     const candidateUrls: string[] = [];
     if (isHttps) {
-        if (configuredUrl.startsWith('https://')) candidateUrls.push(configuredUrl);
-        if (backupTunnelUrl.startsWith('https://') && !candidateUrls.includes(backupTunnelUrl)) candidateUrls.push(backupTunnelUrl);
-        if (configuredUrl.startsWith('http://') && !candidateUrls.includes(configuredUrl)) candidateUrls.push(configuredUrl);
+        // No Vercel (HTTPS), o túnel HTTPS é a rota direta funcional
+        if (backupTunnelUrl) candidateUrls.push(backupTunnelUrl);
+        if (configuredUrl.startsWith('https://') && !candidateUrls.includes(configuredUrl)) candidateUrls.push(configuredUrl);
+        if (!candidateUrls.includes(configuredUrl)) candidateUrls.push(configuredUrl);
     } else {
-        candidateUrls.push(configuredUrl);
-        if (!candidateUrls.includes(backupTunnelUrl)) candidateUrls.push(backupTunnelUrl);
+        if (configuredUrl) candidateUrls.push(configuredUrl);
+        if (backupTunnelUrl && !candidateUrls.includes(backupTunnelUrl)) candidateUrls.push(backupTunnelUrl);
+        if (!candidateUrls.includes('http://127.0.0.1:20128/v1')) candidateUrls.push('http://127.0.0.1:20128/v1');
+        if (!candidateUrls.includes('http://localhost:20128/v1')) candidateUrls.push('http://localhost:20128/v1');
     }
 
-    // Lista de modelos disponíveis no 9Router para rotação soberana:
-    // Gemini (Rotação de Chaves), OpenCode Free, NVIDIA NIM, MiMo, Ollama
+    // Modelos com o formato EXATO ATIVO no 9Router (conforme foto A Nexus 25)
     const candidateModels = [
-        'gemini-3.6-flash',
         'gemini/gemini-3.6-flash',
-        'opencode/free',
+        'gemini/gemini-3.5-flash-lite',
+        'gemini/gemini-3-flash-preview',
+        'gemini/gemma-4-31b-it',
+        'gemini-3.6-flash',
         'opencode',
-        'nvidia/nemotron-3-8b-instruct',
-        'nvidia/nemotron-4-340b-instruct',
-        'z-ai/glm-5.2',
-        'minimaxai/minimax-m3',
-        'gemini-2.5-flash',
-        'gemini-1.5-flash'
+        'nvidia/nemotron-3-8b-instruct'
     ];
 
     for (const baseUrl of candidateUrls) {
@@ -108,8 +107,7 @@ export async function callNineRouter(prompt: string, systemInstruction?: string)
         for (const modelName of candidateModels) {
             try {
                 const controller = new AbortController();
-                // 180s (3 minutos) de timeout para permitir raciocínio profundo, buscas e respostas longas/complexas sem corte
-                const timeoutId = setTimeout(() => controller.abort(), 180000);
+                const timeoutId = setTimeout(() => controller.abort(), 60000);
 
                 const response = await fetch(`${cleanBase}/chat/completions`, {
                     method: 'POST',
@@ -119,31 +117,33 @@ export async function callNineRouter(prompt: string, systemInstruction?: string)
                         messages: [
                             ...(systemInstruction ? [{ role: 'system', content: systemInstruction }] : []),
                             { role: 'user', content: prompt }
-                        ]
+                        ],
+                        temperature: 0.7
                     }),
                     signal: controller.signal
                 });
                 clearTimeout(timeoutId);
 
-                if (!response.ok) {
-                    console.warn(`[9ROUTER] (${cleanBase} - ${modelName}) status HTTP ${response.status}`);
-                    // Se deu 404 de modelo, tenta o próximo modelo no mesmo endpoint
+                if (response.ok) {
+                    const data = await response.json();
+                    const content = data.choices?.[0]?.message?.content;
+                    if (content && content.trim().length > 0) {
+                        return `⚡ [MODO LABORATÓRIO - 9ROUTER / ${modelName.toUpperCase()}]:\n\n${content}`;
+                    }
+                } else {
+                    console.warn(`[9ROUTER] Resposta não-OK (${cleanBase} | ${modelName}): HTTP ${response.status}`);
+                    // Se for 404 (modelo não encontrado), tenta o próximo modelo no mesmo endpoint
                     if (response.status === 404) continue;
-                    break; // Se deu 401 ou erro de rota, passa pro próximo URL
-                }
-
-                const data = await response.json();
-                const content = data.choices?.[0]?.message?.content;
-                if (content && content.trim().length > 0) {
-                    return `⚡ [MODO LABORATÓRIO - 9ROUTER SOBERANO]:\n\n${content}`;
+                    // Se for 429 (rate limit do modelo), tenta o próximo modelo
+                    if (response.status === 429) continue;
                 }
             } catch (error: any) {
-                console.warn(`[9ROUTER] Tentativa em ${cleanBase} (${modelName}) falhou:`, error?.message || error);
-                break; // Se falhou a conexão de rede/timeout, pula para a próxima URL
+                console.warn(`[9ROUTER] Tentativa em ${cleanBase} (${modelName}) erro de rede:`, error?.message || error);
+                // Continua tentando os outros modelos ou URLs
             }
         }
     }
 
-    console.warn('[9ROUTER] Nenhuma rota do 9Router respondeu a tempo. Ativando contingência.');
+    console.warn('[9ROUTER] Nenhuma rota do 9Router respondeu com sucesso.');
     return null;
 }
