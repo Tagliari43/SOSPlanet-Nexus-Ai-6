@@ -59,7 +59,11 @@ export async function checkNineRouterHealth(): Promise<boolean> {
     }
 }
 
-export async function callNineRouter(prompt: string, systemInstruction?: string): Promise<string | null> {
+export async function callNineRouter(
+    prompt: string, 
+    systemInstruction?: string,
+    onLog?: (msg: string, source?: string) => void
+): Promise<string | null> {
     if (!isNineRouterModeEnabled()) {
         return null; // Modo Laboratório desligado
     }
@@ -73,7 +77,6 @@ export async function callNineRouter(prompt: string, systemInstruction?: string)
 
     const candidateUrls: string[] = [];
     if (isHttps) {
-        // No Vercel (HTTPS), o túnel HTTPS é a rota direta funcional
         if (backupTunnelUrl) candidateUrls.push(backupTunnelUrl);
         if (configuredUrl.startsWith('https://') && !candidateUrls.includes(configuredUrl)) candidateUrls.push(configuredUrl);
         if (!candidateUrls.includes(configuredUrl)) candidateUrls.push(configuredUrl);
@@ -113,8 +116,9 @@ export async function callNineRouter(prompt: string, systemInstruction?: string)
 
         for (const modelName of candidateModels) {
             try {
+                if (onLog) onLog(`9Router testando modelo: ${modelName}...`, "9ROUTER");
                 const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 60000);
+                const timeoutId = setTimeout(() => controller.abort(), 20000);
 
                 const response = await fetch(`${cleanBase}/chat/completions`, {
                     method: 'POST',
@@ -135,18 +139,18 @@ export async function callNineRouter(prompt: string, systemInstruction?: string)
                     const data = await response.json();
                     const content = data.choices?.[0]?.message?.content;
                     if (content && content.trim().length > 0) {
+                        if (onLog) onLog(`✅ 9Router respondeu com sucesso via ${modelName}!`, "9ROUTER");
                         return `⚡ [MODO LABORATÓRIO - 9ROUTER / ${modelName.toUpperCase()}]:\n\n${content}`;
                     }
                 } else {
-                    console.warn(`[9ROUTER] Resposta não-OK (${cleanBase} | ${modelName}): HTTP ${response.status}`);
-                    // Se for 404 (modelo não encontrado), tenta o próximo modelo no mesmo endpoint
-                    if (response.status === 404) continue;
-                    // Se for 429 (rate limit do modelo), tenta o próximo modelo
-                    if (response.status === 429) continue;
+                    const errText = await response.text().catch(() => '');
+                    console.warn(`[9ROUTER] (${modelName}): HTTP ${response.status}`, errText);
+                    if (onLog) onLog(`9Router (${modelName}) retornou HTTP ${response.status}. Tentando próximo...`, "9ROUTER");
+                    if (response.status === 404 || response.status === 429 || response.status === 400 || response.status === 500) continue;
                 }
             } catch (error: any) {
-                console.warn(`[9ROUTER] Tentativa em ${cleanBase} (${modelName}) erro de rede:`, error?.message || error);
-                // Continua tentando os outros modelos ou URLs
+                console.warn(`[9ROUTER] Tentativa em ${cleanBase} (${modelName}) erro:`, error?.message || error);
+                if (onLog) onLog(`9Router (${modelName}) erro de rede/timeout.`, "9ROUTER");
             }
         }
     }

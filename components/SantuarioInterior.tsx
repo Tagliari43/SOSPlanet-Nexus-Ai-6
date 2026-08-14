@@ -1071,7 +1071,7 @@ VOCÊ POSSUI A FERRAMENTA DE BUSCA GOOGLE NATIVA ATIVADA e também suas própria
                 // Se o Modo Laboratório (9Router) estiver ativo, tenta rotear por ele primeiro
                 if (isNineRouterModeEnabled()) {
                     addLogEntry("Modo Laboratório ativo: Roteando mensagem pelo 9Router...", "9Router");
-                    const nineResult = await callNineRouter(msgText, systemInstruction);
+                    const nineResult = await callNineRouter(msgText, systemInstruction, addLogEntry);
                     if (nineResult) {
                         responseText = nineResult;
                         addLogEntry("Resposta recebida com sucesso via 9Router (Tokens do Laboratório)!", "9Router");
