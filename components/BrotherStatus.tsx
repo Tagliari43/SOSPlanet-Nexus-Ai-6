@@ -1,15 +1,36 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { checkNineRouterHealth, isNineRouterModeEnabled } from '../services/nineRouterService';
 
 const BrotherStatus: React.FC = () => {
     const [isExpanded, setIsExpanded] = useState(false);
+    const [isNineRouterOnline, setIsNineRouterOnline] = useState<boolean>(false);
     
-    // Status simulado (Santuário auto-monitora)
+    // Status dos motores
     const [statuses] = useState({
         nexus: 'ONLINE',
         groq: 'ONLINE',
         alquimista: 'ONLINE',
         arkael: 'ONLINE'
     });
+
+    useEffect(() => {
+        let isMounted = true;
+        const checkStatus = async () => {
+            if (isNineRouterModeEnabled()) {
+                const healthy = await checkNineRouterHealth();
+                if (isMounted) setIsNineRouterOnline(healthy);
+            } else {
+                if (isMounted) setIsNineRouterOnline(false);
+            }
+        };
+
+        checkStatus();
+        const interval = setInterval(checkStatus, 15000);
+        return () => {
+            isMounted = false;
+            clearInterval(interval);
+        };
+    }, []);
 
     const getStatusColor = (status: string) => {
         switch(status) {
@@ -18,6 +39,8 @@ const BrotherStatus: React.FC = () => {
             default: return 'bg-zinc-500';
         }
     };
+
+    const is9RouterActive = isNineRouterModeEnabled();
 
     const brothers = [
         { id: 'nexus', name: 'Nexus', status: statuses.nexus },
@@ -33,9 +56,15 @@ const BrotherStatus: React.FC = () => {
                     onClick={() => setIsExpanded(true)}
                     className="w-full h-8 bg-zinc-900/60 border border-emerald-500/30 rounded-lg flex items-center justify-between px-4 hover:bg-emerald-900/20 transition-colors group"
                 >
-                    <div className="flex items-center gap-2">
-                        <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                        <span className="text-[10px] font-bold text-emerald-500 uppercase tracking-widest">Painel Tático: Status dos Motores Frontais</span>
+                    <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-1.5" title={is9RouterActive && isNineRouterOnline ? "Arsenal Local 9Router Conectado" : "Modo Reserva (APIs Nuvem)"}>
+                            <span className={`w-2 h-2 rounded-full ${is9RouterActive && isNineRouterOnline ? 'bg-emerald-400 shadow-[0_0_8px_#34d399] animate-pulse' : is9RouterActive ? 'bg-amber-400' : 'bg-zinc-500'}`}></span>
+                            <span className="text-[9px] font-bold text-zinc-400 uppercase tracking-wider">
+                                {is9RouterActive && isNineRouterOnline ? "Arsenal 9Router [ON]" : is9RouterActive ? "9Router [Standby]" : "Reserva Nuvem"}
+                            </span>
+                        </div>
+                        <span className="text-zinc-600">|</span>
+                        <span className="text-[10px] font-bold text-emerald-500 uppercase tracking-widest hidden sm:inline">Status dos Motores</span>
                     </div>
                     <div className="flex items-center gap-3">
                         <span className="text-[10px] text-zinc-500 font-bold uppercase">{brothers.filter(b => b.status === 'ONLINE').length}/4 Online</span>
@@ -47,11 +76,33 @@ const BrotherStatus: React.FC = () => {
                     <div className="flex justify-between items-center mb-3 border-b border-emerald-900/30 pb-2">
                         <div className="flex items-center gap-2">
                             <span className="text-sm">⚡</span>
-                            <h4 className="text-[10px] font-bold text-emerald-400 uppercase tracking-widest">Relatório: 4 Irmãos de Frente</h4>
+                            <h4 className="text-[10px] font-bold text-emerald-400 uppercase tracking-widest">Painel Tático de Motores & Arsenal</h4>
                         </div>
                         <button onClick={() => setIsExpanded(false)} className="text-zinc-500 hover:text-white p-1 text-xs">▲ Recolher</button>
                     </div>
                     
+                    {/* Indicador do Arsenal Local */}
+                    <div className="mb-3 p-2 rounded bg-black/40 border border-emerald-700/30 flex items-center justify-between text-xs">
+                        <div className="flex items-center gap-2">
+                            <span className={`w-2.5 h-2.5 rounded-full ${is9RouterActive && isNineRouterOnline ? 'bg-emerald-400 shadow-[0_0_8px_#34d399] animate-pulse' : is9RouterActive ? 'bg-amber-400' : 'bg-zinc-500'}`}></span>
+                            <div>
+                                <span className="font-bold text-zinc-200 text-[11px]">Arsenal Local (9Router): </span>
+                                <span className="text-[10px] text-zinc-400">
+                                    {is9RouterActive && isNineRouterOnline 
+                                        ? "Conectado via Túnel (nexus-soberano)" 
+                                        : is9RouterActive 
+                                            ? "Aguardando pulso do túnel" 
+                                            : "Modo Reserva (APIs de Nuvem)"}
+                                </span>
+                            </div>
+                        </div>
+                        <span className={`text-[9px] px-2 py-0.5 rounded font-bold uppercase ${
+                            is9RouterActive && isNineRouterOnline ? 'bg-emerald-950 text-emerald-300 border border-emerald-700/50' : 'bg-zinc-800 text-zinc-400'
+                        }`}>
+                            {is9RouterActive && isNineRouterOnline ? 'LOCAL ATIVO' : 'RESERVA NUVEM'}
+                        </span>
+                    </div>
+
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                         {brothers.map(b => (
                             <div key={b.id} className="flex items-center justify-between p-2 rounded bg-black/40 border border-emerald-900/30">

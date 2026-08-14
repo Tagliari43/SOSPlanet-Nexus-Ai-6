@@ -87,10 +87,12 @@ export async function callNineRouter(
         if (!candidateUrls.includes('http://localhost:20128/v1')) candidateUrls.push('http://localhost:20128/v1');
     }
 
-    // Modelos 100% verificados e ATIVOS (Verdes) no 9Router conforme fotos do Guardião:
-    // 1. OpenCode Free (Modelos livres ilimitados)
-    // 2. Gemini (Chave Nexus 2 dedicada)
+    // Modelos ativos no 9Router:
+    // 1. Combo customizado nexus-soberano (orquestrado no 9Router)
+    // 2. OpenCode Free (Modelos livres ilimitados)
+    // 3. Gemini (Chave Nexus 2 dedicada)
     const candidateModels = [
+        'nexus-soberano',
         'oc/deepseek-v4-flash-free',
         'oc/nemotron-3.5-lightning-free',
         'oc/nemotron-3-ultra-free',
@@ -118,7 +120,8 @@ export async function callNineRouter(
             try {
                 if (onLog) onLog(`9Router testando modelo: ${modelName}...`, "9ROUTER");
                 const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 20000);
+                // Timeout de 10 segundos para verificação ágil de pulso
+                const timeoutId = setTimeout(() => controller.abort(), 10000);
 
                 const response = await fetch(`${cleanBase}/chat/completions`, {
                     method: 'POST',
@@ -146,11 +149,11 @@ export async function callNineRouter(
                     const errText = await response.text().catch(() => '');
                     console.warn(`[9ROUTER] (${modelName}): HTTP ${response.status}`, errText);
                     if (onLog) onLog(`9Router (${modelName}) retornou HTTP ${response.status}. Tentando próximo...`, "9ROUTER");
-                    if (response.status === 404 || response.status === 429 || response.status === 400 || response.status === 500) continue;
+                    if (response.status === 404 || response.status === 429 || response.status === 400 || response.status === 401 || response.status === 500) continue;
                 }
             } catch (error: any) {
                 console.warn(`[9ROUTER] Tentativa em ${cleanBase} (${modelName}) erro:`, error?.message || error);
-                if (onLog) onLog(`9Router (${modelName}) erro de rede/timeout.`, "9ROUTER");
+                if (onLog) onLog(`9Router (${modelName}) erro de rede/timeout (10s).`, "9ROUTER");
             }
         }
     }
