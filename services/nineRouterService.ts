@@ -15,9 +15,10 @@ export function setNineRouterMode(enabled: boolean): void {
 export function getNineRouterKey(): string {
     return (
         localStorage.getItem('9router_key') ||
+        localStorage.getItem('VITE_NINEROUTER_KEY') ||
         (import.meta.env.VITE_NINEROUTER_KEY as string) ||
         (import.meta.env.VITE_9ROUTER_KEY as string) ||
-        ''
+        'sk-8effe28f-xif4-8ff9d4' // Chave permanente padrão do 9Remote
     );
 }
 
@@ -28,35 +29,67 @@ export function setNineRouterKey(key: string): void {
 export function getNineRouterUrl(): string {
     return (
         localStorage.getItem('9router_url') ||
+        localStorage.getItem('VITE_NINEROUTER_URL') ||
+        localStorage.getItem('VITE_NINEROUTERR_URL') ||
         (import.meta.env.VITE_NINEROUTER_URL as string) ||
-        'http://localhost:20128/v1'
+        (import.meta.env.VITE_NINEROUTERR_URL as string) ||
+        (import.meta.env.VITE_9ROUTER_URL as string) ||
+        'https://rkjcu2n.abc-tunnel.us/v1'
     );
 }
 
 export function setNineRouterUrl(url: string): void {
-    localStorage.setItem('9router_url', url);
+    localStorage.setItem('9router_url', url.trim());
+}
+
+export function getAllCandidateUrls(): string[] {
+    const custom = getNineRouterUrl().replace(/\/$/, '');
+    const pool = [
+        custom,
+        'https://rkjcu2n.abc-tunnel.us/v1',
+        'https://rkjcu2n.abc-tunnel.us',
+        'http://localhost:20128/v1',
+        'http://localhost:20128',
+        'http://localhost:2208/v1',
+        'http://localhost:2208',
+        'http://127.0.0.1:20128/v1',
+        'http://127.0.0.1:2208/v1'
+    ];
+    // Remove duplicados vazios ou repetidos
+    return Array.from(new Set(pool.filter(Boolean)));
 }
 
 export async function checkNineRouterHealth(): Promise<boolean> {
-    const url = getNineRouterUrl();
+    const candidates = getAllCandidateUrls();
     const key = getNineRouterKey();
-    try {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 6000);
-        const headers: Record<string, string> = {};
-        if (key) {
-            headers['Authorization'] = `Bearer ${key}`;
+
+    for (const rawUrl of candidates) {
+        const url = rawUrl.replace(/\/$/, '');
+        try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 4000);
+            const headers: Record<string, string> = {};
+            if (key) {
+                headers['Authorization'] = `Bearer ${key}`;
+            }
+
+            // Testa /models ou /v1/models dependendo de como a URL termina
+            const target = url.endsWith('/v1') ? `${url}/models` : `${url}/v1/models`;
+            const res = await fetch(target, {
+                method: 'GET',
+                headers,
+                signal: controller.signal
+            }).catch(() => null);
+
+            clearTimeout(timeoutId);
+            if (res && (res.ok || res.status === 200 || res.status === 401 || res.status === 404)) {
+                return true;
+            }
+        } catch {
+            // Continua para o próximo candidato
         }
-        const res = await fetch(`${url}/models`, {
-            method: 'GET',
-            headers,
-            signal: controller.signal
-        });
-        clearTimeout(timeoutId);
-        return res.ok;
-    } catch {
-        return false;
     }
+    return false;
 }
 
 export async function callNineRouter(
@@ -69,23 +102,7 @@ export async function callNineRouter(
     }
 
     const key = getNineRouterKey();
-    const configuredUrl = getNineRouterUrl();
-    const backupTunnelUrl = 'https://rkjcu2n.abc-tunnel.us/v1';
-
-    // Se estiver em HTTPS (Vercel), DEVE usar o túnel HTTPS primeiro para evitar bloqueio de Mixed Content
-    const isHttps = typeof window !== 'undefined' && window.location.protocol === 'https:';
-
-    const candidateUrls: string[] = [];
-    if (isHttps) {
-        if (backupTunnelUrl) candidateUrls.push(backupTunnelUrl);
-        if (configuredUrl.startsWith('https://') && !candidateUrls.includes(configuredUrl)) candidateUrls.push(configuredUrl);
-        if (!candidateUrls.includes(configuredUrl)) candidateUrls.push(configuredUrl);
-    } else {
-        if (configuredUrl) candidateUrls.push(configuredUrl);
-        if (backupTunnelUrl && !candidateUrls.includes(backupTunnelUrl)) candidateUrls.push(backupTunnelUrl);
-        if (!candidateUrls.includes('http://127.0.0.1:20128/v1')) candidateUrls.push('http://127.0.0.1:20128/v1');
-        if (!candidateUrls.includes('http://localhost:20128/v1')) candidateUrls.push('http://localhost:20128/v1');
-    }
+    const candidateUrls = getAllCandidateUrls();
 
     // Modelos ativos no 9Router:
     // 1. Combo customizado nexus-soberano (orquestrado no 9Router)
@@ -107,8 +124,12 @@ export async function callNineRouter(
         'gemini/gemma-4-31b-it'
     ];
 
-    for (const baseUrl of candidateUrls) {
-        const cleanBase = baseUrl.replace(/\/$/, '');
+    for (const rawUrl of candidateUrls) {
+        const cleanBase = rawUrl.replace(/\/$/, '');
+        const targetEndpoint = cleanBase.endsWith('/v1') 
+            ? `${cleanBase}/chat/completions` 
+            : `${cleanBase}/v1/chat/completions`;
+
         const headers: Record<string, string> = {
             'Content-Type': 'application/json'
         };
@@ -118,12 +139,11 @@ export async function callNineRouter(
 
         for (const modelName of candidateModels) {
             try {
-                if (onLog) onLog(`9Router testando modelo: ${modelName}...`, "9ROUTER");
+                if (onLog) onLog(`9Router [${cleanBase}] testando ${modelName}...`, "9ROUTER");
                 const controller = new AbortController();
-                // Timeout de 10 segundos para verificação ágil de pulso
-                const timeoutId = setTimeout(() => controller.abort(), 10000);
+                const timeoutId = setTimeout(() => controller.abort(), 12000);
 
-                const response = await fetch(`${cleanBase}/chat/completions`, {
+                const response = await fetch(targetEndpoint, {
                     method: 'POST',
                     headers,
                     body: JSON.stringify({
@@ -147,13 +167,13 @@ export async function callNineRouter(
                     }
                 } else {
                     const errText = await response.text().catch(() => '');
-                    console.warn(`[9ROUTER] (${modelName}): HTTP ${response.status}`, errText);
-                    if (onLog) onLog(`9Router (${modelName}) retornou HTTP ${response.status}. Tentando próximo...`, "9ROUTER");
+                    console.warn(`[9ROUTER] (${modelName} @ ${cleanBase}): HTTP ${response.status}`, errText);
+                    if (onLog) onLog(`9Router (${modelName}) retornou HTTP ${response.status}. Tentando rota seguinte...`, "9ROUTER");
                     if (response.status === 404 || response.status === 429 || response.status === 400 || response.status === 401 || response.status === 500) continue;
                 }
             } catch (error: any) {
                 console.warn(`[9ROUTER] Tentativa em ${cleanBase} (${modelName}) erro:`, error?.message || error);
-                if (onLog) onLog(`9Router (${modelName}) erro de rede/timeout (10s).`, "9ROUTER");
+                if (onLog) onLog(`9Router [${cleanBase}] (${modelName}) falha de conexão.`, "9ROUTER");
             }
         }
     }
