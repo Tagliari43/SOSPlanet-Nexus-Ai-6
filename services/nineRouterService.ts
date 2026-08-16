@@ -44,27 +44,25 @@ export function setNineRouterUrl(url: string): void {
 
 export function getAllCandidateUrls(): string[] {
     const custom = (getNineRouterUrl() || '').replace(/\/$/, '');
-    const isHttps = typeof window !== 'undefined' && window.location.protocol === 'https:';
 
     const pool: string[] = [];
 
-    // Se estiver em HTTPS (Vercel), o túnel HTTPS DEVE ser a primeira prioridade
-    // para evitar que o navegador bloqueie por Mixed Content (HTTP dentro de HTTPS)
-    if (isHttps) {
-        pool.push('https://rkjcu2n.abc-tunnel.us/v1');
-        pool.push('https://rkjcu2n.abc-tunnel.us');
-        if (custom.startsWith('https://')) {
-            pool.unshift(custom);
-        } else if (custom) {
-            pool.push(custom);
-        }
-    } else {
-        if (custom) pool.push(custom);
-        pool.push('http://localhost:20128/v1');
-        pool.push('http://127.0.0.1:20128/v1');
-        pool.push('https://rkjcu2n.abc-tunnel.us/v1');
-        pool.push('http://localhost:2208/v1');
-    }
+    // 1. Prioridade Absoluta: 9Remote Direto e URLs configuradas pelo Maestro
+    if (custom) pool.push(custom);
+    pool.push('http://localhost:2208/v1');
+    pool.push('http://localhost:2208');
+    pool.push('http://127.0.0.1:2208/v1');
+    pool.push('http://127.0.0.1:2208');
+
+    // 2. 9Router Local Direto
+    pool.push('http://localhost:20128/v1');
+    pool.push('http://localhost:20128');
+    pool.push('http://127.0.0.1:20128/v1');
+    pool.push('http://127.0.0.1:20128');
+
+    // 3. Ponte Túnel HTTPS
+    pool.push('https://rkjcu2n.abc-tunnel.us/v1');
+    pool.push('https://rkjcu2n.abc-tunnel.us');
 
     return Array.from(new Set(pool.filter(Boolean)));
 }
