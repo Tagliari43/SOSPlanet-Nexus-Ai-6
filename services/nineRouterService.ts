@@ -42,7 +42,7 @@ export async function checkNineRouterHealth(): Promise<boolean> {
     const key = getNineRouterKey();
     try {
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 1500);
+        const timeoutId = setTimeout(() => controller.abort(), 6000);
         const headers: Record<string, string> = {};
         if (key) {
             headers['Authorization'] = `Bearer ${key}`;
