@@ -1,5 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
+import { Eye, EyeOff } from 'lucide-react';
 import { loadFromStorage, saveToStorage } from '../utils/storage';
 import { loadApiKeys } from '../utils/keys';
 import { ReconProbe } from '../hooks/useOrchestrator';
@@ -75,6 +76,8 @@ const Arsenal: React.FC<ArsenalProps> = ({
     const [newKeyTargetUrl, setNewKeyTargetUrl] = useState('');
     const [newKeyEmail, setNewKeyEmail] = useState('');
     const [newKeyMethod, setNewKeyMethod] = useState<UserApiKey['method']>('bearer');
+    const [showNewKeyValue, setShowNewKeyValue] = useState(false);
+    const [visibleKeys, setVisibleKeys] = useState<Record<string, boolean>>({});
 
     // Estados da Forja/Cadastro
     const [newName, setNewName] = useState('');
@@ -234,37 +237,73 @@ const Arsenal: React.FC<ArsenalProps> = ({
 
                                 <div>
                                     <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest block mb-1">Chave / Token / Senha</label>
-                                    <input type="password" value={newKeyValue} onChange={e => setNewKeyValue(e.target.value)} placeholder="••••••••••••••••" className="w-full bg-black/40 border border-zinc-700 rounded-lg px-3 py-2 text-white text-sm" required />
+                                    <div className="relative">
+                                        <input 
+                                            type={showNewKeyValue ? "text" : "password"} 
+                                            value={newKeyValue} 
+                                            onChange={e => setNewKeyValue(e.target.value)} 
+                                            placeholder="••••••••••••••••" 
+                                            className="w-full bg-black/40 border border-zinc-700 rounded-lg pl-3 pr-10 py-2 text-white text-sm font-mono" 
+                                            required 
+                                        />
+                                        <button 
+                                            type="button" 
+                                            onClick={() => setShowNewKeyValue(!showNewKeyValue)} 
+                                            className="absolute right-2 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-amber-400 p-1 transition-colors"
+                                            title={showNewKeyValue ? "Ocultar chave" : "Exibir chave"}
+                                        >
+                                            {showNewKeyValue ? <EyeOff size={16} /> : <Eye size={16} />}
+                                        </button>
+                                    </div>
                                 </div>
                                 <button type="submit" className="w-full py-3 bg-amber-600 hover:bg-amber-500 text-white font-black rounded-xl shadow-lg transition-all text-xs uppercase tracking-widest">Cristalizar Chave</button>
                             </form>
                         </div>
                         <div className="lg:col-span-2 space-y-4">
                             <h3 className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.3em] mb-2">Chaves Ativas no Santuário</h3>
-                            {apiKeys.map(key => (
-                                <div key={key.id} className="bg-zinc-900/60 border border-zinc-800 rounded-2xl p-4 flex items-center justify-between group hover:border-amber-500/50 transition-all">
-                                    <div className="flex items-center gap-4">
-                                        <div className="w-10 h-10 rounded-xl bg-amber-900/20 border border-amber-500/30 flex items-center justify-center text-xl">
-                                            {key.method === 'navigation-credentials' ? '🌐' : '🗝️'}
-                                        </div>
-                                        <div>
-                                            <div className="flex items-center gap-2">
-                                                <h4 className="font-bold text-white">{key.service}</h4>
-                                                {key.method === 'navigation-credentials' && (
-                                                    <span className="text-[8px] bg-emerald-950/80 text-emerald-400 border border-emerald-500/40 px-2 py-0.5 rounded font-mono font-bold">PUPPETEER NAV</span>
+                            {apiKeys.map(key => {
+                                const isVisible = !!visibleKeys[key.id];
+                                return (
+                                    <div key={key.id} className="bg-zinc-900/60 border border-zinc-800 rounded-2xl p-4 flex items-center justify-between group hover:border-amber-500/50 transition-all">
+                                        <div className="flex items-center gap-4 min-w-0 flex-grow pr-3">
+                                            <div className="w-10 h-10 rounded-xl bg-amber-900/20 border border-amber-500/30 flex items-center justify-center text-xl flex-shrink-0">
+                                                {key.method === 'navigation-credentials' ? '🌐' : '🗝️'}
+                                            </div>
+                                            <div className="min-w-0 flex-grow">
+                                                <div className="flex items-center gap-2">
+                                                    <h4 className="font-bold text-white truncate">{key.service}</h4>
+                                                    {key.method === 'navigation-credentials' && (
+                                                        <span className="text-[8px] bg-emerald-950/80 text-emerald-400 border border-emerald-500/40 px-2 py-0.5 rounded font-mono font-bold flex-shrink-0">PUPPETEER NAV</span>
+                                                    )}
+                                                </div>
+                                                <div className="flex items-center gap-2 mt-0.5">
+                                                    <p className="text-[11px] font-mono text-zinc-400 break-all select-all">
+                                                        {key.emailIdentifier ? `${key.emailIdentifier} | ` : ''}
+                                                        {isVisible ? (
+                                                            <span className="text-amber-300 bg-black/40 px-1.5 py-0.5 rounded border border-amber-500/30 font-semibold">{key.key}</span>
+                                                        ) : (
+                                                            <span>••••••••{key.key.slice(-4)}</span>
+                                                        )}
+                                                        <span className="text-zinc-500 text-[10px] ml-1.5">| {key.method.toUpperCase()}</span>
+                                                    </p>
+                                                    <button 
+                                                        type="button"
+                                                        onClick={() => setVisibleKeys(prev => ({ ...prev, [key.id]: !prev[key.id] }))}
+                                                        className="p-1 rounded text-zinc-500 hover:text-amber-400 hover:bg-zinc-800 transition-colors flex-shrink-0"
+                                                        title={isVisible ? "Ocultar valor da chave" : "Visualizar valor completo da chave"}
+                                                    >
+                                                        {isVisible ? <EyeOff size={14} /> : <Eye size={14} />}
+                                                    </button>
+                                                </div>
+                                                {key.targetUrl && (
+                                                    <p className="text-[9px] font-mono text-emerald-500/80 truncate max-w-md mt-0.5">{key.targetUrl}</p>
                                                 )}
                                             </div>
-                                            <p className="text-[10px] font-mono text-zinc-500">
-                                                {key.emailIdentifier ? `${key.emailIdentifier} | ` : ''}••••••••{key.key.slice(-4)} | {key.method.toUpperCase()}
-                                            </p>
-                                            {key.targetUrl && (
-                                                <p className="text-[9px] font-mono text-emerald-500/80 truncate max-w-md">{key.targetUrl}</p>
-                                            )}
                                         </div>
+                                        <button onClick={() => handleRemoveKey(key.id)} className="p-2 text-zinc-600 hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100 flex-shrink-0" title="Remover chave">🗑️</button>
                                     </div>
-                                    <button onClick={() => handleRemoveKey(key.id)} className="p-2 text-zinc-600 hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100">🗑️</button>
-                                </div>
-                            ))}
+                                );
+                            })}
                         </div>
                     </div>
                 )}
