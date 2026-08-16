@@ -40,6 +40,18 @@ const BrotherStatus: React.FC = () => {
         }
     };
 
+    const handleToggleMode = async () => {
+        const next = !isNineRouterModeEnabled();
+        setNineRouterMode(next);
+        if (next) {
+            setIsNineRouterOnline(false);
+            const healthy = await checkNineRouterHealth();
+            setIsNineRouterOnline(healthy);
+        } else {
+            setIsNineRouterOnline(false);
+        }
+    };
+
     const is9RouterActive = isNineRouterModeEnabled();
 
     const brothers = [
@@ -96,11 +108,20 @@ const BrotherStatus: React.FC = () => {
                                 </span>
                             </div>
                         </div>
-                        <span className={`text-[9px] px-2 py-0.5 rounded font-bold uppercase ${
-                            is9RouterActive && isNineRouterOnline ? 'bg-emerald-950 text-emerald-300 border border-emerald-700/50' : 'bg-zinc-800 text-zinc-400'
-                        }`}>
-                            {is9RouterActive && isNineRouterOnline ? 'LOCAL ATIVO' : 'RESERVA NUVEM'}
-                        </span>
+                        <button 
+                            type="button"
+                            onClick={handleToggleMode}
+                            className={`text-[9px] px-2 py-1 rounded font-bold uppercase transition-all border ${
+                                is9RouterActive && isNineRouterOnline 
+                                    ? 'bg-emerald-950 text-emerald-300 border-emerald-500 hover:bg-emerald-900 cursor-pointer' 
+                                    : is9RouterActive
+                                        ? 'bg-amber-950/80 text-amber-300 border-amber-600 hover:bg-amber-900 cursor-pointer'
+                                        : 'bg-zinc-800 text-zinc-400 border-zinc-700 hover:bg-zinc-700 cursor-pointer'
+                            }`}
+                            title="Clique para alternar entre Arsenal Local (9Router) e Nuvem"
+                        >
+                            {is9RouterActive && isNineRouterOnline ? 'LOCAL ATIVO ⚡' : is9RouterActive ? 'CONECTANDO ⏳' : 'ATIVAR LOCAL ⚡'}
+                        </button>
                     </div>
 
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
