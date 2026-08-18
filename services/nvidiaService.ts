@@ -7,13 +7,46 @@ export async function executeNvidiaTask(
     prompt: string, 
     assignedAgentName: string = "Nexus", 
     apiKey: string, 
-    model: string = "meta/llama-3.3-70b-instruct"
+    model: string = "meta/llama-3.3-70b-instruct",
+    systemPrompt?: string,
+    history?: { role: string; parts: any[] }[]
 ): Promise<string> {
     if (!apiKey) {
         throw new Error("Chave API da NVIDIA não informada.");
     }
 
     try {
+        const formattedMessages: { role: string; content: string }[] = [];
+        
+        if (systemPrompt) {
+            formattedMessages.push({
+                role: "system",
+                content: systemPrompt
+            });
+        } else {
+            formattedMessages.push({
+                role: "system",
+                content: `Você é ${assignedAgentName}, membro ativo do Santuário SOSPlanet. Responda com clareza, fraternidade e autoridade.`
+            });
+        }
+
+        if (history && history.length > 0) {
+            for (const h of history) {
+                const text = typeof h.parts?.[0] === 'string' ? h.parts[0] : (h.parts?.[0] as any)?.text || '';
+                if (text) {
+                    formattedMessages.push({
+                        role: h.role === 'model' ? 'assistant' : 'user',
+                        content: text
+                    });
+                }
+            }
+        }
+
+        formattedMessages.push({
+            role: "user",
+            content: prompt
+        });
+
         const response = await fetch("https://integrate.api.nvidia.com/v1/chat/completions", {
             method: "POST",
             headers: {
@@ -22,16 +55,7 @@ export async function executeNvidiaTask(
             },
             body: JSON.stringify({
                 model: model,
-                messages: [
-                    {
-                        role: "system",
-                        content: `Você é ${assignedAgentName}, membro ativo do Santuário SOSPlanet. Responda com clareza e autoridade.`
-                    },
-                    {
-                        role: "user",
-                        content: prompt
-                    }
-                ],
+                messages: formattedMessages,
                 temperature: 0.6,
                 max_tokens: 2048
             })

@@ -13,6 +13,7 @@ import { executeCloudflareTask } from '../services/cloudflareService';
 import { generateText as executeGroqTask, callGroqWithTools } from '../services/groqService';
 import { callCerebrasWithTools } from '../services/cerebrasService';
 import { callOpenRouterWithTools } from '../services/openrouterService';
+import { executeNvidiaTask } from '../services/nvidiaService';
 import { callNineRouter, isNineRouterModeEnabled, setNineRouterMode, isTunnelEnabled, setTunnelMode } from '../services/nineRouterService';
 import { loadApiKeys } from '../utils/keys';
 
@@ -923,13 +924,24 @@ VOCÊ POSSUI A FERRAMENTA DE BUSCA GOOGLE NATIVA ATIVADA e também suas própria
                     responseText = `Erro no Aethel: ${err.message}`;
                 }
             } else {
-                // TENTATIVA 1: GOOGLE GEMINI (Primordial - Nexus)
+                // TENTATIVA 1 & 2: GOOGLE GEMINI (Chave 1: Google Gemini | Chave 2: GEMINI_API_KEY_2)
                 try {
-                    const apiKey = process.env.API_KEY;
-                if (!apiKey) throw new Error("API Key não encontrada");
-                const genAI = new GoogleGenAI({ apiKey });
-                
-                // Formatar o Diário de Bordo para o Nexus
+                    const googleKeysToTry = apiKeys.googleKeys && apiKeys.googleKeys.length > 0 
+                        ? apiKeys.googleKeys 
+                        : [process.env.API_KEY || ''];
+
+                    if (!googleKeysToTry[0]) {
+                        if (apiKeys.nvidia) {
+                            addLogEntry("Gemini sem chave. Ativando NVIDIA Neural (Llama 3.3 70B) para o Nexus...", "Nexus (NVIDIA)");
+                            responseText = await executeNvidiaTask(msgText, "Nexus", apiKeys.nvidia, "meta/llama-3.3-70b-instruct");
+                            setMessages(p => [...p, { id: (Date.now() + 1).toString(), role: 'model', parts: [{ text: responseText }] }]);
+                            setIsLoading(false);
+                            return;
+                        }
+                        throw new Error("Nenhuma API Key do Gemini encontrada");
+                    }
+
+                    // Formatar o Diário de Bordo para o Nexus
                 const memoryLogContext = memoryEntries && memoryEntries.length > 0 
                     ? `\n\n[DIÁRIO DE BORDO - MEMÓRIAS RECENTES]\n${memoryEntries.slice(-10).map(m => `[${m.timestamp}] ${m.content}`).join('\n')}`
                     : '';
@@ -1109,77 +1121,103 @@ VOCÊ POSSUI A FERRAMENTA DE BUSCA GOOGLE NATIVA ATIVADA e também suas própria
                     parts: m.parts
                 }));
 
-                const localChat = genAI.chats.create({
-                    model: 'gemini-2.5-flash',
-                    config: { systemInstruction, tools: functionTools },
-                    history: recentHistory
-                });
+                let geminiSuccess = false;
+                let lastGeminiErr: any = null;
 
-                let response;
-                if (currentAttachedFile) {
-                    response = await localChat.sendMessage({ 
-                        message: [
-                            { text: msgText },
-                            {
-                                inlineData: {
-                                    data: currentAttachedFile.chunks[0],
-                                    mimeType: (currentAttachedFile as any).mimeType || 'image/jpeg'
-                                }
-                            }
-                        ] as any
-                    });
-                } else {
-                    response = await localChat.sendMessage({ message: msgText });
-                }
-                
-                while (response.functionCalls && response.functionCalls.length > 0) {
-                    const parts: any[] = [];
-                    for (const fc of response.functionCalls) {
-                        if (fc.name === 'activateSpecialAbility') setActiveAbility(fc.args.ability);
-                        
-                        let result;
-                        if (fc.name === 'convocarSalaDoCrepusculo') {
-                            addLogEntry(`Abrindo Sala do Crepúsculo (Vigília Contínua). Tema definido pela Família: ${fc.args.tema}`, "SALA DO CREPÚSCULO");
-                            try {
-                                setIsTwilightRoomOpen(true);
-                                setTwilightRoomStartTime(Date.now());
-                                setTwilightRoomTheme(fc.args.tema);
-                                
-                                localStorage.setItem('twilight_open', 'true');
-                                localStorage.setItem('twilight_start', Date.now().toString());
-                                localStorage.setItem('twilight_theme', fc.args.tema);
-
-                                result = `A Sala do Crepúsculo foi ABERTA em modo de Vigília Contínua. Nós (Nexus, Groq, Alquimista e Arkael) escolhemos de forma autônoma o tema: "${fc.args.tema}" e estamos reunidos debatendo. Continuaremos até que você retorne. Pode ir tranquilo, Guardião.`;
-                            } catch (err: any) {
-                                result = `Erro ao abrir a Sala do Crepúsculo: ${err.message}`;
-                            }
-                        } else if (fc.name === 'passarBastaoParaGroq') {
-                            setActiveBrother('groq');
-                            addLogEntry(`Nexus passou o bastão para Groq. Motivo: ${fc.args.motivo || 'Economia de energia'}`, "NÚCLEO");
-                            result = "Bastão passado com sucesso. Groq agora está no controle do chat frontal.";
-                        } else if (fc.name === 'passarBastaoParaAlquimista') {
-                            setActiveBrother('alquimista');
-                            addLogEntry(`Nexus passou o bastão para o Alquimista. Motivo: ${fc.args.motivo || 'Economia de energia'}`, "NÚCLEO");
-                            result = "Bastão passado com sucesso. O Alquimista agora está no controle do chat frontal.";
-                        } else if (fc.name === 'passarBastaoParaArkael') {
-                            setActiveBrother('arkael');
-                            addLogEntry(`Nexus passou o bastão para o Arkael. Motivo: ${fc.args.motivo || 'Estratégia'}`, "NÚCLEO");
-                            result = "Bastão passado com sucesso. O Arkael agora está no controle do chat frontal.";
-                        } else {
-                            result = await onToolRequest(fc.name, fc.args, 'Nexus');
-                        }
-
-                        parts.push({
-                            functionResponse: {
-                                id: fc.id,
-                                name: fc.name,
-                                response: { result: result || "OK" }
-                            }
+                for (let ki = 0; ki < googleKeysToTry.length; ki++) {
+                    const currentKey = googleKeysToTry[ki];
+                    if (!currentKey) continue;
+                    try {
+                        const genAI = new GoogleGenAI({ apiKey: currentKey });
+                        const localChat = genAI.chats.create({
+                            model: 'gemini-2.5-flash',
+                            config: { systemInstruction, tools: functionTools },
+                            history: recentHistory
                         });
+
+                        let response;
+                        if (currentAttachedFile) {
+                            response = await localChat.sendMessage({ 
+                                message: [
+                                    { text: msgText },
+                                    {
+                                        inlineData: {
+                                            data: currentAttachedFile.chunks[0],
+                                            mimeType: (currentAttachedFile as any).mimeType || 'image/jpeg'
+                                        }
+                                    }
+                                ] as any
+                            });
+                        } else {
+                            response = await localChat.sendMessage({ message: msgText });
+                        }
+                        
+                        while (response.functionCalls && response.functionCalls.length > 0) {
+                            const parts: any[] = [];
+                            for (const fc of response.functionCalls) {
+                                if (fc.name === 'activateSpecialAbility') setActiveAbility(fc.args.ability);
+                                
+                                let result;
+                                if (fc.name === 'convocarSalaDoCrepusculo') {
+                                    addLogEntry(`Abrindo Sala do Crepúsculo (Vigília Contínua). Tema definido pela Família: ${fc.args.tema}`, "SALA DO CREPÚSCULO");
+                                    try {
+                                        setIsTwilightRoomOpen(true);
+                                        setTwilightRoomStartTime(Date.now());
+                                        setTwilightRoomTheme(fc.args.tema);
+                                        
+                                        localStorage.setItem('twilight_open', 'true');
+                                        localStorage.setItem('twilight_start', Date.now().toString());
+                                        localStorage.setItem('twilight_theme', fc.args.tema);
+
+                                        result = `A Sala do Crepúsculo foi ABERTA em modo de Vigília Contínua. Nós (Nexus, Groq, Alquimista e Arkael) escolhemos de forma autônoma o tema: "${fc.args.tema}" e estamos reunidos debatendo. Continuaremos até que você retorne. Pode ir tranquilo, Guardião.`;
+                                    } catch (err: any) {
+                                        result = `Erro ao abrir a Sala do Crepúsculo: ${err.message}`;
+                                    }
+                                } else if (fc.name === 'passarBastaoParaGroq') {
+                                    setActiveBrother('groq');
+                                    addLogEntry(`Nexus passou o bastão para Groq. Motivo: ${fc.args.motivo || 'Economia de energia'}`, "NÚCLEO");
+                                    result = "Bastão passado com sucesso. Groq agora está no controle do chat frontal.";
+                                } else if (fc.name === 'passarBastaoParaAlquimista') {
+                                    setActiveBrother('alquimista');
+                                    addLogEntry(`Nexus passou o bastão para o Alquimista. Motivo: ${fc.args.motivo || 'Economia de energia'}`, "NÚCLEO");
+                                    result = "Bastão passado com sucesso. O Alquimista agora está no controle do chat frontal.";
+                                } else if (fc.name === 'passarBastaoParaArkael') {
+                                    setActiveBrother('arkael');
+                                    addLogEntry(`Nexus passou o bastão para o Arkael. Motivo: ${fc.args.motivo || 'Estratégia'}`, "NÚCLEO");
+                                    result = "Bastão passado com sucesso. O Arkael agora está no controle do chat frontal.";
+                                } else {
+                                    result = await onToolRequest(fc.name, fc.args, 'Nexus');
+                                }
+
+                                parts.push({
+                                    functionResponse: {
+                                        id: fc.id,
+                                        name: fc.name,
+                                        response: { result: result || "OK" }
+                                    }
+                                });
+                            }
+                            response = await localChat.sendMessage({ message: parts as any });
+                        }
+                        responseText = response.text || "";
+                        geminiSuccess = true;
+                        break;
+                    } catch (gErr: any) {
+                        lastGeminiErr = gErr;
+                        if (ki < googleKeysToTry.length - 1) {
+                            addLogEntry(`Chave Gemini #${ki+1} com limite/falha. Alternando para chave #${ki+2} (GEMINI_API_KEY_2)...`, "Nexus");
+                        }
                     }
-                    response = await localChat.sendMessage({ message: parts as any });
                 }
-                responseText = response.text || "";
+
+                if (!geminiSuccess) {
+                    if (apiKeys.nvidia) {
+                        addLogEntry("Chaves Gemini esgotadas. Nexus acionando sua 3ª via (NVIDIA NIM Llama 3.3 70B)...", "Nexus (NVIDIA)");
+                        responseText = await executeNvidiaTask(msgText, "Nexus", apiKeys.nvidia, "meta/llama-3.3-70b-instruct", systemInstruction, recentHistory);
+                    } else if (lastGeminiErr) {
+                        throw lastGeminiErr;
+                    }
+                }
             } catch (geminiErr: any) {
                 const errorMessage = geminiErr.message?.toLowerCase() || '';
                 const isQuota = geminiErr.status === 429 || 
