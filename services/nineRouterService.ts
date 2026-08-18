@@ -17,6 +17,9 @@ export function setNineRouterMode(enabled: boolean): void {
     } else {
         localStorage.removeItem('santuario_9router_mode');
     }
+    if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('9router-mode-change', { detail: { enabled } }));
+    }
 }
 
 // Modo Túnel: Desligado por padrão, ativado apenas se o usuário pedir explicitamente
@@ -29,6 +32,9 @@ export function setTunnelMode(enabled: boolean): void {
         localStorage.setItem('santuario_tunnel_enabled', 'true');
     } else {
         localStorage.removeItem('santuario_tunnel_enabled');
+    }
+    if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('9router-mode-change', { detail: { tunnelEnabled: enabled } }));
     }
 }
 

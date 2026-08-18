@@ -21,17 +21,26 @@ const RouterPanel: React.FC<RouterPanelProps> = ({ pontes = [] }) => {
 
     useEffect(() => {
         let isMounted = true;
-        checkNineRouterHealth().then(status => {
-            if (isMounted) setIsOnline9R(status);
-        });
-        const interval = setInterval(() => {
+        const updateStatus = () => {
+            const active = isNineRouterModeEnabled();
+            if (isMounted) setNineRouterActive(active);
             checkNineRouterHealth().then(status => {
                 if (isMounted) setIsOnline9R(status);
             });
-        }, 15000);
+        };
+
+        updateStatus();
+        const interval = setInterval(updateStatus, 10000);
+
+        const handleSync = () => {
+            updateStatus();
+        };
+        window.addEventListener('9router-mode-change', handleSync);
+
         return () => {
             isMounted = false;
             clearInterval(interval);
+            window.removeEventListener('9router-mode-change', handleSync);
         };
     }, [nineRouterUrl]);
 
@@ -68,17 +77,17 @@ const RouterPanel: React.FC<RouterPanelProps> = ({ pontes = [] }) => {
                         <span className="text-base">⚡</span>
                         <div>
                             <div className="flex items-center gap-1.5">
-                                <span className="text-xs font-bold text-white">Modo Laboratório (9Router)</span>
+                                <span className="text-xs font-bold text-white">9Remote / 9Router Local</span>
                                 <span className={`text-[9px] font-bold px-1.5 py-0.2 rounded border ${
                                     isOnline9R 
                                         ? 'bg-emerald-950/60 border-emerald-500 text-emerald-300' 
                                         : 'bg-zinc-900 border-zinc-700 text-zinc-400'
                                 }`}>
-                                    {isOnline9R ? 'ONLINE' : 'OFFLINE / ESPERA'}
+                                    {isOnline9R ? 'ONLINE (2208/20128)' : 'OFFLINE / ESPERA'}
                                 </span>
                             </div>
                             <p className="text-[10px] text-zinc-400 font-mono truncate max-w-[200px]">
-                                {nineRouterUrl}
+                                {nineRouterUrl || 'http://localhost:2208'}
                             </p>
                         </div>
                     </div>

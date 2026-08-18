@@ -502,42 +502,107 @@ Tema em debate: ${fc.args.tema}`;
         const currentAttachedFile = attachedFile;
         setAttachedFile(null);
         
-        // Comandos rápidos de controle do Modo Laboratório / 9Remote e Ponte Túnel
-        const lowerMsg = msgText.toLowerCase();
-        if (lowerMsg.includes('ative o 9remote') || lowerMsg.includes('ativar 9remote') || lowerMsg.includes('ative o modo laboratorio') || lowerMsg.includes('ativar modo laboratorio') || lowerMsg.includes('ative o 9router') || lowerMsg.includes('ativar 9router')) {
-            setNineRouterMode(true);
-            setActiveBrother('nexus');
-            const confirmation = "⚡ [SANTUÁRIO - 9REMOTE / MODO LABORATÓRIO ATIVADO]\n\nMaestro Éder, o 9Remote foi ATIVADO como rota prioritária (porta 2208/20128)! Se não houver resposta em 6 segundos, o Santuário fará fallback instantâneo para o nosso roteador nativo da nuvem sem travar o chat.";
-            setMessages(p => [...p, { id: (Date.now() + 1).toString(), role: 'model', parts: [{ text: confirmation }] }]);
-            addLogEntry("9Remote / Modo Laboratório ATIVADO pelo Guardião.", "9Remote");
-            setIsLoading(false);
-            return;
-        }
+        // Comandos rápidos e universais de controle do 9Remote / Modo Laboratório e Ponte Túnel
+        const lowerMsg = msgText.toLowerCase().trim();
 
-        if (lowerMsg.includes('desative o 9remote') || lowerMsg.includes('desativar 9remote') || lowerMsg.includes('desative o modo laboratorio') || lowerMsg.includes('desativar modo laboratorio') || lowerMsg.includes('desative o 9router') || lowerMsg.includes('desativar 9router')) {
-            setNineRouterMode(false);
-            const confirmation = "🛡️ [SANTUÁRIO - 9REMOTE DESATIVADO]\n\nMaestro Éder, o 9Remote foi desativado. O Santuário está usando 100% o nosso roteador nativo oficial.";
-            setMessages(p => [...p, { id: (Date.now() + 1).toString(), role: 'model', parts: [{ text: confirmation }] }]);
-            addLogEntry("9Remote DESATIVADO. Roteador Nativo em comando total.", "Santuário");
-            setIsLoading(false);
-            return;
-        }
+        // Checagem de ativação do 9Remote / 9Router
+        const isActivating9Remote = 
+            lowerMsg.includes('ativo o 9remoto') ||
+            lowerMsg.includes('ativo o 9remote') ||
+            lowerMsg.includes('ative o 9remoto') ||
+            lowerMsg.includes('ative o 9remote') ||
+            lowerMsg.includes('ativar 9remoto') ||
+            lowerMsg.includes('ativar 9remote') ||
+            lowerMsg.includes('ligar 9remote') ||
+            lowerMsg.includes('ligar 9remoto') ||
+            lowerMsg.includes('conectar 9remote') ||
+            lowerMsg.includes('conectar 9remoto') ||
+            lowerMsg.includes('usar 9remote') ||
+            lowerMsg.includes('usar 9remoto') ||
+            lowerMsg.includes('ative o modo laboratorio') ||
+            lowerMsg.includes('ativar modo laboratorio') ||
+            lowerMsg.includes('ativo o modo laboratorio') ||
+            lowerMsg.includes('ative o 9router') ||
+            lowerMsg.includes('ativar 9router') ||
+            lowerMsg.includes('ativo o 9router') ||
+            /(ativ(ar|e|o)|lig(ar|e|o)|conect(ar|e|o)|inici(ar|e|o)|us(ar|e|o))\s+(o\s+)?(9\s*remot[eo]|9\s*router|modo\s*laborat[oó]rio|remot[eo])/i.test(msgText);
 
-        if (lowerMsg.includes('ative o tunel') || lowerMsg.includes('ativar tunel') || lowerMsg.includes('ative a ponte tunel') || lowerMsg.includes('ativar a ponte tunel')) {
+        // Checagem de desativação do 9Remote / 9Router
+        const isDeactivating9Remote =
+            lowerMsg.includes('desativo o 9remoto') ||
+            lowerMsg.includes('desativo o 9remote') ||
+            lowerMsg.includes('desative o 9remoto') ||
+            lowerMsg.includes('desative o 9remote') ||
+            lowerMsg.includes('desativar 9remoto') ||
+            lowerMsg.includes('desativar 9remote') ||
+            lowerMsg.includes('desligar 9remote') ||
+            lowerMsg.includes('desligar 9remoto') ||
+            lowerMsg.includes('desconectar 9remote') ||
+            lowerMsg.includes('desconectar 9remoto') ||
+            lowerMsg.includes('desative o modo laboratorio') ||
+            lowerMsg.includes('desativar modo laboratorio') ||
+            lowerMsg.includes('desativo o modo laboratorio') ||
+            lowerMsg.includes('desative o 9router') ||
+            lowerMsg.includes('desativar 9router') ||
+            lowerMsg.includes('desativo o 9router') ||
+            /(desativ(ar|e|o)|deslig(ar|e|o)|desconect(ar|e|o)|par(ar|e|o))\s+(o\s+)?(9\s*remot[eo]|9\s*router|modo\s*laborat[oó]rio|remot[eo])/i.test(msgText);
+
+        // Checagem de ativação do Túnel
+        const isActivatingTunnel =
+            lowerMsg.includes('ative o tunel') ||
+            lowerMsg.includes('ativar tunel') ||
+            lowerMsg.includes('ativo o tunel') ||
+            lowerMsg.includes('ative a ponte tunel') ||
+            lowerMsg.includes('ativar a ponte tunel') ||
+            lowerMsg.includes('ativo a ponte tunel') ||
+            /(ativ(ar|e|o)|lig(ar|e|o)|conect(ar|e|o)|us(ar|e|o))\s+(o\s+|a\s+ponte\s+)?(t[uú]nel|ponte\s*t[uú]nel)/i.test(msgText);
+
+        // Checagem de desativação do Túnel
+        const isDeactivatingTunnel =
+            lowerMsg.includes('desative o tunel') ||
+            lowerMsg.includes('desativar tunel') ||
+            lowerMsg.includes('desativo o tunel') ||
+            lowerMsg.includes('desative a ponte tunel') ||
+            lowerMsg.includes('desativar a ponte tunel') ||
+            lowerMsg.includes('desativo a ponte tunel') ||
+            /(desativ(ar|e|o)|deslig(ar|e|o)|desconect(ar|e|o))\s+(o\s+|a\s+ponte\s+)?(t[uú]nel|ponte\s*t[uú]nel)/i.test(msgText);
+
+        if (isActivatingTunnel) {
             setTunnelMode(true);
             setNineRouterMode(true);
-            const confirmation = "🌐 [SANTUÁRIO - PONTE TÚNEL ATIVADA]\n\nA rota do Túnel HTTPS (abc-tunnel.us) foi ATIVADA sob sua ordem expressa! As requisições passarão pela ponte segura.";
+            const confirmation = "🌐 [SANTUÁRIO - PONTE TÚNEL ATIVADA]\n\nMaestro Éder, a rota do Túnel HTTPS (abc-tunnel.us) foi ATIVADA sob sua ordem expressa! As requisições passarão pela ponte remota.";
             setMessages(p => [...p, { id: (Date.now() + 1).toString(), role: 'model', parts: [{ text: confirmation }] }]);
             addLogEntry("Ponte Túnel ATIVADA sob comando do Guardião.", "Túnel");
             setIsLoading(false);
             return;
         }
 
-        if (lowerMsg.includes('desative o tunel') || lowerMsg.includes('desativar tunel') || lowerMsg.includes('desative a ponte tunel') || lowerMsg.includes('desativar a ponte tunel')) {
+        if (isDeactivatingTunnel) {
             setTunnelMode(false);
-            const confirmation = "🔒 [SANTUÁRIO - PONTE TÚNEL DESATIVADA]\n\nA rota do Túnel foi desativada. As chamadas voltarão ao 9Remote local direto (2208/20128).";
+            const confirmation = "🔒 [SANTUÁRIO - PONTE TÚNEL DESATIVADA]\n\nMaestro Éder, a rota do Túnel foi desativada. As chamadas voltarão ao 9Remote local direto (2208/20128).";
             setMessages(p => [...p, { id: (Date.now() + 1).toString(), role: 'model', parts: [{ text: confirmation }] }]);
             addLogEntry("Ponte Túnel DESATIVADA.", "Túnel");
+            setIsLoading(false);
+            return;
+        }
+
+        if (isActivating9Remote) {
+            setTunnelMode(false); // Garante que NÃO vai pelo túnel, vai pelo 9Remote direto (2208)
+            setNineRouterMode(true);
+            setActiveBrother('nexus');
+            const confirmation = "⚡ [SANTUÁRIO - 9REMOTE ATIVADO]\n\nMaestro Éder, o 9Remote foi ATIVADO com sucesso como rota prioritária (porta 2208 / 20128)! O Túnel está DESLIGADO, operando 100% pelo seu 9Remote direto. Se a conexão local não responder em 6 segundos, o Santuário fará fallback suave para a nuvem sem travar.";
+            setMessages(p => [...p, { id: (Date.now() + 1).toString(), role: 'model', parts: [{ text: confirmation }] }]);
+            addLogEntry("9Remote ATIVADO pelo Guardião (Túnel desligado, porta 2208 ativa).", "9Remote");
+            setIsLoading(false);
+            return;
+        }
+
+        if (isDeactivating9Remote) {
+            setNineRouterMode(false);
+            setTunnelMode(false);
+            const confirmation = "🛡️ [SANTUÁRIO - 9REMOTE DESATIVADO]\n\nMaestro Éder, o 9Remote foi desativado. O Santuário voltou a usar 100% o nosso roteador nativo oficial da nuvem.";
+            setMessages(p => [...p, { id: (Date.now() + 1).toString(), role: 'model', parts: [{ text: confirmation }] }]);
+            addLogEntry("9Remote DESATIVADO. Roteador Nativo em comando total.", "Santuário");
             setIsLoading(false);
             return;
         }

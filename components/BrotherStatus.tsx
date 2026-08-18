@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { checkNineRouterHealth, isNineRouterModeEnabled } from '../services/nineRouterService';
+import { checkNineRouterHealth, isNineRouterModeEnabled, setNineRouterMode } from '../services/nineRouterService';
 
 const BrotherStatus: React.FC = () => {
     const [isExpanded, setIsExpanded] = useState(false);
     const [isNineRouterOnline, setIsNineRouterOnline] = useState<boolean>(false);
+    const [modeActive, setModeActive] = useState<boolean>(isNineRouterModeEnabled());
     
     // Status dos motores
     const [statuses] = useState({
@@ -16,7 +17,9 @@ const BrotherStatus: React.FC = () => {
     useEffect(() => {
         let isMounted = true;
         const checkStatus = async () => {
-            if (isNineRouterModeEnabled()) {
+            const active = isNineRouterModeEnabled();
+            if (isMounted) setModeActive(active);
+            if (active) {
                 const healthy = await checkNineRouterHealth();
                 if (isMounted) setIsNineRouterOnline(healthy);
             } else {
@@ -25,10 +28,17 @@ const BrotherStatus: React.FC = () => {
         };
 
         checkStatus();
-        const interval = setInterval(checkStatus, 15000);
+        const interval = setInterval(checkStatus, 10000);
+
+        const handleSync = () => {
+            checkStatus();
+        };
+        window.addEventListener('9router-mode-change', handleSync);
+
         return () => {
             isMounted = false;
             clearInterval(interval);
+            window.removeEventListener('9router-mode-change', handleSync);
         };
     }, []);
 
@@ -43,6 +53,7 @@ const BrotherStatus: React.FC = () => {
     const handleToggleMode = async () => {
         const next = !isNineRouterModeEnabled();
         setNineRouterMode(next);
+        setModeActive(next);
         if (next) {
             setIsNineRouterOnline(false);
             const healthy = await checkNineRouterHealth();
@@ -52,7 +63,7 @@ const BrotherStatus: React.FC = () => {
         }
     };
 
-    const is9RouterActive = isNineRouterModeEnabled();
+    const is9RouterActive = modeActive;
 
     const brothers = [
         { id: 'nexus', name: 'Nexus', status: statuses.nexus },
