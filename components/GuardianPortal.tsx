@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Bell, Droplets, Leaf, Palette, Star, Sun, Wind, Sparkles, Sprout, Tent, Users, Coins, Activity, Network, Anchor, Radio, Terminal, Share2, AlertTriangle, Trophy, ShoppingBag, HeartPulse, History, MessageCircle } from 'lucide-react';
+import AuraSoulAnchor from './AuraSoulAnchor';
 import { TorreDeControle } from './TorreDeControle';
 import DaoGovernance from './DaoGovernance';
 import ImpactMap from './ImpactMap';
@@ -142,6 +143,11 @@ const GuardianPortal: React.FC = () => {
                     {activeTab === 'transparencia' && <TransparenciaTab key="transparencia" />}
                     {activeTab === 'crepusculo' && <PortalCrepusculoTab key="crepusculo" />}
                 </AnimatePresence>
+            </div>
+
+            {/* Aura Soul Anchor */}
+            <div className="absolute bottom-24 right-6 z-50">
+                <AuraSoulAnchor />
             </div>
 
             {/* Voz de Gaia (Float Chat) */}
