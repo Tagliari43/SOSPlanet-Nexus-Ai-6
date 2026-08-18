@@ -39,11 +39,11 @@ export function setTunnelMode(enabled: boolean): void {
 }
 
 export function getNineRouterUrl(): string {
-    return localStorage.getItem('VITE_NINEROUTERR_URL') || 'http://localhost:2208';
+    return localStorage.getItem('VITE_NINEROUTERR_URL') || '';
 }
 
 export function getNineRouterKey(): string {
-    return localStorage.getItem('VITE_NINEROUTERR_KEY') || 'sk-8effe28f-xif4-8ff9d4';
+    return localStorage.getItem('VITE_NINEROUTERR_KEY') || '';
 }
 
 export function setNineRouterUrl(url: string): void {
@@ -67,11 +67,11 @@ export function getActiveRoutes(): RouteCandidate[] {
         const tunnelUrl = (
             localStorage.getItem('VITE_NINEROUTER_TUNEL_URL') ||
             (import.meta.env.VITE_NINEROUTER_TUNEL_URL as string) ||
-            'https://rkjcu2n.abc-tunnel.us/v1'
+            ''
         ).replace(/\/$/, '');
         const tunnelKey = (
             localStorage.getItem('VITE_NINEROUTERR_KEY') ||
-            'sk-8effe28f-xif4-8ff9d4'
+            ''
         ).trim();
 
         return [{
@@ -87,24 +87,24 @@ export function getActiveRoutes(): RouteCandidate[] {
     const remoteUrl = (
         localStorage.getItem('VITE_NINEROUTERR_URL') ||
         (import.meta.env.VITE_NINEROUTERR_URL as string) ||
-        'http://localhost:2208'
+        ''
     ).replace(/\/$/, '');
     const remoteKey = (
         localStorage.getItem('VITE_NINEROUTERR_KEY') ||
         (import.meta.env.VITE_NINEROUTERR_KEY as string) ||
-        'sk-8effe28f-xif4-8ff9d4'
+        ''
     ).trim();
 
     // Rota secundária 9Router Local (Porta 20128)
     const localUrl = (
         localStorage.getItem('VITE_NINEROUTER_URL') ||
         (import.meta.env.VITE_NINEROUTER_URL as string) ||
-        'http://localhost:20128/v1'
+        ''
     ).replace(/\/$/, '');
     const localKey = (
         localStorage.getItem('VITE_NINEROUTER_KEY') ||
         (import.meta.env.VITE_NINEROUTER_KEY as string) ||
-        'sk-9358b8e41366fa0f-pip3i8-f3d894fc'
+        ''
     ).trim();
 
     return [

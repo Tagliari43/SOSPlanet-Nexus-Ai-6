@@ -91,9 +91,9 @@ const INITIAL_USER_KEYS: UserApiKey[] = [
     { id: 'scraper-api-key', service: 'Scraper API (Navegador)', key: process.env.SCRAPER_API_KEY || '', method: 'bearer' },
     { id: 'cerebras-default', service: 'Cerebras API', key: '', method: 'bearer' },
     { id: 'openrouter-default', service: 'OpenRouter API', key: '', method: 'bearer' },
-    { id: '9router-remote-key', service: 'VITE_NINEROUTERR_KEY (9Remote)', key: 'sk-8effe28f-xif4-8ff9d4', targetUrl: 'http://localhost:2208', method: 'bearer' },
-    { id: '9router-local-key', service: 'VITE_NINEROUTER_KEY (9Router)', key: 'sk-9358b8e41366fa0f-pip3i8-f3d894fc', targetUrl: 'http://localhost:20128/v1', method: 'bearer' },
-    { id: '9router-tunnel-key', service: 'VITE_NINEROUTER_TUNEL_URL (Túnel)', key: 'sk-8effe28f-xif4-8ff9d4', targetUrl: 'https://rkjcu2n.abc-tunnel.us/v1', method: 'bearer' }
+    { id: '9router-remote-key', service: 'VITE_NINEROUTERR_KEY (9Remote)', key: '', targetUrl: '', method: 'bearer' },
+    { id: '9router-local-key', service: 'VITE_NINEROUTER_KEY (9Router)', key: '', targetUrl: '', method: 'bearer' },
+    { id: '9router-tunnel-key', service: 'VITE_NINEROUTER_TUNEL_URL (Túnel)', key: '', targetUrl: '', method: 'bearer' }
 ];
 
 const App: React.FC = () => {
@@ -148,20 +148,17 @@ const App: React.FC = () => {
                 modified = true;
             }
 
-            // 4. Ensure 9Router, 9Remote & Tunnel credentials exist in Cofre
+            // 4. Ensure 9Router slots exist but don't force values
             const default9RouterItems: UserApiKey[] = [
-                { id: '9router-remote-key', service: 'VITE_NINEROUTERR_KEY (9Remote)', key: 'sk-8effe28f-xif4-8ff9d4', targetUrl: 'http://localhost:2208', method: 'bearer' },
-                { id: '9router-local-key', service: 'VITE_NINEROUTER_KEY (9Router)', key: 'sk-9358b8e41366fa0f-pip3i8-f3d894fc', targetUrl: 'http://localhost:20128/v1', method: 'bearer' },
-                { id: '9router-tunnel-key', service: 'VITE_NINEROUTER_TUNEL_URL (Túnel)', key: 'sk-8effe28f-xif4-8ff9d4', targetUrl: 'https://rkjcu2n.abc-tunnel.us/v1', method: 'bearer' }
+                { id: '9router-remote-key', service: 'VITE_NINEROUTERR_KEY (9Remote)', key: '', targetUrl: '', method: 'bearer' },
+                { id: '9router-local-key', service: 'VITE_NINEROUTER_KEY (9Router)', key: '', targetUrl: '', method: 'bearer' },
+                { id: '9router-tunnel-key', service: 'VITE_NINEROUTER_TUNEL_URL (Túnel)', key: '', targetUrl: '', method: 'bearer' }
             ];
 
             for (const item of default9RouterItems) {
                 const existingIndex = newKeys.findIndex(k => k.id === item.id || k.service === item.service);
                 if (existingIndex === -1) {
                     newKeys.push(item);
-                    modified = true;
-                } else if (!newKeys[existingIndex].key || newKeys[existingIndex].key.trim() === '') {
-                    newKeys[existingIndex] = { ...newKeys[existingIndex], ...item };
                     modified = true;
                 }
             }
