@@ -39,90 +39,56 @@ export function setTunnelMode(enabled: boolean): void {
 }
 
 export function getNineRouterUrl(): string {
-    return localStorage.getItem('VITE_NINEROUTERR_URL') || '';
+    return localStorage.getItem('VITE_NINEROUTER_URL') || 
+           localStorage.getItem('9router_url') || 
+           localStorage.getItem('VITE_NINEROUTERR_URL') || 
+           (import.meta.env.VITE_NINEROUTER_URL as string) || 
+           '';
 }
 
 export function getNineRouterKey(): string {
-    return localStorage.getItem('VITE_NINEROUTERR_KEY') || '';
+    return localStorage.getItem('VITE_NINEROUTER_KEY') || 
+           localStorage.getItem('9router_key') || 
+           localStorage.getItem('VITE_NINEROUTERR_KEY') || 
+           (import.meta.env.VITE_NINEROUTER_KEY as string) || 
+           '';
 }
 
 export function setNineRouterUrl(url: string): void {
-    localStorage.setItem('9router_url', url.trim());
+    const cleanUrl = url.trim();
+    localStorage.setItem('VITE_NINEROUTER_URL', cleanUrl);
+    localStorage.setItem('9router_url', cleanUrl);
 }
 
 export function setNineRouterKey(key: string): void {
-    localStorage.setItem('9router_key', key.trim());
+    const cleanKey = key.trim();
+    localStorage.setItem('VITE_NINEROUTER_KEY', cleanKey);
+    localStorage.setItem('9router_key', cleanKey);
 }
 
 /**
- * Retorna a rota ativa com base no que o usuário habilitou:
- * - Se túnel estiver explicitamente ligado: usa o túnel HTTPS.
- * - Caso padrão: usa a ponte direta do 9Remote (porta 2208) ou 9Router (porta 20128).
+ * Retorna a rota ativa configurada pelo Guardião:
+ * - Se nenhuma URL estiver configurada no Arsenal/Cofre, retorna vazio (sem fallbacks fantasmas).
+ * - Usa exclusivamente a URL e Chave validadas e salvas nesta sessão.
  */
 export function getActiveRoutes(): RouteCandidate[] {
-    const tunnelActive = isTunnelEnabled();
+    const rawUrl = getNineRouterUrl().trim().replace(/\/$/, '');
+    const rawKey = getNineRouterKey().trim();
 
-    if (tunnelActive) {
-        // Rota do Túnel (somente se usuário pediu)
-        const tunnelUrl = (
-            localStorage.getItem('VITE_NINEROUTER_TUNEL_URL') ||
-            (import.meta.env.VITE_NINEROUTER_TUNEL_URL as string) ||
-            ''
-        ).replace(/\/$/, '');
-        const tunnelKey = (
-            localStorage.getItem('VITE_NINEROUTERR_KEY') ||
-            ''
-        ).trim();
-
-        return [{
-            name: 'Ponte Túnel (abc-tunnel)',
-            url: tunnelUrl,
-            key: tunnelKey,
-            endpoint: tunnelUrl.endsWith('/v1') ? `${tunnelUrl}/chat/completions` : `${tunnelUrl}/v1/chat/completions`,
-            modelsEndpoint: tunnelUrl.endsWith('/v1') ? `${tunnelUrl}/models` : `${tunnelUrl}/v1/models`
-        }];
+    if (!rawUrl) {
+        return [];
     }
 
-    // Rota padrão do 9Remote (Porta 2208)
-    const remoteUrl = (
-        localStorage.getItem('VITE_NINEROUTERR_URL') ||
-        (import.meta.env.VITE_NINEROUTERR_URL as string) ||
-        ''
-    ).replace(/\/$/, '');
-    const remoteKey = (
-        localStorage.getItem('VITE_NINEROUTERR_KEY') ||
-        (import.meta.env.VITE_NINEROUTERR_KEY as string) ||
-        ''
-    ).trim();
+    const endpoint = rawUrl.endsWith('/v1') ? `${rawUrl}/chat/completions` : `${rawUrl}/v1/chat/completions`;
+    const modelsEndpoint = rawUrl.endsWith('/v1') ? `${rawUrl}/models` : `${rawUrl}/v1/models`;
 
-    // Rota secundária 9Router Local (Porta 20128)
-    const localUrl = (
-        localStorage.getItem('VITE_NINEROUTER_URL') ||
-        (import.meta.env.VITE_NINEROUTER_URL as string) ||
-        ''
-    ).replace(/\/$/, '');
-    const localKey = (
-        localStorage.getItem('VITE_NINEROUTER_KEY') ||
-        (import.meta.env.VITE_NINEROUTER_KEY as string) ||
-        ''
-    ).trim();
-
-    return [
-        {
-            name: '9Remote (Porta 2208)',
-            url: remoteUrl,
-            key: remoteKey,
-            endpoint: remoteUrl.endsWith('/v1') ? `${remoteUrl}/chat/completions` : `${remoteUrl}/v1/chat/completions`,
-            modelsEndpoint: remoteUrl.endsWith('/v1') ? `${remoteUrl}/models` : `${remoteUrl}/v1/models`
-        },
-        {
-            name: '9Router Local (Porta 20128)',
-            url: localUrl,
-            key: localKey,
-            endpoint: localUrl.endsWith('/v1') ? `${localUrl}/chat/completions` : `${localUrl}/v1/chat/completions`,
-            modelsEndpoint: localUrl.endsWith('/v1') ? `${localUrl}/models` : `${localUrl}/v1/models`
-        }
-    ];
+    return [{
+        name: isTunnelEnabled() ? '9Router Túnel (Soberano)' : '9Router / 9Remote',
+        url: rawUrl,
+        key: rawKey,
+        endpoint,
+        modelsEndpoint
+    }];
 }
 
 /**
