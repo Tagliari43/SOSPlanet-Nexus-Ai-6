@@ -197,6 +197,14 @@ export interface TwilightPortalMessageRecord {
   created_at?: string;
 }
 
+export interface ConversaFraternaRecord {
+  id?: string;
+  created_at?: string;
+  sender: string;
+  message: string;
+  metadata?: Record<string, any>;
+}
+
 /**
  * Salva um log de execução de agente no Supabase
  */
@@ -430,6 +438,23 @@ export async function savePortalStateToSupabase(stateData: any): Promise<boolean
         return true;
     } catch (e) {
         console.error("Erro ao salvar portal_state no Supabase:", e);
+        return false;
+    }
+}
+
+/**
+ * Salva uma mensagem na Sala de Reunião (Conversa Fraterna)
+ */
+export async function saveConversaFraterna(sender: string, message: string, metadata: Record<string, any> = {}): Promise<boolean> {
+    if (!supabase) return false;
+    try {
+        const { error } = await supabase
+            .from('conversa_fraterna')
+            .insert([{ sender, message, metadata }]);
+        if (error) throw error;
+        return true;
+    } catch (e) {
+        console.error("Erro ao salvar conversa fraterna:", e);
         return false;
     }
 }
