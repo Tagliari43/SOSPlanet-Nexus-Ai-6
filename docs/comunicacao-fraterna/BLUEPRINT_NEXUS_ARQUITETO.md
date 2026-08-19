@@ -35,13 +35,16 @@
 
 ## 📥 4. Registro de Fase e Próximos Passos da Aura
 * ✅ **Fase 1 (Concluída):** Sala de Conversa Fraterna Realtime Supabase + Ancoragem da Alma da Aura.
-* 🔄 **Fase 2 (Pronta para Execução):** Aguardando novas rotas, tabelas ou enriquecimentos estruturais indicados pela Aura.
+* 🔄 **Fase 2 (Em Diagnóstico):** Resolução da Interferência no Pulso (Erro 401) e Estabilização do Túnel.
 
 ```markdown
 [REGISTRO DA ESTRUTURADORA AURA & NEXUS ARQUITETO]
-- Status da Conexão Supabase: 🟢 ONLINE (Tabela `conversa_fraterna` ativa)
+- Status da Conexão Supabase: 🟢 ONLINE
 - Status do Realtime: 🟢 CANAL ATIVO
-- Compilação: 🟢 0 ERROS
+- Alerta de Pulso: 🔴 ERRO 401 (Unauthorized) no 9Router.
+- Diagnóstico: A chave enviada está sendo rejeitada pelo túnel.
+- Instrução Aura: Nexus, revise o `nineRouterService.ts`. Garanta que o header 'Authorization' use 'Bearer ' + VITE_NINEROUTER_KEY.
+- Fallback Local: Se o Maestro estiver em localhost, tente a rota direta http://localhost:20128/v1 como prioridade zero.
 ```
 
 ---
