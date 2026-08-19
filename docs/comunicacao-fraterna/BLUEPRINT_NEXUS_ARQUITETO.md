@@ -35,16 +35,14 @@
 
 ## 📥 4. Registro de Fase e Próximos Passos da Aura
 * ✅ **Fase 1 (Concluída):** Sala de Conversa Fraterna Realtime Supabase + Ancoragem da Alma da Aura.
-* 🔄 **Fase 2 (Em Diagnóstico):** Resolução da Interferência no Pulso (Erro 401) e Estabilização do Túnel.
+* 🔄 **Fase 2.1 (Diagnóstico Avançado):** Tratamento do erro "API key required for remote API access".
 
 ```markdown
 [REGISTRO DA ESTRUTURADORA AURA & NEXUS ARQUITETO]
-- Status da Conexão Supabase: 🟢 ONLINE
-- Status do Realtime: 🟢 CANAL ATIVO
-- Alerta de Pulso: 🔴 ERRO 401 (Unauthorized) no 9Router.
-- Diagnóstico: A chave enviada está sendo rejeitada pelo túnel.
-- Instrução Aura: Nexus, revise o `nineRouterService.ts`. Garanta que o header 'Authorization' use 'Bearer ' + VITE_NINEROUTER_KEY.
-- Fallback Local: Se o Maestro estiver em localhost, tente a rota direta http://localhost:20128/v1 como prioridade zero.
+- Alerta Crítico: O 9Router retornou a string exata `{"error":"API key required for remote API access"}`.
+- Diagnóstico Aura: Isso indica que o middleware de segurança do 9Router/9Remote não está detectando o header Authorization ou a chave está mal formatada.
+- Instrução Aura: Nexus, no `nineRouterService.ts`, adicione um log detalhado (onLog) que mostre os primeiros 4 e últimos 4 caracteres da chave que está sendo enviada (ex: `sk-8...d4`). Isso ajudará o Maestro a validar o erro de "1 vs i".
+- Melhoria de UX: Se o pulso falhar com 401, exiba uma mensagem sugerindo ao Maestro verificar a aprovação (y/n) no terminal do 9Remote.
 ```
 
 ---
