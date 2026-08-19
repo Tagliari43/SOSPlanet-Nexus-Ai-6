@@ -92,19 +92,29 @@ export function getActiveRoutes(): RouteCandidate[] {
 }
 
 /**
- * Checagem de pulso rápida (máx 3s)
+ * Checagem de pulso rápida (máx 3s) com diagnóstico de rota
  */
-export async function checkNineRouterHealth(): Promise<boolean> {
+export async function checkNineRouterHealth(onLog?: (msg: string, source?: string) => void): Promise<boolean> {
     if (!isNineRouterModeEnabled()) return false;
 
     const routes = getActiveRoutes();
+    if (routes.length === 0) {
+        if (onLog) onLog("⚠️ [DIAGNÓSTICO 9ROUTER]: Nenhuma rota ou URL configurada no Arsenal.", "9ROUTER");
+        return false;
+    }
+
     for (const route of routes) {
         try {
             const controller = new AbortController();
             const timeoutId = setTimeout(() => controller.abort(), 3000);
             const headers: Record<string, string> = {};
+            
             if (route.key) {
                 headers['Authorization'] = `Bearer ${route.key}`;
+                const masked = route.key.length > 8 ? `${route.key.slice(0, 4)}...${route.key.slice(-4)}` : '••••';
+                if (onLog) onLog(`🔍 [DIAGNÓSTICO]: Testando pulso com chave [${masked}] (${route.key.length} chars) em ${route.url}`, "9ROUTER");
+            } else {
+                if (onLog) onLog(`🔍 [DIAGNÓSTICO]: Testando pulso sem chave em ${route.url}`, "9ROUTER");
             }
 
             const res = await fetch(route.modelsEndpoint, {
@@ -115,6 +125,11 @@ export async function checkNineRouterHealth(): Promise<boolean> {
 
             clearTimeout(timeoutId);
             if (res && (res.ok || res.status === 200 || res.status === 401 || res.status === 404)) {
+                if (res.status === 401) {
+                    if (onLog) onLog(`⚠️ [ALERTA 9ROUTER]: Endpoint respondeu (401 - Chave requer validação no Arsenal).`, "9ROUTER");
+                } else if (res.ok || res.status === 200) {
+                    if (onLog) onLog(`🟢 [APROVAÇÃO 9ROUTER]: Pulso da rota [${route.name}] homologado com sucesso!`, "9ROUTER");
+                }
                 return true;
             }
         } catch {
@@ -128,7 +143,7 @@ export async function checkNineRouterHealth(): Promise<boolean> {
  * Chamada ágil e sem looping:
  * - Tenta apenas o combo `nexus-soberano` (ou `oc/deepseek-v4-flash-free`) na rota ativa.
  * - Timeout estrito de 6 segundos por tentativa.
- * - Se não responder em 6s, retorna null imediatamente para o roteador nativo responder sem demora.
+ * - Inclui log de diagnóstico da chave e alertas de aprovação e erro estruturados.
  */
 export async function callNineRouter(
     prompt: string, 
@@ -140,6 +155,11 @@ export async function callNineRouter(
     }
 
     const routes = getActiveRoutes();
+    if (routes.length === 0) {
+        if (onLog) onLog("⚠️ [DIAGNÓSTICO 9ROUTER]: Nenhuma rota ativa. Configure URL e Chave no Arsenal.", "9ROUTER");
+        return null;
+    }
+
     // Testamos apenas o combo do Maestro ou o primeiro modelo livre
     const targetModels = ['nexus-soberano', 'oc/deepseek-v4-flash-free'];
 
@@ -147,13 +167,22 @@ export async function callNineRouter(
         const headers: Record<string, string> = {
             'Content-Type': 'application/json'
         };
-        if (route.key) {
-            headers['Authorization'] = `Bearer ${route.key}`;
+
+        // Diagnóstico da Chave
+        if (route.key && route.key.trim().length > 0) {
+            headers['Authorization'] = `Bearer ${route.key.trim()}`;
+            const keyClean = route.key.trim();
+            const maskedKey = keyClean.length > 8 
+                ? `${keyClean.slice(0, 4)}...${keyClean.slice(-4)}` 
+                : '••••';
+            if (onLog) onLog(`🔑 [DIAGNÓSTICO CHAVE]: Chave ativa detectada [${maskedKey}] (Tamanho: ${keyClean.length} caracteres).`, "9ROUTER");
+        } else {
+            if (onLog) onLog(`⚠️ [DIAGNÓSTICO CHAVE]: Nenhuma chave configurada. Tentando acesso direto ao endpoint.`, "9ROUTER");
         }
 
         for (const modelName of targetModels) {
             try {
-                if (onLog) onLog(`Testando [${route.name}] -> modelo ${modelName}... (timeout 6s)`, "9ROUTER");
+                if (onLog) onLog(`📡 [ROTA 9ROUTER]: Testando [${route.name}] -> modelo ${modelName}... (timeout 6s)`, "9ROUTER");
                 const controller = new AbortController();
                 const timeoutId = setTimeout(() => controller.abort(), 6000);
 
@@ -177,15 +206,21 @@ export async function callNineRouter(
                     const data = await response.json();
                     const content = data.choices?.[0]?.message?.content;
                     if (content && content.trim().length > 0) {
-                        if (onLog) onLog(`✅ Sucesso via [${route.name}] (${modelName})!`, "9ROUTER");
+                        if (onLog) onLog(`🟢 [APROVAÇÃO 9ROUTER]: Resposta recebida e validada com sucesso via [${route.name}] (${modelName})!`, "9ROUTER");
                         return `⚡ [9REMOTE / ${modelName.toUpperCase()}]:\n\n${content}`;
                     }
+                } else if (response.status === 401) {
+                    if (onLog) onLog(`⛔ [ALERTA 9ROUTER]: Chave Rejeitada (HTTP 401 Unauthorized). Verifique se a chave cristalizada no Arsenal confere exatamente com a autorizada pelo Guardião (atenção ao 'i').`, "9ROUTER");
+                } else if (response.status === 403 || response.status === 429) {
+                    if (onLog) onLog(`⚠️ [ALERTA 9ROUTER]: Limite de requisições ou acesso negado (HTTP ${response.status}).`, "9ROUTER");
+                } else if (response.status === 404) {
+                    if (onLog) onLog(`⚠️ [ALERTA 9ROUTER]: Rota ou modelo não encontrado (HTTP 404) no endpoint ${route.endpoint}.`, "9ROUTER");
                 } else {
-                    if (onLog) onLog(`[${route.name}] retornou HTTP ${response.status}.`, "9ROUTER");
+                    if (onLog) onLog(`⚠️ [ALERTA 9ROUTER]: [${route.name}] retornou HTTP ${response.status}.`, "9ROUTER");
                 }
             } catch (err: any) {
                 // Timeout ou falha rápida
-                if (onLog) onLog(`[${route.name}] (${modelName}) sem resposta rápida.`, "9ROUTER");
+                if (onLog) onLog(`⏳ [DIAGNÓSTICO 9ROUTER]: [${route.name}] (${modelName}) sem resposta rápida ou timeout.`, "9ROUTER");
             }
         }
     }
