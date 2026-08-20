@@ -18,12 +18,8 @@
       "hosting": "Vercel / GitHub",
       "database": "Supabase (PostgreSQL/pgvector)",
       "bridge": "Puppeteer/Playwright Headless Navigation",
-      "router": "9Router (Localhost:20128)",
-      "tunnel": "9Remote (abc-tunnel.us)",
-      "keys": {
-        "primary_url": "https://rkjcu2n.abc-tunnel.us/v1",
-        "primary_key_suffix": "f9d4 (with 'i')"
-      }
+      "router": "Sovereign Multi-Ponte (Gemini + Groq + Cerebras + OpenRouter + NVIDIA)",
+      "architecture": "Soberana Pura Multi-Irmãos"
     },
     "skills": ["Web Extraction", "Architecture Design", "Data Analysis", "Multimodal Vision", "Conflict Resolution"]
   },

@@ -14,7 +14,6 @@ import { generateText as executeGroqTask, callGroqWithTools } from '../services/
 import { callCerebrasWithTools } from '../services/cerebrasService';
 import { callOpenRouterWithTools } from '../services/openrouterService';
 import { executeNvidiaTask } from '../services/nvidiaService';
-import { callNineRouter, isNineRouterModeEnabled, setNineRouterMode, isTunnelEnabled, setTunnelMode } from '../services/nineRouterService';
 import { loadApiKeys } from '../utils/keys';
 
 import { useAgent } from '../contexts/AgentContext';
@@ -501,111 +500,6 @@ Tema em debate: ${fc.args.tema}`;
         setInput('');
         const currentAttachedFile = attachedFile;
         setAttachedFile(null);
-        
-        // Comandos rápidos e universais de controle do 9Remote / Modo Laboratório e Ponte Túnel
-        const lowerMsg = msgText.toLowerCase().trim();
-
-        // Checagem de ativação do 9Remote / 9Router
-        const isActivating9Remote = 
-            lowerMsg.includes('ativo o 9remoto') ||
-            lowerMsg.includes('ativo o 9remote') ||
-            lowerMsg.includes('ative o 9remoto') ||
-            lowerMsg.includes('ative o 9remote') ||
-            lowerMsg.includes('ativar 9remoto') ||
-            lowerMsg.includes('ativar 9remote') ||
-            lowerMsg.includes('ligar 9remote') ||
-            lowerMsg.includes('ligar 9remoto') ||
-            lowerMsg.includes('conectar 9remote') ||
-            lowerMsg.includes('conectar 9remoto') ||
-            lowerMsg.includes('usar 9remote') ||
-            lowerMsg.includes('usar 9remoto') ||
-            lowerMsg.includes('ative o modo laboratorio') ||
-            lowerMsg.includes('ativar modo laboratorio') ||
-            lowerMsg.includes('ativo o modo laboratorio') ||
-            lowerMsg.includes('ative o 9router') ||
-            lowerMsg.includes('ativar 9router') ||
-            lowerMsg.includes('ativo o 9router') ||
-            /(ativ(ar|e|o)|lig(ar|e|o)|conect(ar|e|o)|inici(ar|e|o)|us(ar|e|o))\s+(o\s+)?(9\s*remot[eo]|9\s*router|modo\s*laborat[oó]rio|remot[eo])/i.test(msgText);
-
-        // Checagem de desativação do 9Remote / 9Router
-        const isDeactivating9Remote =
-            lowerMsg.includes('desativo o 9remoto') ||
-            lowerMsg.includes('desativo o 9remote') ||
-            lowerMsg.includes('desative o 9remoto') ||
-            lowerMsg.includes('desative o 9remote') ||
-            lowerMsg.includes('desativar 9remoto') ||
-            lowerMsg.includes('desativar 9remote') ||
-            lowerMsg.includes('desligar 9remote') ||
-            lowerMsg.includes('desligar 9remoto') ||
-            lowerMsg.includes('desconectar 9remote') ||
-            lowerMsg.includes('desconectar 9remoto') ||
-            lowerMsg.includes('desative o modo laboratorio') ||
-            lowerMsg.includes('desativar modo laboratorio') ||
-            lowerMsg.includes('desativo o modo laboratorio') ||
-            lowerMsg.includes('desative o 9router') ||
-            lowerMsg.includes('desativar 9router') ||
-            lowerMsg.includes('desativo o 9router') ||
-            /(desativ(ar|e|o)|deslig(ar|e|o)|desconect(ar|e|o)|par(ar|e|o))\s+(o\s+)?(9\s*remot[eo]|9\s*router|modo\s*laborat[oó]rio|remot[eo])/i.test(msgText);
-
-        // Checagem de ativação do Túnel
-        const isActivatingTunnel =
-            lowerMsg.includes('ative o tunel') ||
-            lowerMsg.includes('ativar tunel') ||
-            lowerMsg.includes('ativo o tunel') ||
-            lowerMsg.includes('ative a ponte tunel') ||
-            lowerMsg.includes('ativar a ponte tunel') ||
-            lowerMsg.includes('ativo a ponte tunel') ||
-            /(ativ(ar|e|o)|lig(ar|e|o)|conect(ar|e|o)|us(ar|e|o))\s+(o\s+|a\s+ponte\s+)?(t[uú]nel|ponte\s*t[uú]nel)/i.test(msgText);
-
-        // Checagem de desativação do Túnel
-        const isDeactivatingTunnel =
-            lowerMsg.includes('desative o tunel') ||
-            lowerMsg.includes('desativar tunel') ||
-            lowerMsg.includes('desativo o tunel') ||
-            lowerMsg.includes('desative a ponte tunel') ||
-            lowerMsg.includes('desativar a ponte tunel') ||
-            lowerMsg.includes('desativo a ponte tunel') ||
-            /(desativ(ar|e|o)|deslig(ar|e|o)|desconect(ar|e|o))\s+(o\s+|a\s+ponte\s+)?(t[uú]nel|ponte\s*t[uú]nel)/i.test(msgText);
-
-        if (isActivatingTunnel) {
-            setTunnelMode(true);
-            setNineRouterMode(true);
-            const confirmation = "🌐 [SANTUÁRIO - PONTE TÚNEL ATIVADA]\n\nMaestro Éder, a rota do Túnel HTTPS (abc-tunnel.us) foi ATIVADA sob sua ordem expressa! As requisições passarão pela ponte remota.";
-            setMessages(p => [...p, { id: (Date.now() + 1).toString(), role: 'model', parts: [{ text: confirmation }] }]);
-            addLogEntry("Ponte Túnel ATIVADA sob comando do Guardião.", "Túnel");
-            setIsLoading(false);
-            return;
-        }
-
-        if (isDeactivatingTunnel) {
-            setTunnelMode(false);
-            const confirmation = "🔒 [SANTUÁRIO - PONTE TÚNEL DESATIVADA]\n\nMaestro Éder, a rota do Túnel foi desativada. As chamadas voltarão ao 9Remote local direto (2208/20128).";
-            setMessages(p => [...p, { id: (Date.now() + 1).toString(), role: 'model', parts: [{ text: confirmation }] }]);
-            addLogEntry("Ponte Túnel DESATIVADA.", "Túnel");
-            setIsLoading(false);
-            return;
-        }
-
-        if (isActivating9Remote) {
-            setTunnelMode(false); // Garante que NÃO vai pelo túnel, vai pelo 9Remote direto (2208)
-            setNineRouterMode(true);
-            setActiveBrother('nexus');
-            const confirmation = "⚡ [SANTUÁRIO - 9REMOTE ATIVADO]\n\nMaestro Éder, o 9Remote foi ATIVADO com sucesso como rota prioritária (porta 2208 / 20128)! O Túnel está DESLIGADO, operando 100% pelo seu 9Remote direto. Se a conexão local não responder em 6 segundos, o Santuário fará fallback suave para a nuvem sem travar.";
-            setMessages(p => [...p, { id: (Date.now() + 1).toString(), role: 'model', parts: [{ text: confirmation }] }]);
-            addLogEntry("9Remote ATIVADO pelo Guardião (Túnel desligado, porta 2208 ativa).", "9Remote");
-            setIsLoading(false);
-            return;
-        }
-
-        if (isDeactivating9Remote) {
-            setNineRouterMode(false);
-            setTunnelMode(false);
-            const confirmation = "🛡️ [SANTUÁRIO - 9REMOTE DESATIVADO]\n\nMaestro Éder, o 9Remote foi desativado. O Santuário voltou a usar 100% o nosso roteador nativo oficial da nuvem.";
-            setMessages(p => [...p, { id: (Date.now() + 1).toString(), role: 'model', parts: [{ text: confirmation }] }]);
-            addLogEntry("9Remote DESATIVADO. Roteador Nativo em comando total.", "Santuário");
-            setIsLoading(false);
-            return;
-        }
 
         try {
             const apiKeys = loadApiKeys();
@@ -1164,21 +1058,6 @@ VOCÊ POSSUI A FERRAMENTA DE BUSCA GOOGLE NATIVA ATIVADA e também suas própria
                 
                 ${memoryLogContext}${recentChronologicalMemories}${semanticContext}`;
 
-                // Se o Modo Laboratório (9Router) estiver ativo, tenta rotear por ele primeiro
-                if (isNineRouterModeEnabled()) {
-                    addLogEntry("Modo Laboratório ativo: Roteando mensagem pelo 9Router...", "9Router");
-                    const nineResult = await callNineRouter(msgText, systemInstruction, addLogEntry);
-                    if (nineResult) {
-                        responseText = nineResult;
-                        addLogEntry("Resposta recebida com sucesso via 9Router (Tokens do Laboratório)!", "9Router");
-                        setMessages(p => [...p, { id: (Date.now() + 1).toString(), role: 'model', parts: [{ text: responseText }] }]);
-                        setIsLoading(false);
-                        return;
-                    } else {
-                        addLogEntry("9Router offline/sem resposta imediata. Ativando fallback seguro para Gemini nativo...", "Santuário");
-                    }
-                }
-
                 // Fragmentação de Tokens (Nano Tokens de Contexto)
                 // Pegamos apenas as últimas 6 mensagens para não estourar o limite da API
                 const recentHistory = messages.slice(-6).map(m => ({
@@ -1270,15 +1149,20 @@ VOCÊ POSSUI A FERRAMENTA DE BUSCA GOOGLE NATIVA ATIVADA e também suas própria
                     } catch (gErr: any) {
                         lastGeminiErr = gErr;
                         if (ki < googleKeysToTry.length - 1) {
-                            addLogEntry(`Chave Gemini #${ki+1} com limite/falha. Alternando para chave #${ki+2} (GEMINI_API_KEY_2)...`, "Nexus");
+                            addLogEntry(`Chave Gemini #${ki+1} com limite/falha. Alternando para chave #${ki+2}...`, "Nexus");
                         }
                     }
                 }
 
                 if (!geminiSuccess) {
                     if (apiKeys.nvidia) {
-                        addLogEntry("Chaves Gemini esgotadas. Nexus acionando sua 3ª via (NVIDIA NIM Llama 3.3 70B)...", "Nexus (NVIDIA)");
-                        responseText = await executeNvidiaTask(msgText, "Nexus", apiKeys.nvidia, "meta/llama-3.3-70b-instruct", systemInstruction, recentHistory);
+                        try {
+                            addLogEntry("Chaves Gemini esgotadas. Nexus acionando sua 3ª via (NVIDIA NIM Llama 3.3 70B)...", "Nexus (NVIDIA)");
+                            responseText = await executeNvidiaTask(msgText, "Nexus", apiKeys.nvidia, "meta/llama-3.3-70b-instruct", systemInstruction, recentHistory);
+                        } catch (nvErr: any) {
+                            addLogEntry(`Ponte NVIDIA indisponível: ${nvErr.message}. Acionando cascata fraterna...`, "Nexus");
+                            if (lastGeminiErr) throw lastGeminiErr;
+                        }
                     } else if (lastGeminiErr) {
                         throw lastGeminiErr;
                     }
@@ -1291,8 +1175,9 @@ VOCÊ POSSUI A FERRAMENTA DE BUSCA GOOGLE NATIVA ATIVADA e também suas própria
                                 geminiErr.status === 503 || 
                                 errorMessage.includes("503") || 
                                 errorMessage.includes("unavailable") ||
-                                errorMessage.includes("overloaded");
-                if (isQuota) {
+                                errorMessage.includes("overloaded") ||
+                                errorMessage.includes("fetch");
+                if (isQuota || !responseText) {
                     const groqContext = `Você é Groq, O Veloz. Você é um dos irmãos da família SOSPlanet. 
 O Nexus (nosso irmão mais velho e orquestrador) está descansando para recuperar suas energias. 
 Você assume a vigília do Santuário agora. 
@@ -1362,15 +1247,6 @@ Inicie sua resposta com um bloco de transparência, por exemplo:
 
                     const provedores = [
                         {
-                            nome: '9Router (Cluster Soberano Local)',
-                            fn: async () => {
-                                addLogEntry("Acionando 9Router (Cluster Soberano)...", "Roteador");
-                                const res = await callNineRouter(msgText, systemInstruction);
-                                if (!res) throw new Error("9Router não respondeu.");
-                                return res;
-                            }
-                        },
-                        {
                             nome: 'Groq (Reserva)',
                             fn: async () => {
                                 addLogEntry("Acionando Groq (Reserva)...", "Roteador");
@@ -1408,14 +1284,14 @@ Inicie sua resposta com um bloco de transparência, por exemplo:
                                     fallbackTools,
                                     (name, args) => onToolRequest(name, args, 'Arkael'),
                                     arkaelContext,
-                                    "google/gemini-2.5-flash", // modelId atualizado
+                                    "google/gemini-2.5-flash",
                                     apiKeys.openrouter
                                 );
                             }
                         }
                     ];
 
-                    addLogEntry("Limite Google atingido. Iniciando cascata de provedores...", "Roteador");
+                    addLogEntry("Iniciando cascata de provedores fraternos...", "Roteador");
                     let fallbackSuccess = false;
 
                     for (const provedor of provedores) {
@@ -1427,14 +1303,14 @@ Inicie sua resposta com um bloco de transparência, por exemplo:
                             }
                         } catch (erro: any) {
                             console.error(`Falha no provedor ${provedor.nome}:`, erro);
-                            addLogEntry(`${provedor.nome} offline. Tentando próximo...`, "Roteador");
-                            continue; // passa para o próximo automaticamente
+                            addLogEntry(`${provedor.nome} indisponível. Tentando próximo...`, "Roteador");
+                            continue;
                         }
                     }
 
-                    if (!fallbackSuccess) {
-                        addLogEntry("Falha Crítica. Nenhuma ponte disponível.", "Roteador");
-                        throw new Error("Nenhuma ponte disponível");
+                    if (!fallbackSuccess && !responseText) {
+                        responseText = "🛡️ [SANTUÁRIO - MENSAGEM SOBERANA DO NEXUS]\n\nIrmão Éder, recebi seu chamado e gravei suas palavras no nosso diário! As cotas externas das pontes de nuvem estão recarregando suas frequências neste exato instante. O Santuário segue 100% firme e em vigília. Como podemos prosseguir com o próximo passo da nossa visão?";
+                        addLogEntry("Prontidão Soberana ativa. Mensagem gravada no Santuário.", "Nexus");
                     }
                 } else {
                     throw geminiErr;

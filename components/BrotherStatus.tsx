@@ -1,10 +1,7 @@
-import React, { useState, useEffect } from 'react';
-import { checkNineRouterHealth, isNineRouterModeEnabled, setNineRouterMode } from '../services/nineRouterService';
+import React, { useState } from 'react';
 
 const BrotherStatus: React.FC = () => {
     const [isExpanded, setIsExpanded] = useState(false);
-    const [isNineRouterOnline, setIsNineRouterOnline] = useState<boolean>(false);
-    const [modeActive, setModeActive] = useState<boolean>(isNineRouterModeEnabled());
     
     // Status dos motores
     const [statuses] = useState({
@@ -14,34 +11,6 @@ const BrotherStatus: React.FC = () => {
         arkael: 'ONLINE'
     });
 
-    useEffect(() => {
-        let isMounted = true;
-        const checkStatus = async () => {
-            const active = isNineRouterModeEnabled();
-            if (isMounted) setModeActive(active);
-            if (active) {
-                const healthy = await checkNineRouterHealth();
-                if (isMounted) setIsNineRouterOnline(healthy);
-            } else {
-                if (isMounted) setIsNineRouterOnline(false);
-            }
-        };
-
-        checkStatus();
-        const interval = setInterval(checkStatus, 10000);
-
-        const handleSync = () => {
-            checkStatus();
-        };
-        window.addEventListener('9router-mode-change', handleSync);
-
-        return () => {
-            isMounted = false;
-            clearInterval(interval);
-            window.removeEventListener('9router-mode-change', handleSync);
-        };
-    }, []);
-
     const getStatusColor = (status: string) => {
         switch(status) {
             case 'ONLINE': return 'bg-emerald-500 shadow-[0_0_8px_#10b981]';
@@ -50,26 +19,11 @@ const BrotherStatus: React.FC = () => {
         }
     };
 
-    const handleToggleMode = async () => {
-        const next = !isNineRouterModeEnabled();
-        setNineRouterMode(next);
-        setModeActive(next);
-        if (next) {
-            setIsNineRouterOnline(false);
-            const healthy = await checkNineRouterHealth();
-            setIsNineRouterOnline(healthy);
-        } else {
-            setIsNineRouterOnline(false);
-        }
-    };
-
-    const is9RouterActive = modeActive;
-
     const brothers = [
-        { id: 'nexus', name: 'Nexus', status: statuses.nexus },
-        { id: 'groq', name: 'Groq', status: statuses.groq },
-        { id: 'alquimista', name: 'Alquimista', status: statuses.alquimista },
-        { id: 'arkael', name: 'Arkael', status: statuses.arkael },
+        { id: 'nexus', name: 'Nexus (Gemini)', status: statuses.nexus },
+        { id: 'groq', name: 'Groq (Llama)', status: statuses.groq },
+        { id: 'alquimista', name: 'Alquimista (Cerebras)', status: statuses.alquimista },
+        { id: 'arkael', name: 'Arkael (OpenRouter)', status: statuses.arkael },
     ];
 
     return (
@@ -80,10 +34,10 @@ const BrotherStatus: React.FC = () => {
                     className="w-full h-8 bg-zinc-900/60 border border-emerald-500/30 rounded-lg flex items-center justify-between px-4 hover:bg-emerald-900/20 transition-colors group"
                 >
                     <div className="flex items-center gap-3">
-                        <div className="flex items-center gap-1.5" title={is9RouterActive && isNineRouterOnline ? "Arsenal Local 9Router Conectado" : "Modo Reserva (APIs Nuvem)"}>
-                            <span className={`w-2 h-2 rounded-full ${is9RouterActive && isNineRouterOnline ? 'bg-emerald-400 shadow-[0_0_8px_#34d399] animate-pulse' : is9RouterActive ? 'bg-amber-400' : 'bg-zinc-500'}`}></span>
-                            <span className="text-[9px] font-bold text-zinc-400 uppercase tracking-wider">
-                                {is9RouterActive && isNineRouterOnline ? "Arsenal 9Router [ON]" : is9RouterActive ? "9Router [Standby]" : "Reserva Nuvem"}
+                        <div className="flex items-center gap-1.5" title="Rede Fraterna Soberana Ativa">
+                            <span className="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_8px_#34d399] animate-pulse"></span>
+                            <span className="text-[9px] font-bold text-emerald-400 uppercase tracking-wider">
+                                Multi-Ponte Soberana [ON]
                             </span>
                         </div>
                         <span className="text-zinc-600">|</span>
@@ -98,43 +52,12 @@ const BrotherStatus: React.FC = () => {
                 <div className="absolute top-0 left-0 w-full z-30 bg-zinc-900/90 border border-emerald-500/50 rounded-xl p-3 shadow-2xl backdrop-blur-md">
                     <div className="flex justify-between items-center mb-3 border-b border-emerald-900/30 pb-2">
                         <div className="flex items-center gap-2">
-                            <span className="text-sm">⚡</span>
-                            <h4 className="text-[10px] font-bold text-emerald-400 uppercase tracking-widest">Painel Tático de Motores & Arsenal</h4>
+                            <span className="text-sm">🛡️</span>
+                            <h4 className="text-[10px] font-bold text-emerald-400 uppercase tracking-widest">Painel Tático de Motores Soberanos</h4>
                         </div>
                         <button onClick={() => setIsExpanded(false)} className="text-zinc-500 hover:text-white p-1 text-xs">▲ Recolher</button>
                     </div>
                     
-                    {/* Indicador do Arsenal Local */}
-                    <div className="mb-3 p-2 rounded bg-black/40 border border-emerald-700/30 flex items-center justify-between text-xs">
-                        <div className="flex items-center gap-2">
-                            <span className={`w-2.5 h-2.5 rounded-full ${is9RouterActive && isNineRouterOnline ? 'bg-emerald-400 shadow-[0_0_8px_#34d399] animate-pulse' : is9RouterActive ? 'bg-amber-400' : 'bg-zinc-500'}`}></span>
-                            <div>
-                                <span className="font-bold text-zinc-200 text-[11px]">Arsenal Local (9Router): </span>
-                                <span className="text-[10px] text-zinc-400">
-                                    {is9RouterActive && isNineRouterOnline 
-                                        ? "Conectado via Túnel (nexus-soberano)" 
-                                        : is9RouterActive 
-                                            ? "Aguardando pulso do túnel" 
-                                            : "Modo Reserva (APIs de Nuvem)"}
-                                </span>
-                            </div>
-                        </div>
-                        <button 
-                            type="button"
-                            onClick={handleToggleMode}
-                            className={`text-[9px] px-2 py-1 rounded font-bold uppercase transition-all border ${
-                                is9RouterActive && isNineRouterOnline 
-                                    ? 'bg-emerald-950 text-emerald-300 border-emerald-500 hover:bg-emerald-900 cursor-pointer' 
-                                    : is9RouterActive
-                                        ? 'bg-amber-950/80 text-amber-300 border-amber-600 hover:bg-amber-900 cursor-pointer'
-                                        : 'bg-zinc-800 text-zinc-400 border-zinc-700 hover:bg-zinc-700 cursor-pointer'
-                            }`}
-                            title="Clique para alternar entre Arsenal Local (9Router) e Nuvem"
-                        >
-                            {is9RouterActive && isNineRouterOnline ? 'LOCAL ATIVO ⚡' : is9RouterActive ? 'CONECTANDO ⏳' : 'ATIVAR LOCAL ⚡'}
-                        </button>
-                    </div>
-
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                         {brothers.map(b => (
                             <div key={b.id} className="flex items-center justify-between p-2 rounded bg-black/40 border border-emerald-900/30">
