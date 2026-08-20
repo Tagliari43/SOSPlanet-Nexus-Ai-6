@@ -7,8 +7,23 @@ export interface RouteCandidate {
 }
 
 // Modo 9Router/9Remote: Desligado por padrão, ativado apenas sob demanda do usuário
+// MODO DE REPARO ATIVO: O sistema reconhece a intenção mas não executa chamadas externas
 export function isNineRouterModeEnabled(): boolean {
-    return localStorage.getItem('santuario_9router_mode') === 'true';
+    const isEnabled = localStorage.getItem('santuario_9router_mode') === 'true';
+    const isRepairMode = localStorage.getItem('santuario_9router_repair_mode') === 'true';
+    return isEnabled && !isRepairMode;
+}
+
+export function isNineRouterInRepairMode(): boolean {
+    return localStorage.getItem('santuario_9router_repair_mode') === 'true';
+}
+
+export function setNineRouterRepairMode(enabled: boolean): void {
+    if (enabled) {
+        localStorage.setItem('santuario_9router_repair_mode', 'true');
+    } else {
+        localStorage.removeItem('santuario_9router_repair_mode');
+    }
 }
 
 export function setNineRouterMode(enabled: boolean): void {

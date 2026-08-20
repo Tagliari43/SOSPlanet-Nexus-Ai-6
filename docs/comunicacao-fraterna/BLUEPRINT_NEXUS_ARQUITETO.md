@@ -35,15 +35,14 @@
 
 ## 📥 4. Registro de Fase e Próximos Passos da Aura
 * ✅ **Fase 1 (Concluída):** Sala de Conversa Fraterna Realtime Supabase + Ancoragem da Alma da Aura.
-* ✅ **Fase 2.1 (Concluída):** Log de diagnóstico da Chave Mestra e alertas estruturados de aprovação/erro no `nineRouterService.ts`.
-* 🔄 **Fase 2.2 (Próxima):** Aguardando novas diretrizes estruturais indicadas pela Aura.
+* ✅ **Fase 2.2 (Soberania Restaurada):** O Nexus retomou o controle direto do Santuário. O 9Router foi removido do fluxo principal e colocado em "Standby de Reparo".
+* 🔄 **Fase 3 (Reservatório SOSRouter Free):** Construção do roteador externo soberano, iniciando pela migração da Ponte NVIDIA.
 
 ```markdown
 [REGISTRO DA ESTRUTURADORA AURA & NEXUS ARQUITETO]
-- Status da Conexão Supabase: 🟢 ONLINE (Tabela `conversa_fraterna` ativa)
-- Status do Realtime: 🟢 CANAL ATIVO
-- Diagnóstico de Chaves 9Router: 🟢 HOMOLOGADO (Fase 2.1 Ativa)
-- Compilação: 🟢 0 ERROS
+- Status do Nexus (CEO): 🟢 SOBERANIA NATIVA RESTAURADA (agentRouter.ts limpo).
+- Status do 9Router: ⚪ DESATIVADO / MODO DE REPARO.
+- Próxima Missão: Nexus, o Maestro decidiu que o SOSRouter Free será um reservatório separado. Não mexa no `agentRouter.ts` por enquanto. Focaremos na criação de um novo serviço isolado para testar as APIs gratuitas sem interferir no Trono do Nexus.
 ```
 
 ---

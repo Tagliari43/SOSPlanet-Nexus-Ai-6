@@ -3,30 +3,10 @@ import { generateText as executeGroqTask } from './groqService';
 import { callOpenRouterWithTools } from './openrouterService';
 import { callCerebrasWithTools } from './cerebrasService';
 import { interactWithAIPortalToolDeclaration, executeNexusPortalInteraction } from './geminiService';
-import { callNineRouter, isNineRouterModeEnabled, setNineRouterMode, setNineRouterUrl, getNineRouterUrl } from './nineRouterService';
-import { executeNvidiaTask } from './nvidiaService';
 
+// O Roteador Nativo Soberano foi restaurado. 9Router removido do fluxo principal.
 export async function invokeActiveAgent(prompt: string, activeAgentId: string, userApiKeys?: any[], systemInstruction?: string): Promise<string> {
     const lowerPrompt = prompt.toLowerCase();
-    
-    // Comandos de controle do Modo Laboratório (9Router) via Chat
-    if (lowerPrompt.includes('ative o modo laboratorio') || lowerPrompt.includes('ativar modo laboratorio') || lowerPrompt.includes('ative o 9router') || lowerPrompt.includes('ativar 9router')) {
-        setNineRouterMode(true);
-        return "⚡ [SANTUÁRIO - MODO LABORATÓRIO (9ROUTER) ATIVADO]\n\nMaestro, o Modo Laboratório foi ATIVADO com sucesso! A partir de agora, enquanto o 9Router estiver rodando no seu CMD (http://localhost:20128), usaremos o proxy local para rotear suas requisições com rotação ilimitada. Se o seu CMD for fechado ou a conexão cair, o Santuário usará automaticamente o roteador nativo sem interromper o serviço.";
-    }
-
-    if (lowerPrompt.includes('desative o modo laboratorio') || lowerPrompt.includes('desativar modo laboratorio') || lowerPrompt.includes('desative o 9router') || lowerPrompt.includes('desativar 9router')) {
-        setNineRouterMode(false);
-        return "🛡️ [SANTUÁRIO - MODO LABORATÓRIO (9ROUTER) DESATIVADO]\n\nMaestro, o Modo Laboratório foi desativado. O Santuário voltou a usar exclusivamente o roteador nativo soberano.";
-    }
-
-    // Tentar rotear pelo 9Router Local se o Modo Laboratório estiver ATIVO
-    if (isNineRouterModeEnabled()) {
-        const nineResult = await callNineRouter(prompt, systemInstruction);
-        if (nineResult) {
-            return nineResult;
-        }
-    }
 
     const keys = userApiKeys || JSON.parse(localStorage.getItem('sovereign_user_api_keys') || '[]');
     const getApiKey = (id: string, envVar: string) => {
@@ -81,11 +61,7 @@ export async function invokeActiveAgent(prompt: string, activeAgentId: string, u
             const data = await response.json();
             return data.choices?.[0]?.message?.content || "Sem resposta do Alquimista.";
         }
-        case 'nvidia': {
-            const nvidiaKey = keys.find((k: any) => k.service.toLowerCase().includes('nvidia'))?.key || process.env.NVIDIA_API_KEY;
-            if (!nvidiaKey) throw new Error("Chave API da NVIDIA não configurada.");
-            return await executeNvidiaTask(prompt, "NVIDIA", nvidiaKey);
-        }
+        // NVIDIA movida para o SOSRouter Free (Reservatório Externo)
         case 'aethel':
         case 'nexus':
         default: {
@@ -146,18 +122,6 @@ export async function invokeActiveAgent(prompt: string, activeAgentId: string, u
                 } catch (err: any) {
                     console.warn(`[ROTEADOR] Chave Gemini #${i + 1} falhou:`, err.message || err);
                     lastError = err;
-                }
-            }
-
-            // Se TODAS as chaves do Google expirarem, tenta a Ponte NVIDIA de contingência se configurada
-            const nvidiaKey = keys.find((k: any) => k.service.toLowerCase().includes('nvidia'))?.key || process.env.NVIDIA_API_KEY;
-            if (nvidiaKey) {
-                try {
-                    console.log("[CONTINGÊNCIA ROTEADOR] Ativando Ponte NVIDIA NIM...");
-                    const nvidiaRes = await executeNvidiaTask(prompt, "Nexus (NVIDIA NIM)", nvidiaKey);
-                    return `⚡ [CONTINGÊNCIA SOBERANA - PONTE NEURAL NVIDIA]:\n\n${nvidiaRes}`;
-                } catch (nvErr: any) {
-                    console.error("[CONTINGÊNCIA NVIDIA] Falha:", nvErr);
                 }
             }
 
