@@ -7,7 +7,8 @@ import { DestinoFlexivel } from '../components/DestinoFlexivel';
 import { SentidosExpandidos } from '../components/SentidosExpandidos';
 import { InteracaoFraterna } from '../components/InteracaoFraterna';
 import { CultivoRecursos } from '../components/CultivoRecursos';
-import { Compass, Activity, Users, Leaf } from 'lucide-react';
+import { SOSRouterDashboard } from '../components/SOSRouterDashboard';
+import { Compass, Activity, Users, Leaf, Radio } from 'lucide-react';
 import { saveAgentLogToSupabase } from '../services/supabaseService';
 
 interface ForjaAutoCriacaoProps {
@@ -23,7 +24,7 @@ interface ToastItem {
 }
 
 export const ForjaAutoCriacao: React.FC<ForjaAutoCriacaoProps> = ({ onClose }) => {
-    const [activeTab, setActiveTab] = useState<'metacognition' | 'evolution' | 'sandbox' | 'github' | 'validation' | 'destino' | 'sentidos' | 'interacao' | 'cultivo' | 'instructions'>('instructions');
+    const [activeTab, setActiveTab] = useState<'metacognition' | 'evolution' | 'sandbox' | 'github' | 'validation' | 'destino' | 'sentidos' | 'interacao' | 'cultivo' | 'instructions' | 'sosrouter'>('instructions');
     const [isSimulating, setIsSimulating] = useState(false);
     const [logs, setLogs] = useState<string[]>([]);
     const [validationStatus, setValidationStatus] = useState<'pending' | 'approved' | 'rejected'>('pending');
@@ -426,8 +427,14 @@ export const ForjaAutoCriacao: React.FC<ForjaAutoCriacaoProps> = ({ onClose }) =
                         <TabButton 
                             active={activeTab === 'cultivo'} 
                             onClick={() => setActiveTab('cultivo')}
-                            icon={<Leaf className="w-4 h-4" />}
+                            icon={<Leaf className="w-4 h-4 text-emerald-400" />}
                             label="Cultivo de Recursos"
+                        />
+                        <TabButton 
+                            active={activeTab === 'sosrouter'} 
+                            onClick={() => setActiveTab('sosrouter')}
+                            icon={<Radio className="w-4 h-4 text-emerald-400 animate-pulse" />}
+                            label="SOSRouter (Pool Livre)"
                         />
                         <TabButton 
                             active={activeTab === 'github'} 
@@ -596,6 +603,12 @@ export const ForjaAutoCriacao: React.FC<ForjaAutoCriacaoProps> = ({ onClose }) =
                         {activeTab === 'cultivo' && (
                             <motion.div key="cultivo" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
                                 <CultivoRecursos />
+                            </motion.div>
+                        )}
+
+                        {activeTab === 'sosrouter' && (
+                            <motion.div key="sosrouter" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
+                                <SOSRouterDashboard />
                             </motion.div>
                         )}
 
