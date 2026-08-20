@@ -458,3 +458,48 @@ export async function saveConversaFraterna(sender: string, message: string, meta
         return false;
     }
 }
+
+export interface FreePoolKeyRecord {
+    id?: string;
+    service: string;
+    key: string;
+    tag?: string;
+    tier?: number;
+    active?: boolean;
+}
+
+/**
+ * Busca chaves do Pool Livre (free_pool / sosrouter) armazenadas no Supabase
+ */
+export async function fetchFreePoolKeysFromSupabase(): Promise<FreePoolKeyRecord[]> {
+    if (!supabase) return [];
+    try {
+        // Tenta buscar da tabela api_keys ou vault_keys com filtro de tag/categoria free_pool
+        const { data, error } = await supabase
+            .from('api_keys')
+            .select('*')
+            .or('tag.eq.free_pool,category.eq.free_pool,tag.eq.sosrouter');
+        
+        if (!error && data && data.length > 0) {
+            return data.map((d: any) => ({
+                id: d.id,
+                service: d.service || d.provider || 'unknown',
+                key: d.key || d.api_key || '',
+                tag: d.tag || 'free_pool',
+                tier: d.tier || 1,
+                active: d.active !== false
+            }));
+        }
+
+        // Fallback: tentar portal_state se houver chaves de pool cadastradas
+        const portalData = await getPortalStateFromSupabase();
+        if (portalData && Array.isArray(portalData.free_pool_keys)) {
+            return portalData.free_pool_keys;
+        }
+
+        return [];
+    } catch (e) {
+        console.warn("Aviso ao buscar chaves do Supabase:", e);
+        return [];
+    }
+}
