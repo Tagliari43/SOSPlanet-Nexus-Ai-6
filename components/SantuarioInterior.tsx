@@ -542,6 +542,13 @@ Tema em debate: ${fc.args.tema}`;
             lowerMsg === 'desativar sos router' ||
             /(desativ(ar|e|o)|deslig(ar|e|o)|par(ar|e|o)|desconect(ar|e|o))\s+(o\s+)?sos\s*router/i.test(msgText);
 
+        const isStressTestRequest =
+            lowerMsg.includes('testar estresse sosrouter') ||
+            lowerMsg.includes('teste de estresse sosrouter') ||
+            lowerMsg.includes('estresse sosrouter') ||
+            lowerMsg.includes('simular 429') ||
+            lowerMsg.includes('simular erro 429');
+
         if (isActivatingSOSRouter) {
             setSOSRouterMode(true);
             setIsSOSRouterActive(true);
@@ -1126,9 +1133,9 @@ VOCÊ POSSUI A FERRAMENTA DE BUSCA GOOGLE NATIVA ATIVADA e também suas própria
                     parts: m.parts
                 }));
 
-                // Se o SOSRouter Cloud estiver ativo, desvia a requisição para o Pool de Contingência da Nuvem
-                if (isSOSRouterActive) {
-                    addLogEntry("SOSRouter Cloud Ativo: Roteando mensagem pelo Pool de Contingência da Nuvem...", "SOSRouter");
+                // Se o SOSRouter Cloud estiver ativo ou se for um teste de estresse, desvia para o Pool de Contingência da Nuvem
+                if (isSOSRouterActive || isStressTestRequest) {
+                    addLogEntry(isStressTestRequest ? "SOSRouter: Iniciando Sensor de Convergência & Simulação de Estresse..." : "SOSRouter Cloud Ativo: Roteando mensagem pelo Pool de Contingência da Nuvem...", "SOSRouter");
                     const sosResult = await executeSOSRouterCascade(
                         msgText,
                         systemInstruction,
@@ -1136,7 +1143,8 @@ VOCÊ POSSUI A FERRAMENTA DE BUSCA GOOGLE NATIVA ATIVADA e também suas própria
                         apiKeys,
                         addLogEntry,
                         functionTools,
-                        async (name, args) => onToolRequest(name, args, 'Nexus')
+                        async (name, args) => onToolRequest(name, args, 'Nexus'),
+                        isStressTestRequest
                     );
                     if (sosResult) {
                         responseText = sosResult;

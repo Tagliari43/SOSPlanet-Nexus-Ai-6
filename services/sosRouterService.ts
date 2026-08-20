@@ -100,8 +100,24 @@ function isKeyInCooldown(key: string): boolean {
 /**
  * Aplica o descanso de 60 segundos à chave que retornou limite de cota / 429
  */
-function putKeyInCooldown(key: string, durationMs: number = 60000): void {
+export function putKeyInCooldown(key: string, durationMs: number = 60000): void {
     keyCooldownMap.set(key, Date.now() + durationMs);
+}
+
+/**
+ * Simula um teste de estresse colocando propositalmente a primeira chave Gemini ativa em Cool-down
+ */
+export function triggerStressTestSimulation(apiKeys: any = {}): { simulatedKeyFingerprint: string } {
+    const localGoogleKeys = apiKeys.googleKeys && apiKeys.googleKeys.length > 0
+        ? apiKeys.googleKeys
+        : [apiKeys.gemini, process.env.GEMINI_API_KEY, process.env.API_KEY].filter(Boolean);
+
+    if (localGoogleKeys.length > 0) {
+        const targetKey = localGoogleKeys[0];
+        putKeyInCooldown(targetKey, 60000);
+        return { simulatedKeyFingerprint: getKeyFingerprint(targetKey) };
+    }
+    return { simulatedKeyFingerprint: 'Tier1-Simulated' };
 }
 
 /**
@@ -125,9 +141,17 @@ export async function executeSOSRouterCascade(
     apiKeys: any = {},
     onLog?: (msg: string, source?: string) => void,
     functionTools?: any[],
-    onToolExecute?: (name: string, args: any) => Promise<any>
+    onToolExecute?: (name: string, args: any) => Promise<any>,
+    isStressTest: boolean = false
 ): Promise<string> {
     if (onLog) onLog("⚡ [SOSROUTER CLOUD]: Conectando ao Cofre de Chaves e preparando Pool de Contingência...", "SOSRouter");
+
+    let stressPrefix = "";
+    if (isStressTest) {
+        const sim = triggerStressTestSimulation(apiKeys);
+        stressPrefix = `\n\n🔍 **[SOSRouter Diagnóstico]**: Simulação de Estresse 429 executada. Chave ${sim.simulatedKeyFingerprint} colocada em Cool-down (60s). Salto instantâneo para próxima contingência realizado com sucesso.`;
+        if (onLog) onLog(`🧪 [SOSRouter Estresse]: Injetando simulação de Erro 429 na chave ${sim.simulatedKeyFingerprint}. Forçando contingência...`, "SOSRouter");
+    }
 
     // 1. Busca dinâmica de chaves cadastradas sob 'free_pool' no Supabase
     let supabaseFreeKeys: FreePoolKeyRecord[] = [];
@@ -201,7 +225,8 @@ export async function executeSOSRouterCascade(
                 if (resText) {
                     if (onLog) onLog(`🟢 [SOSRouter Tier 1]: Resposta sintetizada com sucesso (Gemini Flash [${fingerprint}])!`, "SOSRouter");
                     recordSOSRouterUsage(`Gemini Flash (${fingerprint})`, promptText, resText);
-                    return resText;
+                    const diagnosticFooter = isStressTest ? `\n\n🛡️ [SOSRouter Diagnóstico]: Salto executado com sucesso. Tier 1 em descanso. Resposta gerada via Provedor [Gemini Flash (${fingerprint})].` : "";
+                    return resText + diagnosticFooter;
                 }
             } catch (gErr: any) {
                 const errMsg = gErr.message || String(gErr);
@@ -247,7 +272,8 @@ export async function executeSOSRouterCascade(
                 if (nvResponse) {
                     if (onLog) onLog(`🟢 [SOSRouter Tier 2]: Resposta entregue via NVIDIA NIM [${fingerprint}]!`, "SOSRouter");
                     recordSOSRouterUsage(`NVIDIA NIM (${fingerprint})`, promptText, nvResponse);
-                    return nvResponse;
+                    const diagnosticFooter = isStressTest ? `\n\n🛡️ [SOSRouter Diagnóstico]: Salto executado com sucesso. Tier 1 em descanso. Resposta gerada via Provedor [NVIDIA NIM (${fingerprint})].` : "";
+                    return nvResponse + diagnosticFooter;
                 }
             } catch (nvErr: any) {
                 const is429 = (nvErr.message || '').includes('429') || (nvErr.message || '').includes('quota');
@@ -291,7 +317,8 @@ export async function executeSOSRouterCascade(
                 if (orResponse) {
                     if (onLog) onLog(`🟢 [SOSRouter Tier 3]: Resposta recebida via OpenRouter [${fingerprint}]!`, "SOSRouter");
                     recordSOSRouterUsage(`OpenRouter Cloud (${fingerprint})`, promptText, orResponse);
-                    return orResponse;
+                    const diagnosticFooter = isStressTest ? `\n\n🛡️ [SOSRouter Diagnóstico]: Salto executado com sucesso. Tier 1 em descanso. Resposta gerada via Provedor [OpenRouter (${fingerprint})].` : "";
+                    return orResponse + diagnosticFooter;
                 }
             } catch (orErr: any) {
                 const is429 = (orErr.message || '').includes('429') || (orErr.message || '').includes('rate limit');
@@ -323,7 +350,8 @@ export async function executeSOSRouterCascade(
             if (groqRes) {
                 if (onLog) onLog("🟢 [SOSRouter Tier 4]: Resposta entregue via Groq!", "SOSRouter");
                 recordSOSRouterUsage("Groq Cloud", promptText, groqRes);
-                return groqRes;
+                const diagnosticFooter = isStressTest ? `\n\n🛡️ [SOSRouter Diagnóstico]: Salto executado com sucesso. Tier 1 em descanso. Resposta gerada via Provedor [Groq Cloud].` : "";
+                return groqRes + diagnosticFooter;
             }
         } catch (groqErr: any) {
             putKeyInCooldown(groqKey, 60000);
@@ -346,7 +374,8 @@ export async function executeSOSRouterCascade(
             if (cerebrasRes) {
                 if (onLog) onLog("🟢 [SOSRouter Tier 4]: Resposta entregue via Cerebras!", "SOSRouter");
                 recordSOSRouterUsage("Cerebras Cloud", promptText, cerebrasRes);
-                return cerebrasRes;
+                const diagnosticFooter = isStressTest ? `\n\n🛡️ [SOSRouter Diagnóstico]: Salto executado com sucesso. Tier 1 em descanso. Resposta gerada via Provedor [Cerebras Alquimista].` : "";
+                return cerebrasRes + diagnosticFooter;
             }
         } catch (cerErr: any) {
             putKeyInCooldown(cerebrasKey, 60000);
