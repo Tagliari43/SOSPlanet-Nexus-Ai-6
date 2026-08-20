@@ -90,9 +90,7 @@ const INITIAL_USER_KEYS: UserApiKey[] = [
     { id: 'groq-default', service: 'Groq API', key: process.env.GROQ_API_KEY || '', method: 'bearer' },
     { id: 'scraper-api-key', service: 'Scraper API (Navegador)', key: process.env.SCRAPER_API_KEY || '', method: 'bearer' },
     { id: 'cerebras-default', service: 'Cerebras API', key: '', method: 'bearer' },
-    { id: 'openrouter-default', service: 'OpenRouter API', key: '', method: 'bearer' },
-    { id: '9router-remote-key', service: 'VITE_NINEROUTER_KEY (Chave Mestra)', key: '', targetUrl: '', method: 'bearer' },
-    { id: '9router-tunnel-key', service: 'VITE_NINEROUTER_URL (Endpoint Túnel)', key: '', targetUrl: '', method: 'bearer' }
+    { id: 'openrouter-default', service: 'OpenRouter API', key: '', method: 'bearer' }
 ];
 
 const App: React.FC = () => {
@@ -110,21 +108,20 @@ const App: React.FC = () => {
     const [customTools, setCustomTools] = useState<SovereignTool[]>(() => loadFromStorage<SovereignTool[]>(CUSTOM_TOOLS_KEY, []));
     const [userApiKeys, setUserApiKeys] = useState<UserApiKey[]>(() => loadFromStorage<UserApiKey[]>(USER_API_KEYS_KEY, INITIAL_USER_KEYS));
 
-    // Migration e Purificação de Chaves Fantasmas
+    // Migration e Purificação de Chaves
     useEffect(() => {
         setUserApiKeys(prevKeys => {
             let modified = false;
             let newKeys = [...prevKeys];
 
-            // 1. Remove Hugging Face
-            if (newKeys.some(k => k.service.includes('Hugging Face') || k.id === 'hf-default')) {
-                newKeys = newKeys.filter(k => !k.service.includes('Hugging Face') && k.id !== 'hf-default');
+            // 1. Remove Hugging Face e chaves antigas de 9Router
+            if (newKeys.some(k => k.service.includes('Hugging Face') || k.id === 'hf-default' || k.id === '9router-local-key' || k.id === '9router-remote-key' || k.id === '9router-tunnel-key' || k.service.includes('NINEROUTER'))) {
+                newKeys = newKeys.filter(k => !k.service.includes('Hugging Face') && k.id !== 'hf-default' && k.id !== '9router-local-key' && k.id !== '9router-remote-key' && k.id !== '9router-tunnel-key' && !k.service.includes('NINEROUTER'));
                 modified = true;
             }
 
-            // 2. Limpa e purifica chaves antigas com valores fantasmas hardcoded (ex: final 94fc, links redundantes)
+            // 2. Limpa e purifica chaves antigas com valores residuais
             newKeys = newKeys.map(k => {
-                // Se a chave guardada for uma das strings fantasmas hardcoded do passado, limpa para respeitar o Guardião
                 if (k.key && (k.key.includes('sk-9358b8e41366fa0f') || k.key.includes('sk-8effe28f-xif4-8ff9d4'))) {
                     modified = true;
                     return { ...k, key: '' };
@@ -136,30 +133,14 @@ const App: React.FC = () => {
                 return k;
             });
 
-            // 3. Remove chaves redundantes ou com erro de sintaxe (como VITE_NINEROUTERR_KEY e 9router-local-key)
-            if (newKeys.some(k => k.id === '9router-local-key' || k.service.includes('VITE_NINEROUTERR_KEY'))) {
-                newKeys = newKeys.filter(k => k.id !== '9router-local-key' && !k.service.includes('VITE_NINEROUTERR_KEY'));
-                modified = true;
-            }
-
-            // 4. Garante que existam apenas as duas entradas mestras limpas
-            if (!newKeys.some(k => k.id === '9router-remote-key' || k.service.includes('VITE_NINEROUTER_KEY'))) {
-                newKeys.push({ id: '9router-remote-key', service: 'VITE_NINEROUTER_KEY (Chave Mestra)', key: '', targetUrl: '', method: 'bearer' });
-                modified = true;
-            }
-            if (!newKeys.some(k => k.id === '9router-tunnel-key' || k.service.includes('VITE_NINEROUTER_URL'))) {
-                newKeys.push({ id: '9router-tunnel-key', service: 'VITE_NINEROUTER_URL (Endpoint Túnel)', key: '', targetUrl: '', method: 'bearer' });
-                modified = true;
-            }
-
-            // 5. Clean up Cerebras keys
+            // 3. Clean up Cerebras keys
             const cerebrasKeys = newKeys.filter(k => k.id === 'cerebras-default' || k.service.toLowerCase().includes('cerebras'));
             if (cerebrasKeys.length === 0) {
                 newKeys.push({ id: 'cerebras-default', service: 'Cerebras API', key: '', method: 'bearer' });
                 modified = true;
             }
 
-            // 6. Add OpenRouter key if missing
+            // 4. Add OpenRouter key if missing
             const openrouterKeys = newKeys.filter(k => k.id === 'openrouter-default' || k.service.toLowerCase().includes('openrouter'));
             if (openrouterKeys.length === 0) {
                 newKeys.push({ id: 'openrouter-default', service: 'OpenRouter API', key: '', method: 'bearer' });

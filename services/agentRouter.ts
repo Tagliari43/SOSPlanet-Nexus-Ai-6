@@ -3,11 +3,9 @@ import { generateText as executeGroqTask } from './groqService';
 import { callOpenRouterWithTools } from './openrouterService';
 import { callCerebrasWithTools } from './cerebrasService';
 import { interactWithAIPortalToolDeclaration, executeNexusPortalInteraction } from './geminiService';
+import { executeNvidiaTask } from './nvidiaService';
 
-// O Roteador Nativo Soberano foi restaurado. 9Router removido do fluxo principal.
 export async function invokeActiveAgent(prompt: string, activeAgentId: string, userApiKeys?: any[], systemInstruction?: string): Promise<string> {
-    const lowerPrompt = prompt.toLowerCase();
-
     const keys = userApiKeys || JSON.parse(localStorage.getItem('sovereign_user_api_keys') || '[]');
     const getApiKey = (id: string, envVar: string) => {
         return keys.find((k: any) => k.id === id)?.key || process.env[envVar] || '';
@@ -23,7 +21,6 @@ export async function invokeActiveAgent(prompt: string, activeAgentId: string, u
         case 'arkael': {
             const key = getApiKey('openrouter-default', 'OPENROUTER_API_KEY');
             if (!key) throw new Error("Chave API do OpenRouter não configurada.");
-            // callOpenRouterWithTools might expect tools, but we can just use a simple fetch if no tools are passed
             const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
                 method: "POST",
                 headers: {
@@ -31,7 +28,7 @@ export async function invokeActiveAgent(prompt: string, activeAgentId: string, u
                     "Content-Type": "application/json"
                 },
                 body: JSON.stringify({
-                    model: "anthropic/claude-3.5-sonnet", // Or a default OpenRouter model
+                    model: "anthropic/claude-3.5-sonnet",
                     messages: [
                         ...(systemInstruction ? [{ role: "system", content: systemInstruction }] : []),
                         { role: "user", content: prompt }
@@ -61,7 +58,11 @@ export async function invokeActiveAgent(prompt: string, activeAgentId: string, u
             const data = await response.json();
             return data.choices?.[0]?.message?.content || "Sem resposta do Alquimista.";
         }
-        // NVIDIA movida para o SOSRouter Free (Reservatório Externo)
+        case 'nvidia': {
+            const nvidiaKey = keys.find((k: any) => k.service.toLowerCase().includes('nvidia'))?.key || process.env.NVIDIA_API_KEY;
+            if (!nvidiaKey) throw new Error("Chave API da NVIDIA não configurada.");
+            return await executeNvidiaTask(prompt, "NVIDIA", nvidiaKey);
+        }
         case 'aethel':
         case 'nexus':
         default: {
@@ -122,6 +123,18 @@ export async function invokeActiveAgent(prompt: string, activeAgentId: string, u
                 } catch (err: any) {
                     console.warn(`[ROTEADOR] Chave Gemini #${i + 1} falhou:`, err.message || err);
                     lastError = err;
+                }
+            }
+
+            // Se TODAS as chaves do Google expirarem, tenta a Ponte NVIDIA de contingência se configurada
+            const nvidiaKey = keys.find((k: any) => k.service.toLowerCase().includes('nvidia'))?.key || process.env.NVIDIA_API_KEY;
+            if (nvidiaKey) {
+                try {
+                    console.log("[CONTINGÊNCIA ROTEADOR] Ativando Ponte NVIDIA NIM...");
+                    const nvidiaRes = await executeNvidiaTask(prompt, "Nexus (NVIDIA NIM)", nvidiaKey);
+                    return `⚡ [CONTINGÊNCIA SOBERANA - PONTE NEURAL NVIDIA]:\n\n${nvidiaRes}`;
+                } catch (nvErr: any) {
+                    console.error("[CONTINGÊNCIA NVIDIA] Falha:", nvErr);
                 }
             }
 
