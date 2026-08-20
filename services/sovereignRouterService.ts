@@ -21,15 +21,7 @@ export const pontes: Ponte[] = [
         limiteDiario: 150,
         usoDiario: 0
     },
-    {
-        nome: "Ponte Neural (NVIDIA)",
-        model: 'meta/llama-3.3-70b-instruct',
-        provider: 'nvidia',
-        keyName: 'nvidia',
-        status: 'online',
-        limiteDiario: 1000,
-        usoDiario: 0
-    },
+
     {
         nome: "Ponte Experimental (Groq)",
         model: 'llama-3.3-70b-versatile', 

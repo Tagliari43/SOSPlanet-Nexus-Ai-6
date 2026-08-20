@@ -80,10 +80,10 @@ const RouterPanel: React.FC<RouterPanelProps> = ({ pontes = [] }) => {
                                 <span className="text-xs font-bold text-white">9Router / 9Remote Local</span>
                                 <span className={`text-[9px] font-bold px-1.5 py-0.2 rounded border ${
                                     isOnline9R 
-                                        ? 'bg-emerald-950/60 border-emerald-500 text-emerald-300' 
+                                        ? 'bg-amber-950/60 border-amber-500 text-amber-300' 
                                         : 'bg-zinc-900 border-zinc-700 text-zinc-400'
                                 }`}>
-                                    {isOnline9R ? 'ONLINE' : 'OFFLINE / ESPERA'}
+                                    {isOnline9R ? 'MODO REPARO' : 'OFFLINE / ESPERA'}
                                 </span>
                             </div>
                             <p className="text-[10px] text-zinc-400 font-mono truncate max-w-[200px]">
