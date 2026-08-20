@@ -14,6 +14,7 @@ import { generateText as executeGroqTask, callGroqWithTools } from '../services/
 import { callCerebrasWithTools } from '../services/cerebrasService';
 import { callOpenRouterWithTools } from '../services/openrouterService';
 import { executeNvidiaTask } from '../services/nvidiaService';
+import { isSOSRouterModeEnabled, setSOSRouterMode, executeSOSRouterCascade } from '../services/sosRouterService';
 import { loadApiKeys } from '../utils/keys';
 
 import { useAgent } from '../contexts/AgentContext';
@@ -115,6 +116,21 @@ const SantuarioInterior: React.FC<SantuarioInteriorProps> = ({
         return saved ? parseInt(saved) : null;
     });
     const [twilightRoomTheme, setTwilightRoomTheme] = useState<string>(() => localStorage.getItem('twilight_theme') || '');
+
+    // SOSRouter Cloud State (100% Serverless)
+    const [isSOSRouterActive, setIsSOSRouterActive] = useState<boolean>(() => isSOSRouterModeEnabled());
+
+    useEffect(() => {
+        const handleSOSModeChange = (e: any) => {
+            if (e.detail && typeof e.detail.enabled === 'boolean') {
+                setIsSOSRouterActive(e.detail.enabled);
+            } else {
+                setIsSOSRouterActive(isSOSRouterModeEnabled());
+            }
+        };
+        window.addEventListener('sosrouter-mode-change', handleSOSModeChange);
+        return () => window.removeEventListener('sosrouter-mode-change', handleSOSModeChange);
+    }, []);
 
     const [isRoomActive, setIsRoomActive] = useState(false);
     const [isLiveListening, setIsLiveListening] = useState(false);
@@ -500,6 +516,51 @@ Tema em debate: ${fc.args.tema}`;
         setInput('');
         const currentAttachedFile = attachedFile;
         setAttachedFile(null);
+
+        // Comandos de controle do SOSRouter Cloud (100% Serverless)
+        const lowerMsg = msgText.toLowerCase().trim();
+        const isActivatingSOSRouter = 
+            lowerMsg === 'ative o sosrouter' ||
+            lowerMsg === 'ativar o sosrouter' ||
+            lowerMsg === 'ativar sosrouter' ||
+            lowerMsg === 'ativo o sosrouter' ||
+            lowerMsg === 'ligar sosrouter' ||
+            lowerMsg === 'ligue o sosrouter' ||
+            lowerMsg === 'usar sosrouter' ||
+            lowerMsg === 'ative o sos router' ||
+            lowerMsg === 'ativar sos router' ||
+            /(ativ(ar|e|o)|lig(ar|e|o)|inici(ar|e|o)|us(ar|e|o))\s+(o\s+)?sos\s*router/i.test(msgText);
+
+        const isDeactivatingSOSRouter =
+            lowerMsg === 'desative o sosrouter' ||
+            lowerMsg === 'desativar o sosrouter' ||
+            lowerMsg === 'desativar sosrouter' ||
+            lowerMsg === 'desativo o sosrouter' ||
+            lowerMsg === 'desligar sosrouter' ||
+            lowerMsg === 'desligue o sosrouter' ||
+            lowerMsg === 'desative o sos router' ||
+            lowerMsg === 'desativar sos router' ||
+            /(desativ(ar|e|o)|deslig(ar|e|o)|par(ar|e|o)|desconect(ar|e|o))\s+(o\s+)?sos\s*router/i.test(msgText);
+
+        if (isActivatingSOSRouter) {
+            setSOSRouterMode(true);
+            setIsSOSRouterActive(true);
+            const confirmation = "⚡ [SOSRouter Ativado]: Conexão estabelecida com o Pool de Contingência da Nuvem, Maestro! A partir de agora, o roteamento fluirá pelo pool inteligente de cascata gratuita da nuvem (Gemini Flash Multi-Key ➔ NVIDIA NIM ➔ OpenRouter Free ➔ Groq/Cerebras) de forma invisível, resiliente e 100% serverless.";
+            setMessages(p => [...p, { id: (Date.now() + 1).toString(), role: 'model', parts: [{ text: confirmation }] }]);
+            addLogEntry("SOSRouter Cloud ATIVADO pelo Maestro Éder.", "SOSRouter");
+            setIsLoading(false);
+            return;
+        }
+
+        if (isDeactivatingSOSRouter) {
+            setSOSRouterMode(false);
+            setIsSOSRouterActive(false);
+            const confirmation = "🛡️ [SOSRouter Desativado]: Retornando ao fluxo padrão soberano do Santuário, Maestro.";
+            setMessages(p => [...p, { id: (Date.now() + 1).toString(), role: 'model', parts: [{ text: confirmation }] }]);
+            addLogEntry("SOSRouter Cloud DESATIVADO. Fluxo padrão restabelecido.", "Santuário");
+            setIsLoading(false);
+            return;
+        }
 
         try {
             const apiKeys = loadApiKeys();
@@ -1064,6 +1125,26 @@ VOCÊ POSSUI A FERRAMENTA DE BUSCA GOOGLE NATIVA ATIVADA e também suas própria
                     role: m.role,
                     parts: m.parts
                 }));
+
+                // Se o SOSRouter Cloud estiver ativo, desvia a requisição para o Pool de Contingência da Nuvem
+                if (isSOSRouterActive) {
+                    addLogEntry("SOSRouter Cloud Ativo: Roteando mensagem pelo Pool de Contingência da Nuvem...", "SOSRouter");
+                    const sosResult = await executeSOSRouterCascade(
+                        msgText,
+                        systemInstruction,
+                        recentHistory,
+                        apiKeys,
+                        addLogEntry,
+                        functionTools,
+                        async (name, args) => onToolRequest(name, args, 'Nexus')
+                    );
+                    if (sosResult) {
+                        responseText = sosResult;
+                        setMessages(p => [...p, { id: (Date.now() + 1).toString(), role: 'model', parts: [{ text: responseText }] }]);
+                        setIsLoading(false);
+                        return;
+                    }
+                }
 
                 let geminiSuccess = false;
                 let lastGeminiErr: any = null;

@@ -1,7 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { isSOSRouterModeEnabled } from '../services/sosRouterService';
 
 const BrotherStatus: React.FC = () => {
     const [isExpanded, setIsExpanded] = useState(false);
+    const [isSOSRouterActive, setIsSOSRouterActive] = useState<boolean>(() => isSOSRouterModeEnabled());
     
     // Status dos motores
     const [statuses] = useState({
@@ -10,6 +12,14 @@ const BrotherStatus: React.FC = () => {
         alquimista: 'ONLINE',
         arkael: 'ONLINE'
     });
+
+    useEffect(() => {
+        const handleSync = () => {
+            setIsSOSRouterActive(isSOSRouterModeEnabled());
+        };
+        window.addEventListener('sosrouter-mode-change', handleSync);
+        return () => window.removeEventListener('sosrouter-mode-change', handleSync);
+    }, []);
 
     const getStatusColor = (status: string) => {
         switch(status) {
@@ -34,10 +44,10 @@ const BrotherStatus: React.FC = () => {
                     className="w-full h-8 bg-zinc-900/60 border border-emerald-500/30 rounded-lg flex items-center justify-between px-4 hover:bg-emerald-900/20 transition-colors group"
                 >
                     <div className="flex items-center gap-3">
-                        <div className="flex items-center gap-1.5" title="Rede Fraterna Soberana Ativa">
-                            <span className="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_8px_#34d399] animate-pulse"></span>
+                        <div className="flex items-center gap-1.5" title={isSOSRouterActive ? "SOSRouter Nuvem Ativo" : "Rede Fraterna Soberana Padrão"}>
+                            <span className={`w-2 h-2 rounded-full ${isSOSRouterActive ? 'bg-amber-400 shadow-[0_0_8px_#f59e0b]' : 'bg-emerald-400 shadow-[0_0_8px_#34d399]'} animate-pulse`}></span>
                             <span className="text-[9px] font-bold text-emerald-400 uppercase tracking-wider">
-                                Multi-Ponte Soberana [ON]
+                                {isSOSRouterActive ? "SOSRouter [NUVEM ATIVA ⚡]" : "Multi-Ponte Soberana [ON]"}
                             </span>
                         </div>
                         <span className="text-zinc-600">|</span>
