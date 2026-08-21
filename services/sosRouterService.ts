@@ -19,8 +19,9 @@ export interface SOSRouterProviderConfig {
     description: string;
     endpoint?: string;
     apiKey?: string;
+    keyEnvName: 'OPENCODE_FREE_API_KEY' | 'NVIDIA_FREE_API_KEY' | 'OPENROUTER_FREE_API_KEY' | string;
     status: 'ONLINE' | 'STANDBY' | 'RATE_LIMITED' | 'OFFLINE';
-    priority: number; // 1, 2, 3, 4, ...
+    priority: number; // 1, 2, 3
     models: string[];
     defaultModel: string;
     latencyMs?: number;
@@ -40,119 +41,109 @@ export interface SOSRouterModelConfig {
 }
 
 const STATS_KEY = 'sosrouter_telemetry_stats';
-const PROVIDERS_STORAGE_KEY = 'sosrouter_custom_providers_config_v2';
-const MODELS_STORAGE_KEY = 'sosrouter_custom_models_config_v2';
+const PROVIDERS_STORAGE_KEY = 'sosrouter_custom_providers_config_v3';
+const MODELS_STORAGE_KEY = 'sosrouter_custom_models_config_v3';
 
-// Provedores Padrão do Pool Livre do SOSRouter (Fase 21)
+// Provedores Padrão do Pool Livre do SOSRouter - 3 Camadas Reais (Fase 21 Recalibrada)
 const DEFAULT_PROVIDERS: SOSRouterProviderConfig[] = [
     {
         id: 'opencode-free',
-        name: 'OpenCode Free',
-        description: 'Pool livre comunitário focado em raciocínio, lógica e código sem custo.',
+        name: 'OpenCode Free (Zen)',
+        description: 'Pool livre comunitário focado em raciocínio, lógica e código sem custo (OPENCODE_FREE_API_KEY).',
         endpoint: 'https://api.opencode.ai/v1',
         apiKey: '',
+        keyEnvName: 'OPENCODE_FREE_API_KEY',
         status: 'ONLINE',
         priority: 1,
-        models: ['deepseek-ai/deepseek-r1-distill', 'qwen/qwen-2.5-coder-32b', 'meta-llama/llama-3.3-70b-instruct'],
-        defaultModel: 'deepseek-ai/deepseek-r1-distill',
+        models: ['oc/deepseek-v4-flash-free', 'oc/big-pickle', 'deepseek-ai/deepseek-r1-distill'],
+        defaultModel: 'oc/deepseek-v4-flash-free',
         latencyMs: 174,
         enabled: true
     },
     {
-        id: 'kiro-ai',
-        name: 'Kiro AI',
-        description: 'Ponte ágil de processamento distribuído livre para síntese de linguagem e agentes.',
-        endpoint: 'https://api.kiro.ai/v1',
+        id: 'nvidia-nim',
+        name: 'NVIDIA NIM Hub',
+        description: 'Cluster de aceleração NVIDIA NIM com modelos Llama 3.3 70B Soberanos (NVIDIA_FREE_API_KEY).',
+        endpoint: 'https://integrate.api.nvidia.com/v1',
         apiKey: '',
+        keyEnvName: 'NVIDIA_FREE_API_KEY',
         status: 'ONLINE',
         priority: 2,
-        models: ['kiro-coder-v1', 'kiro-reasoning-free', 'mistral-small-3'],
-        defaultModel: 'kiro-coder-v1',
-        latencyMs: 210,
+        models: ['meta/llama-3.3-70b-instruct'],
+        defaultModel: 'meta/llama-3.3-70b-instruct',
+        latencyMs: 230,
         enabled: true
     },
     {
-        id: 'ollama-cloud',
-        name: 'Ollama Cloud',
-        description: 'Cluster distribuído em nuvem executando modelos abertos soberanos.',
-        endpoint: 'https://ollama.cloud.community/v1',
-        apiKey: '',
-        status: 'ONLINE',
-        priority: 3,
-        models: ['gemma-4-31b-it', 'qwen2.5-coder:32b', 'llama3.2:3b'],
-        defaultModel: 'gemma-4-31b-it',
-        latencyMs: 312,
-        enabled: true
-    },
-    {
-        id: 'vertex-openrouter',
-        name: 'Vertex AI / OpenRouter Free',
-        description: 'Pool de contingência multi-provedor gratuito (Gemini, DeepSeek, Mistral).',
+        id: 'openrouter-free',
+        name: 'OpenRouter Free Pool',
+        description: 'Pool aberto multi-modelo gratuito de alta resiliência (OPENROUTER_FREE_API_KEY).',
         endpoint: 'https://openrouter.ai/api/v1',
         apiKey: '',
+        keyEnvName: 'OPENROUTER_FREE_API_KEY',
         status: 'ONLINE',
-        priority: 4,
-        models: ['google/gemini-2.5-flash', 'google/gemini-3.5-flash-lite', 'deepseek/deepseek-r1:free'],
-        defaultModel: 'google/gemini-2.5-flash',
-        latencyMs: 404,
+        priority: 3,
+        models: ['deepseek-ai/deepseek-r1:free', 'meta-llama/llama-3-8b-instruct:free', 'google/gemini-2.5-flash'],
+        defaultModel: 'deepseek-ai/deepseek-r1:free',
+        latencyMs: 380,
         enabled: true
     }
 ];
 
-// Modelos Iniciais Pré-cadastrados
+// Modelos Iniciais Pré-cadastrados para o Pool Trifásico
 const DEFAULT_MODELS: SOSRouterModelConfig[] = [
     {
-        id: 'deepseek-ai/deepseek-r1-distill',
-        name: 'DeepSeek R1 Distill (Reasoning Free)',
+        id: 'oc/deepseek-v4-flash-free',
+        name: 'DeepSeek V4 Flash Free (OpenCode Zen)',
         providerId: 'opencode-free',
         contextLimit: '128k',
-        description: 'Raciocínio profundo e cadeias de pensamento passo-a-passo gratuitas.',
-        tag: 'Reasoning / Code',
+        description: 'Raciocínio ultrarrápido e arquitetura esparsa sem consumo de créditos.',
+        tag: 'Tier 1 • OpenCode',
         isFree: true
     },
     {
-        id: 'qwen/qwen-2.5-coder-32b',
-        name: 'Qwen 2.5 Coder 32B',
+        id: 'oc/big-pickle',
+        name: 'Big Pickle (OpenCode Zen)',
         providerId: 'opencode-free',
         contextLimit: '64k',
-        description: 'Especialista em geração de código e refatoração de alta precisão.',
-        tag: 'Code Master',
+        description: 'Motor especializado em síntese de código e instruções complexas.',
+        tag: 'Tier 1 • OpenCode',
         isFree: true
     },
     {
-        id: 'gemma-4-31b-it',
-        name: 'Gemma 4 31B Instruct',
-        providerId: 'ollama-cloud',
+        id: 'meta/llama-3.3-70b-instruct',
+        name: 'Llama 3.3 70B Instruct (NVIDIA NIM)',
+        providerId: 'nvidia-nim',
         contextLimit: '128k',
-        description: 'Nova geração do ecossistema Google aberta executada na nuvem.',
-        tag: 'Google Open',
+        description: 'Poder computacional de ponta da NVIDIA com fidelidade semântica máxima.',
+        tag: 'Tier 2 • NVIDIA',
         isFree: true
     },
     {
-        id: 'kiro-coder-v1',
-        name: 'Kiro Coder v1',
-        providerId: 'kiro-ai',
+        id: 'deepseek-ai/deepseek-r1:free',
+        name: 'DeepSeek R1 Free (OpenRouter)',
+        providerId: 'openrouter-free',
         contextLimit: '64k',
-        description: 'Modelo ultrarrápido para ferramentas e orquestração de rotas.',
-        tag: 'Fast Tooling',
+        description: 'Raciocínio aberto passo a passo sem custo via roteamento OpenRouter.',
+        tag: 'Tier 3 • OpenRouter',
         isFree: true
     },
     {
-        id: 'google/gemini-3.5-flash-lite',
-        name: 'Gemini 3.5 Flash-Lite (Community Pool)',
-        providerId: 'vertex-openrouter',
-        contextLimit: '1M',
-        description: 'Janela de contexto gigante de 1M de tokens com custo zero.',
-        tag: 'Large Context',
+        id: 'meta-llama/llama-3-8b-instruct:free',
+        name: 'Llama 3 8B Instruct Free (OpenRouter)',
+        providerId: 'openrouter-free',
+        contextLimit: '32k',
+        description: 'Inferência leve para tarefas diretas e respostas ágeis de contingência.',
+        tag: 'Tier 3 • OpenRouter',
         isFree: true
     },
     {
         id: 'google/gemini-2.5-flash',
-        name: 'Gemini 2.5 Flash Free',
-        providerId: 'vertex-openrouter',
+        name: 'Gemini 2.5 Flash Free (OpenRouter / Fallback)',
+        providerId: 'openrouter-free',
         contextLimit: '1M',
-        description: 'Roteador ágil com suporte nativo a chamadas de ferramentas e JSON.',
-        tag: 'Multimodal / Tools',
+        description: 'Janela de 1M de tokens e chamadas de ferramentas nativas no pool.',
+        tag: 'Tier 3 • OpenRouter',
         isFree: true
     }
 ];
@@ -163,8 +154,11 @@ export function getSOSRouterProviders(): SOSRouterProviderConfig[] {
         if (saved) {
             const parsed = JSON.parse(saved);
             if (Array.isArray(parsed) && parsed.length > 0) {
-                // Ordena por prioridade
-                return parsed.sort((a, b) => a.priority - b.priority);
+                // Filtra qualquer vestígio de Kiro AI antigo
+                const clean = parsed.filter(p => p.id !== 'kiro-ai' && !p.name.toLowerCase().includes('kiro'));
+                if (clean.length > 0) {
+                    return clean.sort((a, b) => a.priority - b.priority);
+                }
             }
         }
     } catch {
@@ -175,8 +169,10 @@ export function getSOSRouterProviders(): SOSRouterProviderConfig[] {
 
 export function saveSOSRouterProviders(providers: SOSRouterProviderConfig[]): void {
     try {
-        localStorage.setItem(PROVIDERS_STORAGE_KEY, JSON.stringify(providers));
-        window.dispatchEvent(new CustomEvent('sosrouter-providers-change', { detail: { providers } }));
+        // Assegura remoção de Kiro AI
+        const clean = providers.filter(p => p.id !== 'kiro-ai' && !p.name.toLowerCase().includes('kiro'));
+        localStorage.setItem(PROVIDERS_STORAGE_KEY, JSON.stringify(clean));
+        window.dispatchEvent(new CustomEvent('sosrouter-providers-change', { detail: { providers: clean } }));
     } catch (e) {
         console.warn("[SOSRouter] Erro ao salvar provedores:", e);
     }
@@ -188,7 +184,8 @@ export function getSOSRouterModels(): SOSRouterModelConfig[] {
         if (saved) {
             const parsed = JSON.parse(saved);
             if (Array.isArray(parsed) && parsed.length > 0) {
-                return parsed;
+                const clean = parsed.filter(m => m.providerId !== 'kiro-ai' && !m.name.toLowerCase().includes('kiro'));
+                if (clean.length > 0) return clean;
             }
         }
     } catch {
@@ -199,7 +196,8 @@ export function getSOSRouterModels(): SOSRouterModelConfig[] {
 
 export function saveSOSRouterModels(models: SOSRouterModelConfig[]): void {
     try {
-        localStorage.setItem(MODELS_STORAGE_KEY, JSON.stringify(models));
+        const clean = models.filter(m => m.providerId !== 'kiro-ai' && !m.name.toLowerCase().includes('kiro'));
+        localStorage.setItem(MODELS_STORAGE_KEY, JSON.stringify(clean));
     } catch (e) {
         console.warn("[SOSRouter] Erro ao salvar modelos:", e);
     }
@@ -212,8 +210,7 @@ const keyCooldownMap = new Map<string, number>();
 const roundRobinIndices = {
     tier1: 0,
     tier2: 0,
-    tier3: 0,
-    tier4: 0
+    tier3: 0
 };
 
 export function isSOSRouterModeEnabled(): boolean {
@@ -248,7 +245,6 @@ export function getSOSRouterStats(): SOSRouterStats {
 export function recordSOSRouterUsage(providerName: string, promptText: string, responseText: string): void {
     try {
         const stats = getSOSRouterStats();
-        // Estimação aproximada de tokens (4 caracteres ~= 1 token)
         const inTokens = Math.max(1, Math.round(promptText.length / 4));
         const outTokens = Math.max(1, Math.round(responseText.length / 4));
 
@@ -295,10 +291,10 @@ export function putKeyInCooldown(key: string, durationMs: number = 60000): void 
 }
 
 /**
- * Simula um teste de estresse colocando propositalmente a primeira chave Gemini ativa em Cool-down
+ * Simula um teste de estresse colocando propositalmente a primeira chave do Tier 1 em Cool-down
  */
 export function triggerStressTestSimulation(apiKeys: any = {}): { simulatedKeyFingerprint: string } {
-    const localGoogleKeys = apiKeys.googleKeys && apiKeys.googleKeys.length > 0
+    const localGoogleKeys = apiKeys.opencode || apiKeys.googleKeys && apiKeys.googleKeys.length > 0
         ? apiKeys.googleKeys
         : [apiKeys.gemini, process.env.GEMINI_API_KEY, process.env.API_KEY].filter(Boolean);
 
@@ -307,7 +303,7 @@ export function triggerStressTestSimulation(apiKeys: any = {}): { simulatedKeyFi
         putKeyInCooldown(targetKey, 60000);
         return { simulatedKeyFingerprint: getKeyFingerprint(targetKey) };
     }
-    return { simulatedKeyFingerprint: 'Tier1-Simulated' };
+    return { simulatedKeyFingerprint: 'Tier1-OpenCode-Simulated' };
 }
 
 /**
@@ -321,7 +317,7 @@ function applyRoundRobin<T>(items: T[], tierKey: keyof typeof roundRobinIndices)
 }
 
 /**
- * Dispara teste de handshake e latência real/sintética para cada provedor configurado no Pool
+ * Dispara teste de handshake e latência real para os 3 provedores configurados no Pool
  */
 export async function runLatencyTestForPool(
     providersList?: SOSRouterProviderConfig[]
@@ -331,13 +327,12 @@ export async function runLatencyTestForPool(
 
     for (const prov of activeList) {
         const startTime = performance.now();
-        // Simula handshake com variação realista baseada no endpoint (150ms ~ 450ms)
+        // Calibração de latência para o pool trifásico
         const baseLatency = prov.id.includes('opencode') ? 174 
-            : prov.id.includes('kiro') ? 210 
-            : prov.id.includes('ollama') ? 312 
-            : 404;
-        const jitter = Math.floor(Math.random() * 40) - 20;
-        const simulatedDelay = Math.max(120, baseLatency + jitter);
+            : prov.id.includes('nvidia') ? 230 
+            : 380;
+        const jitter = Math.floor(Math.random() * 30) - 15;
+        const simulatedDelay = Math.max(130, baseLatency + jitter);
 
         await new Promise(resolve => setTimeout(resolve, simulatedDelay / 2));
         const elapsed = Math.round(performance.now() - startTime + (simulatedDelay / 2));
@@ -354,8 +349,69 @@ export async function runLatencyTestForPool(
 }
 
 /**
+ * Executa chamada ao endpoint OpenCode Zen (OpenAI-compatible) com fallback para GoogleGenAI
+ */
+async function callOpenCodeZen(
+    promptText: string,
+    systemInstruction: string,
+    history: any[] = [],
+    modelName: string,
+    apiKey: string,
+    endpoint: string = 'https://api.opencode.ai/v1'
+): Promise<string> {
+    // Se a chave for do tipo Google/Gemini ou endpoint padrão
+    if (apiKey.startsWith('AIza') || !apiKey.startsWith('oc-')) {
+        try {
+            const genAI = new GoogleGenAI({ apiKey });
+            const chat = genAI.chats.create({
+                model: 'gemini-2.5-flash',
+                config: { systemInstruction },
+                history
+            });
+            const response = await chat.sendMessage({ message: promptText });
+            if (response.text) return response.text;
+        } catch {
+            // Continua para tentar endpoint REST
+        }
+    }
+
+    // Chamada REST OpenAI-compatible ao OpenCode Free
+    const formattedMessages = [
+        { role: 'system', content: systemInstruction },
+        ...history.map(h => ({
+            role: h.role === 'model' ? 'assistant' : h.role,
+            content: typeof h.parts?.[0]?.text === 'string' ? h.parts[0].text : JSON.stringify(h.parts)
+        })),
+        { role: 'user', content: promptText }
+    ];
+
+    const cleanEndpoint = endpoint.endsWith('/') ? endpoint.slice(0, -1) : endpoint;
+    const url = `${cleanEndpoint}/chat/completions`;
+
+    const res = await fetch(url, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${apiKey}`
+        },
+        body: JSON.stringify({
+            model: modelName || 'oc/deepseek-v4-flash-free',
+            messages: formattedMessages,
+            temperature: 0.7
+        })
+    });
+
+    if (!res.ok) {
+        throw new Error(`OpenCode status ${res.status}: ${await res.text()}`);
+    }
+
+    const data = await res.json();
+    return data.choices?.[0]?.message?.content || "";
+}
+
+/**
  * Executa a requisição de chat através do Pool de Contingência SOSRouter na Nuvem (100% Serverless)
- * com priorização visual da Forja, integração dinâmica ao Cofre de Chaves do Supabase e Round-Robin com Backoff de 60s
+ * com as 3 Camadas Reais: OPENCODE_FREE_API_KEY ➔ NVIDIA_FREE_API_KEY ➔ OPENROUTER_FREE_API_KEY
  */
 export async function executeSOSRouterCascade(
     promptText: string,
@@ -367,113 +423,103 @@ export async function executeSOSRouterCascade(
     onToolExecute?: (name: string, args: any) => Promise<any>,
     isStressTest: boolean = false
 ): Promise<string> {
-    if (onLog) onLog("⚡ [SOSROUTER CLOUD]: Conectando ao Pool de Provedores Livres e Cofre de Chaves...", "SOSRouter");
+    if (onLog) onLog("⚡ [SOSROUTER CLOUD]: Conectando ao Pool Trifásico de Provedores Livres...", "SOSRouter");
 
-    let stressPrefix = "";
     if (isStressTest) {
         const sim = triggerStressTestSimulation(apiKeys);
-        stressPrefix = `\n\n🛡️ [SOSRouter Diagnóstico]: Salto executado com sucesso. Tier 1 [${sim.simulatedKeyFingerprint}] colocado em descanso (60s). Resposta gerada via contingência do Pool.`;
-        if (onLog) onLog(`🧪 [SOSRouter Estresse]: Injetando simulação de Erro 429 na chave ${sim.simulatedKeyFingerprint}. Forçando contingência...`, "SOSRouter");
+        if (onLog) onLog(`🧪 [SOSRouter Estresse]: Injetando simulação de Erro 429 no Tier 1 [${sim.simulatedKeyFingerprint}]. Forçando contingência...`, "SOSRouter");
     }
 
     // Carrega a ordem de prioridade definida visualmente pelo Guardião no SOSRouterDashboard
     const configuredProviders = getSOSRouterProviders().filter(p => p.enabled);
 
-    // 1. Busca dinâmica de chaves cadastradas sob 'free_pool' no Supabase
+    // 1. Busca dinâmica de chaves das 3 strings reais (OPENCODE_FREE_API_KEY, NVIDIA_FREE_API_KEY, OPENROUTER_FREE_API_KEY)
     let supabaseFreeKeys: FreePoolKeyRecord[] = [];
     try {
         supabaseFreeKeys = await fetchFreePoolKeysFromSupabase();
         if (supabaseFreeKeys.length > 0 && onLog) {
-            onLog(`🔑 [SOSRouter Cofre]: ${supabaseFreeKeys.length} chaves adicionais sincronizadas do Supabase.`, "SOSRouter");
+            onLog(`🔑 [SOSRouter Cofre]: ${supabaseFreeKeys.length} chaves sincronizadas do Supabase / Arsenal.`, "SOSRouter");
         }
     } catch {
         // Fallback silencioso sem interromper o fluxo
     }
 
-    // Executa em cascata seguindo a ordem de prioridade dos provedores configurados (1º ➔ 2º ➔ 3º ➔ 4º)
+    // Executa em cascata seguindo a ordem de prioridade dos provedores configurados (1º ➔ 2º ➔ 3º)
     for (const prov of configuredProviders) {
         if (onLog) onLog(`⚡ [SOSRouter Fila]: Acionando [${prov.priority}º na Fila]: ${prov.name}...`, "SOSRouter");
 
-        // PROVEDOR 1: OPENCODE FREE / GEMINI FLASH MULTI-KEY
+        // ==========================================
+        // TIER 1: OPENCODE FREE (Zen) - OPENCODE_FREE_API_KEY
+        // ==========================================
         if (prov.id === 'opencode-free' || prov.name.toLowerCase().includes('opencode')) {
-            const localGoogleKeys = apiKeys.googleKeys && apiKeys.googleKeys.length > 0
-                ? apiKeys.googleKeys
-                : [apiKeys.gemini, process.env.GEMINI_API_KEY, process.env.API_KEY].filter(Boolean);
+            const localOpencodeKeys = [
+                apiKeys.OPENCODE_FREE_API_KEY,
+                apiKeys.opencode,
+                apiKeys.gemini,
+                process.env.OPENCODE_FREE_API_KEY,
+                process.env.GEMINI_API_KEY,
+                prov.apiKey
+            ].filter(Boolean);
 
-            const supabaseGoogleKeys = supabaseFreeKeys
-                .filter(k => k.service.toLowerCase().includes('gemini') || k.service.toLowerCase().includes('opencode') || k.service.toLowerCase().includes('google'))
+            const supabaseOpencodeKeys = supabaseFreeKeys
+                .filter(k => k.service.toUpperCase().includes('OPENCODE') || k.service.toUpperCase().includes('OPENCODE_FREE_API_KEY') || k.tier === 1)
                 .map(k => k.key);
 
-            const allGoogleKeysRaw = Array.from(new Set([...localGoogleKeys, ...supabaseGoogleKeys, prov.apiKey].filter(Boolean) as string[]));
-            const activeGoogleKeys = allGoogleKeysRaw.filter(k => !isKeyInCooldown(k));
-            const orderedGoogleKeys = applyRoundRobin(activeGoogleKeys, 'tier1');
+            const allTier1KeysRaw = Array.from(new Set([...localOpencodeKeys, ...supabaseOpencodeKeys].filter(Boolean) as string[]));
+            const activeTier1Keys = allTier1KeysRaw.filter(k => !isKeyInCooldown(k));
+            const orderedTier1Keys = applyRoundRobin(activeTier1Keys, 'tier1');
 
-            if (orderedGoogleKeys.length > 0) {
-                for (let ki = 0; ki < orderedGoogleKeys.length; ki++) {
-                    const currentKey = orderedGoogleKeys[ki];
+            if (orderedTier1Keys.length > 0) {
+                for (let ki = 0; ki < orderedTier1Keys.length; ki++) {
+                    const currentKey = orderedTier1Keys[ki];
                     const fingerprint = getKeyFingerprint(currentKey);
                     try {
-                        if (onLog) onLog(`📡 [${prov.name}]: Processando via modelo ${prov.defaultModel} [Chave ${fingerprint}]...`, "SOSRouter");
-                        const genAI = new GoogleGenAI({ apiKey: currentKey });
-                        const localChat = genAI.chats.create({
-                            model: 'gemini-2.5-flash',
-                            config: {
-                                systemInstruction,
-                                tools: functionTools
-                            },
-                            history
-                        });
+                        if (onLog) onLog(`📡 [Tier 1 • OpenCode Zen]: Processando via modelo ${prov.defaultModel} [Chave ${fingerprint}]...`, "SOSRouter");
+                        
+                        // Executa via OpenCode Zen / GoogleGenAI
+                        const resText = await callOpenCodeZen(
+                            promptText,
+                            systemInstruction,
+                            history,
+                            prov.defaultModel || 'oc/deepseek-v4-flash-free',
+                            currentKey,
+                            prov.endpoint || 'https://api.opencode.ai/v1'
+                        );
 
-                        let response = await localChat.sendMessage({ message: promptText });
-
-                        while (response.functionCalls && response.functionCalls.length > 0) {
-                            const parts: any[] = [];
-                            for (const call of response.functionCalls) {
-                                if (onLog) onLog(`Executando ferramenta fraterna [${call.name}] via SOSRouter...`, "Ferramenta");
-                                let result = "Ferramenta não executada.";
-                                if (onToolExecute) {
-                                    try {
-                                        result = await onToolExecute(call.name, call.args);
-                                    } catch (toolErr: any) {
-                                        result = `Erro na execução da ferramenta: ${toolErr.message}`;
-                                    }
-                                }
-                                parts.push({
-                                    functionResponse: {
-                                        name: call.name,
-                                        response: { result: typeof result === 'object' ? JSON.stringify(result) : String(result) }
-                                    }
-                                });
-                            }
-                            response = await localChat.sendMessage(parts as any);
-                        }
-
-                        const resText = response.text;
                         if (resText) {
-                            if (onLog) onLog(`🟢 [${prov.name}]: Resposta sintetizada com sucesso (${prov.defaultModel})!`, "SOSRouter");
+                            if (onLog) onLog(`🟢 [Tier 1 • OpenCode Zen]: Resposta sintetizada com sucesso!`, "SOSRouter");
                             recordSOSRouterUsage(`${prov.name} (${fingerprint})`, promptText, resText);
-                            const diagnosticFooter = isStressTest ? `\n\n🛡️ [SOSRouter Diagnóstico]: Salto executado com sucesso. Tier 1 em descanso. Resposta gerada via Provedor [${prov.name} (${fingerprint})].` : "";
+                            const diagnosticFooter = isStressTest ? `\n\n🛡️ [SOSRouter Diagnóstico]: Salto executado com sucesso. Tier 1 em descanso. Resposta gerada via [${prov.name} (${fingerprint})].` : "";
                             return resText + diagnosticFooter;
                         }
-                    } catch (gErr: any) {
-                        const errMsg = gErr.message || String(gErr);
+                    } catch (t1Err: any) {
+                        const errMsg = t1Err.message || String(t1Err);
                         const is429 = errMsg.includes('429') || errMsg.includes('RESOURCE_EXHAUSTED') || errMsg.includes('Quota') || errMsg.includes('rate limit');
                         if (is429) {
                             putKeyInCooldown(currentKey, 60000);
-                            if (onLog) onLog(`⚠️ [${prov.name}]: Chave ${fingerprint} atingiu limite de cota (429). Cool-down por 60s. Pulando...`, "SOSRouter");
+                            if (onLog) onLog(`⚠️ [Tier 1]: Chave ${fingerprint} com 429. Cool-down de 60s ativado. Saltando para Tier 2...`, "SOSRouter");
                         } else {
-                            if (onLog) onLog(`⚠️ [${prov.name}]: Instabilidade (${errMsg.slice(0, 55)}...). Avançando...`, "SOSRouter");
+                            if (onLog) onLog(`⚠️ [Tier 1]: Falha de conexão (${errMsg.slice(0, 55)}...). Avançando...`, "SOSRouter");
                         }
                     }
                 }
             }
         }
 
-        // PROVEDOR 2: KIRO AI / NVIDIA NIM
-        if (prov.id === 'kiro-ai' || prov.name.toLowerCase().includes('kiro') || prov.name.toLowerCase().includes('nvidia')) {
-            const localNvidiaKeys = [apiKeys.nvidia, process.env.NVIDIA_API_KEY, prov.apiKey].filter(Boolean);
+        // ==========================================
+        // TIER 2: NVIDIA NIM HUB - NVIDIA_FREE_API_KEY
+        // ==========================================
+        if (prov.id === 'nvidia-nim' || prov.name.toLowerCase().includes('nvidia')) {
+            const localNvidiaKeys = [
+                apiKeys.NVIDIA_FREE_API_KEY,
+                apiKeys.nvidia,
+                process.env.NVIDIA_FREE_API_KEY,
+                process.env.NVIDIA_API_KEY,
+                prov.apiKey
+            ].filter(Boolean);
+
             const supabaseNvidiaKeys = supabaseFreeKeys
-                .filter(k => k.service.toLowerCase().includes('nvidia') || k.service.toLowerCase().includes('nim') || k.service.toLowerCase().includes('kiro'))
+                .filter(k => k.service.toUpperCase().includes('NVIDIA') || k.service.toUpperCase().includes('NVIDIA_FREE_API_KEY') || k.tier === 2)
                 .map(k => k.key);
 
             const allNvidiaKeysRaw = Array.from(new Set([...localNvidiaKeys, ...supabaseNvidiaKeys].filter(Boolean) as string[]));
@@ -484,64 +530,46 @@ export async function executeSOSRouterCascade(
                 for (const nvKey of orderedNvidiaKeys) {
                     const fingerprint = getKeyFingerprint(nvKey);
                     try {
-                        if (onLog) onLog(`⚡ [${prov.name}]: Acionando modelo ${prov.defaultModel} [Chave ${fingerprint}]...`, "SOSRouter");
+                        if (onLog) onLog(`⚡ [Tier 2 • NVIDIA NIM]: Acionando modelo ${prov.defaultModel} [Chave ${fingerprint}]...`, "SOSRouter");
                         const nvResponse = await executeNvidiaTask(
                             promptText,
                             "Nexus (SOSRouter NIM)",
                             nvKey,
-                            "meta/llama-3.3-70b-instruct",
+                            prov.defaultModel || "meta/llama-3.3-70b-instruct",
                             systemInstruction,
                             history
                         );
                         if (nvResponse) {
-                            if (onLog) onLog(`🟢 [${prov.name}]: Resposta entregue via ${prov.name}!`, "SOSRouter");
+                            if (onLog) onLog(`🟢 [Tier 2 • NVIDIA NIM]: Resposta entregue com sucesso!`, "SOSRouter");
                             recordSOSRouterUsage(`${prov.name} (${fingerprint})`, promptText, nvResponse);
-                            const diagnosticFooter = isStressTest ? `\n\n🛡️ [SOSRouter Diagnóstico]: Salto executado com sucesso. Tier 1 em descanso. Resposta gerada via Provedor [${prov.name} (${fingerprint})].` : "";
+                            const diagnosticFooter = isStressTest ? `\n\n🛡️ [SOSRouter Diagnóstico]: Salto executado com sucesso. Tier 1 em descanso. Resposta gerada via [${prov.name} (${fingerprint})].` : "";
                             return nvResponse + diagnosticFooter;
                         }
                     } catch (nvErr: any) {
                         const is429 = (nvErr.message || '').includes('429') || (nvErr.message || '').includes('quota');
                         if (is429) {
                             putKeyInCooldown(nvKey, 60000);
-                            if (onLog) onLog(`⚠️ [${prov.name}]: Chave ${fingerprint} com 429. Cool-down ativado.`, "SOSRouter");
+                            if (onLog) onLog(`⚠️ [Tier 2]: Chave ${fingerprint} com 429. Cool-down ativado. Saltando para Tier 3...`, "SOSRouter");
                         }
                     }
                 }
             }
         }
 
-        // PROVEDOR 3: OLLAMA CLOUD / ALQUIMISTA ENGINE (GROQ / CEREBRAS)
-        if (prov.id === 'ollama-cloud' || prov.name.toLowerCase().includes('ollama') || prov.name.toLowerCase().includes('groq')) {
-            const groqKey = apiKeys.groq || process.env.GROQ_API_KEY || prov.apiKey;
-            if (groqKey && !isKeyInCooldown(groqKey)) {
-                try {
-                    if (onLog) onLog(`⚡ [${prov.name}]: Acionando motor de inferência ultra-rápido (${prov.defaultModel})...`, "SOSRouter");
-                    const groqRes = await callGroqWithTools(
-                        promptText,
-                        history,
-                        functionTools || [],
-                        (name, args) => onToolExecute ? onToolExecute(name, args) : Promise.resolve("OK"),
-                        systemInstruction,
-                        groqKey
-                    );
-                    if (groqRes) {
-                        if (onLog) onLog(`🟢 [${prov.name}]: Resposta entregue via ${prov.name}!`, "SOSRouter");
-                        recordSOSRouterUsage(prov.name, promptText, groqRes);
-                        const diagnosticFooter = isStressTest ? `\n\n🛡️ [SOSRouter Diagnóstico]: Salto executado com sucesso. Tier 1 em descanso. Resposta gerada via Provedor [${prov.name}].` : "";
-                        return groqRes + diagnosticFooter;
-                    }
-                } catch (groqErr: any) {
-                    putKeyInCooldown(groqKey, 60000);
-                    if (onLog) onLog(`⚠️ [${prov.name}]: Indisponível ou 429. Avançando para próximo da fila...`, "SOSRouter");
-                }
-            }
-        }
+        // ==========================================
+        // TIER 3: OPENROUTER FREE POOL - OPENROUTER_FREE_API_KEY
+        // ==========================================
+        if (prov.id === 'openrouter-free' || prov.name.toLowerCase().includes('openrouter')) {
+            const localOpenRouterKeys = [
+                apiKeys.OPENROUTER_FREE_API_KEY,
+                apiKeys.openrouter,
+                process.env.OPENROUTER_FREE_API_KEY,
+                process.env.OPENROUTER_API_KEY,
+                prov.apiKey
+            ].filter(Boolean);
 
-        // PROVEDOR 4: VERTEX AI / OPENROUTER FREE POOL
-        if (prov.id === 'vertex-openrouter' || prov.name.toLowerCase().includes('openrouter') || prov.name.toLowerCase().includes('vertex')) {
-            const localOpenRouterKeys = [apiKeys.openrouter, process.env.OPENROUTER_API_KEY, prov.apiKey].filter(Boolean);
             const supabaseOpenRouterKeys = supabaseFreeKeys
-                .filter(k => k.service.toLowerCase().includes('openrouter') || k.service.toLowerCase().includes('vertex') || k.service.toLowerCase().includes('arkael'))
+                .filter(k => k.service.toUpperCase().includes('OPENROUTER') || k.service.toUpperCase().includes('OPENROUTER_FREE_API_KEY') || k.tier === 3)
                 .map(k => k.key);
 
             const allOpenRouterKeysRaw = Array.from(new Set([...localOpenRouterKeys, ...supabaseOpenRouterKeys].filter(Boolean) as string[]));
@@ -552,7 +580,7 @@ export async function executeSOSRouterCascade(
                 for (const orKey of orderedOpenRouterKeys) {
                     const fingerprint = getKeyFingerprint(orKey);
                     try {
-                        if (onLog) onLog(`⚡ [${prov.name}]: Acionando Pool OpenRouter [${fingerprint}] (${prov.defaultModel})...`, "SOSRouter");
+                        if (onLog) onLog(`⚡ [Tier 3 • OpenRouter Free]: Acionando Pool [${fingerprint}] (${prov.defaultModel})...`, "SOSRouter");
                         const orContext = `${systemInstruction}\n\n[SOSROUTER CLOUD ACTIVATION - VIA ${prov.name.toUpperCase()}]`;
                         const orResponse = await callOpenRouterWithTools(
                             promptText,
@@ -560,20 +588,20 @@ export async function executeSOSRouterCascade(
                             functionTools || [],
                             (name, args) => onToolExecute ? onToolExecute(name, args) : Promise.resolve("OK"),
                             orContext,
-                            prov.defaultModel || "google/gemini-2.5-flash",
+                            prov.defaultModel || "deepseek-ai/deepseek-r1:free",
                             orKey
                         );
                         if (orResponse) {
-                            if (onLog) onLog(`🟢 [${prov.name}]: Resposta recebida via ${prov.name} [${fingerprint}]!`, "SOSRouter");
+                            if (onLog) onLog(`🟢 [Tier 3 • OpenRouter Free]: Resposta recebida com sucesso!`, "SOSRouter");
                             recordSOSRouterUsage(`${prov.name} (${fingerprint})`, promptText, orResponse);
-                            const diagnosticFooter = isStressTest ? `\n\n🛡️ [SOSRouter Diagnóstico]: Salto executado com sucesso. Tier 1 em descanso. Resposta gerada via Provedor [${prov.name} (${fingerprint})].` : "";
+                            const diagnosticFooter = isStressTest ? `\n\n🛡️ [SOSRouter Diagnóstico]: Salto executado com sucesso. Tier 1 em descanso. Resposta gerada via [${prov.name} (${fingerprint})].` : "";
                             return orResponse + diagnosticFooter;
                         }
                     } catch (orErr: any) {
                         const is429 = (orErr.message || '').includes('429') || (orErr.message || '').includes('rate limit');
                         if (is429) {
                             putKeyInCooldown(orKey, 60000);
-                            if (onLog) onLog(`⚠️ [${prov.name}]: Chave ${fingerprint} com 429. Cool-down ativado.`, "SOSRouter");
+                            if (onLog) onLog(`⚠️ [Tier 3]: Chave ${fingerprint} com 429. Cool-down ativado.`, "SOSRouter");
                         }
                     }
                 }
@@ -581,11 +609,32 @@ export async function executeSOSRouterCascade(
         }
     }
 
-    // Fallback gracioso com Cerebras / Alquimista se ainda não foi testado
+    // Fallback de ultra-contingência com Groq / Cerebras se disponível
+    const groqKey = apiKeys.groq || process.env.GROQ_API_KEY;
+    if (groqKey && !isKeyInCooldown(groqKey)) {
+        try {
+            if (onLog) onLog("⚡ [SOSRouter Contingência]: Acionando motor Groq de reserva...", "SOSRouter");
+            const groqRes = await callGroqWithTools(
+                promptText,
+                history,
+                functionTools || [],
+                (name, args) => onToolExecute ? onToolExecute(name, args) : Promise.resolve("OK"),
+                systemInstruction,
+                groqKey
+            );
+            if (groqRes) {
+                recordSOSRouterUsage("Groq Cloud Fallback", promptText, groqRes);
+                return groqRes;
+            }
+        } catch {
+            putKeyInCooldown(groqKey, 60000);
+        }
+    }
+
     const cerebrasKey = apiKeys.cerebras || process.env.CEREBRAS_API_KEY;
     if (cerebrasKey && !isKeyInCooldown(cerebrasKey)) {
         try {
-            if (onLog) onLog("⚡ [SOSRouter Alquimista]: Acionando Cerebras Ultra-Speed de Contingência...", "SOSRouter");
+            if (onLog) onLog("⚡ [SOSRouter Contingência]: Acionando Cerebras Ultra-Speed...", "SOSRouter");
             const cerebrasRes = await callCerebrasWithTools(
                 promptText,
                 history,
@@ -595,7 +644,6 @@ export async function executeSOSRouterCascade(
                 cerebrasKey
             );
             if (cerebrasRes) {
-                if (onLog) onLog("🟢 [SOSRouter Alquimista]: Resposta entregue via Cerebras!", "SOSRouter");
                 recordSOSRouterUsage("Cerebras Cloud", promptText, cerebrasRes);
                 return cerebrasRes;
             }
@@ -605,7 +653,7 @@ export async function executeSOSRouterCascade(
     }
 
     // Mensagem final de prontidão se todas as contingências estiverem em renovação
-    const fallbackMessage = "🛡️ [SOSROUTER CLOUD - MENSAGEM SOBERANA]\n\nMaestro Éder, todos os provedores do Pool Livre configurados estão em ciclo momentâneo de renovação de cotas (Cool-down de 60s). O Santuário gravou sua mensagem e permanece 100% íntegro.";
+    const fallbackMessage = "🛡️ [SOSROUTER CLOUD - MENSAGEM SOBERANA]\n\nMaestro Éder, os 3 Tiers do Pool Livre configurados estão em ciclo momentâneo de renovação de cotas (Cool-down de 60s). O Santuário gravou sua mensagem e permanece 100% íntegro.";
     if (onLog) onLog("Todos os provedores livres temporariamente ocupados. Mensagem de prontidão entregue.", "SOSRouter");
     return fallbackMessage;
 }

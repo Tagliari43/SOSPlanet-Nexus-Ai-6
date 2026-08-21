@@ -469,37 +469,80 @@ export interface FreePoolKeyRecord {
 }
 
 /**
- * Busca chaves do Pool Livre (free_pool / sosrouter) armazenadas no Supabase
+ * Busca chaves do Pool Livre (OPENCODE_FREE_API_KEY, NVIDIA_FREE_API_KEY, OPENROUTER_FREE_API_KEY)
+ * armazenadas no Supabase ou no Arsenal do Santuário
  */
 export async function fetchFreePoolKeysFromSupabase(): Promise<FreePoolKeyRecord[]> {
-    if (!supabase) return [];
-    try {
-        // Tenta buscar da tabela api_keys ou vault_keys com filtro de tag/categoria free_pool
-        const { data, error } = await supabase
-            .from('api_keys')
-            .select('*')
-            .or('tag.eq.free_pool,category.eq.free_pool,tag.eq.sosrouter');
-        
-        if (!error && data && data.length > 0) {
-            return data.map((d: any) => ({
-                id: d.id,
-                service: d.service || d.provider || 'unknown',
-                key: d.key || d.api_key || '',
-                tag: d.tag || 'free_pool',
-                tier: d.tier || 1,
-                active: d.active !== false
-            }));
-        }
+    const collected: FreePoolKeyRecord[] = [];
 
-        // Fallback: tentar portal_state se houver chaves de pool cadastradas
-        const portalData = await getPortalStateFromSupabase();
-        if (portalData && Array.isArray(portalData.free_pool_keys)) {
-            return portalData.free_pool_keys;
-        }
+    // 1. Tenta buscar no Supabase
+    if (supabase) {
+        try {
+            const { data, error } = await supabase
+                .from('api_keys')
+                .select('*')
+                .or('tag.eq.free_pool,category.eq.free_pool,tag.eq.sosrouter,service.eq.OPENCODE_FREE_API_KEY,service.eq.NVIDIA_FREE_API_KEY,service.eq.OPENROUTER_FREE_API_KEY');
+            
+            if (!error && data && data.length > 0) {
+                for (const d of data) {
+                    const svc = (d.service || d.provider || d.name || '').toUpperCase();
+                    let tier = 1;
+                    if (svc.includes('NVIDIA')) tier = 2;
+                    else if (svc.includes('OPENROUTER')) tier = 3;
+                    else if (svc.includes('OPENCODE')) tier = 1;
 
-        return [];
-    } catch (e) {
-        console.warn("Aviso ao buscar chaves do Supabase:", e);
-        return [];
+                    collected.push({
+                        id: d.id,
+                        service: d.service || d.name || 'OPENCODE_FREE_API_KEY',
+                        key: d.key || d.api_key || d.value || '',
+                        tag: d.tag || 'free_pool',
+                        tier: d.tier || tier,
+                        active: d.active !== false
+                    });
+                }
+            }
+
+            // Fallback: portal_state
+            const portalData = await getPortalStateFromSupabase();
+            if (portalData && Array.isArray(portalData.free_pool_keys)) {
+                for (const pk of portalData.free_pool_keys) {
+                    if (pk.key && !collected.some(c => c.key === pk.key)) {
+                        collected.push(pk);
+                    }
+                }
+            }
+        } catch (e) {
+            console.warn("[Supabase] Aviso ao sincronizar chaves do pool livre:", e);
+        }
     }
+
+    // 2. Busca também do Arsenal / LocalStorage pelas 3 strings maiúsculas exatas
+    try {
+        const storedArsenal = localStorage.getItem('santuario_arsenal_keys_v2') || localStorage.getItem('user_api_keys');
+        if (storedArsenal) {
+            const parsed = JSON.parse(storedArsenal);
+            if (Array.isArray(parsed)) {
+                for (const item of parsed) {
+                    const itemService = (item.service || item.id || '').toUpperCase();
+                    if (itemService.includes('OPENCODE_FREE_API_KEY') || itemService === 'OPENCODE' || itemService === 'OPENCODE_FREE') {
+                        if (item.key && !collected.some(c => c.key === item.key)) {
+                            collected.push({ service: 'OPENCODE_FREE_API_KEY', key: item.key, tier: 1, tag: 'free_pool', active: true });
+                        }
+                    } else if (itemService.includes('NVIDIA_FREE_API_KEY') || itemService === 'NVIDIA_NIM' || itemService === 'NVIDIA_FREE') {
+                        if (item.key && !collected.some(c => c.key === item.key)) {
+                            collected.push({ service: 'NVIDIA_FREE_API_KEY', key: item.key, tier: 2, tag: 'free_pool', active: true });
+                        }
+                    } else if (itemService.includes('OPENROUTER_FREE_API_KEY') || itemService === 'OPENROUTER_FREE' || itemService === 'OPENROUTER') {
+                        if (item.key && !collected.some(c => c.key === item.key)) {
+                            collected.push({ service: 'OPENROUTER_FREE_API_KEY', key: item.key, tier: 3, tag: 'free_pool', active: true });
+                        }
+                    }
+                }
+            }
+        }
+    } catch {
+        // Fallback silencioso
+    }
+
+    return collected;
 }

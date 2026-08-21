@@ -20,7 +20,8 @@ import {
     ExternalLink,
     Search,
     Sliders,
-    Server
+    Server,
+    Flame
 } from 'lucide-react';
 import { 
     getSOSRouterProviders, 
@@ -52,7 +53,7 @@ export const SOSRouterDashboard: React.FC = () => {
     const [newModelName, setNewModelName] = useState('');
     const [newModelProvider, setNewModelProvider] = useState(providers[0]?.id || 'opencode-free');
     const [newModelContext, setNewModelContext] = useState('128k');
-    const [newModelTag, setNewModelTag] = useState('Community Free');
+    const [newModelTag, setNewModelTag] = useState('Tier 1 • OpenCode');
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedProviderFilter, setSelectedProviderFilter] = useState('all');
 
@@ -68,8 +69,15 @@ export const SOSRouterDashboard: React.FC = () => {
             setIsSOSActive(isSOSRouterModeEnabled());
             setStats(getSOSRouterStats());
         };
+        const handleProvidersChange = () => {
+            setProviders(getSOSRouterProviders());
+        };
         window.addEventListener('sosrouter-mode-change', handleModeChange);
-        return () => window.removeEventListener('sosrouter-mode-change', handleModeChange);
+        window.addEventListener('sosrouter-providers-change', handleProvidersChange);
+        return () => {
+            window.removeEventListener('sosrouter-mode-change', handleModeChange);
+            window.removeEventListener('sosrouter-providers-change', handleProvidersChange);
+        };
     }, []);
 
     // Salva provedores e atualiza o estado
@@ -86,7 +94,7 @@ export const SOSRouterDashboard: React.FC = () => {
         copy[index] = copy[index - 1];
         copy[index - 1] = temp;
         
-        // Recalcula prioridades
+        // Recalcula prioridades (1º, 2º, 3º...)
         const reordered = copy.map((p, idx) => ({ ...p, priority: idx + 1 }));
         handleUpdateProviders(reordered);
     };
@@ -99,7 +107,7 @@ export const SOSRouterDashboard: React.FC = () => {
         copy[index] = copy[index + 1];
         copy[index + 1] = temp;
 
-        // Recalcula prioridades
+        // Recalcula prioridades (1º, 2º, 3º...)
         const reordered = copy.map((p, idx) => ({ ...p, priority: idx + 1 }));
         handleUpdateProviders(reordered);
     };
@@ -107,12 +115,6 @@ export const SOSRouterDashboard: React.FC = () => {
     // Alternar ativação de um provedor
     const toggleProviderActive = (id: string) => {
         const updated = providers.map(p => p.id === id ? { ...p, enabled: !p.enabled } : p);
-        handleUpdateProviders(updated);
-    };
-
-    // Atualizar chave de API de um provedor
-    const handleKeyChange = (id: string, key: string) => {
-        const updated = providers.map(p => p.id === id ? { ...p, apiKey: key } : p);
         handleUpdateProviders(updated);
     };
 
@@ -127,7 +129,7 @@ export const SOSRouterDashboard: React.FC = () => {
             providerId: newModelProvider,
             contextLimit: newModelContext.trim() || '128k',
             description: `Modelo gratuito associado ao provedor ${newModelProvider}`,
-            tag: newModelTag.trim() || 'Community Free',
+            tag: newModelTag.trim() || 'Custom Free',
             isFree: true
         };
 
@@ -167,6 +169,7 @@ export const SOSRouterDashboard: React.FC = () => {
             description: 'Provedor livre externo cadastrado na Forja',
             endpoint: newProvEndpoint.trim() || 'https://api.external-ai.org/v1',
             apiKey: newProvKey.trim(),
+            keyEnvName: 'CUSTOM_FREE_KEY',
             status: 'ONLINE',
             priority: providers.length + 1,
             models: newProvDefaultModel ? [newProvDefaultModel.trim()] : ['default-free-model'],
@@ -230,13 +233,13 @@ export const SOSRouterDashboard: React.FC = () => {
                         </div>
                         <div>
                             <div className="flex items-center gap-2">
-                                <h3 className="text-xl font-bold text-emerald-300 tracking-tight">SOSRouter: Orquestração de Provedores Livres</h3>
+                                <h3 className="text-xl font-bold text-emerald-300 tracking-tight">SOSRouter: Orquestração Trifásica Serverless</h3>
                                 <span className="text-[10px] uppercase font-bold tracking-widest bg-emerald-900/60 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded-full">
-                                    Fase 21 • 100% Serverless
+                                    Fase 21 • 3 Tiers Reais
                                 </span>
                             </div>
                             <p className="text-xs text-zinc-400 mt-0.5">
-                                Gerencie a fila de prioridades, cadastre novos modelos da comunidade e teste a latência do pool externo sem tocar nas chaves nativas do Santuário.
+                                Cascata automática com 3 Tiers reais (OpenCode Zen ➔ NVIDIA NIM ➔ OpenRouter Free). Desvio de 429 com cool-down de 60s e isolamento total do Santuário.
                             </p>
                         </div>
                     </div>
@@ -252,7 +255,7 @@ export const SOSRouterDashboard: React.FC = () => {
                             ) : (
                                 <Activity className="w-4 h-4 text-emerald-400" />
                             )}
-                            Testar Latência do Pool
+                            Testar Latência do Pool (3 Tiers)
                         </button>
 
                         <button
@@ -298,16 +301,16 @@ export const SOSRouterDashboard: React.FC = () => {
                 </div>
             </div>
 
-            {/* SEÇÃO 1: GRID DE PROVEDORES LIVRES EXTERNOS COM CONTROLE DE FILA / PRIORIDADE */}
+            {/* SEÇÃO 1: GRID DE PROVEDORES LIVRES EXTERNOS COM CONTROLE DE FILA (3 TIERS) */}
             <div className="space-y-4">
                 <div className="flex justify-between items-center">
                     <div>
                         <h4 className="text-base font-bold text-emerald-300 flex items-center gap-2">
                             <Layers className="w-5 h-5 text-emerald-400" />
-                            Provedores Livres Externos (SOSRouter Pool)
+                            Provedores Livres Externos (SOSRouter Trifásico)
                         </h4>
                         <p className="text-xs text-zinc-400">
-                            A ordem abaixo define a sequência exata de fallback (1º ➔ 2º ➔ 3º ➔ 4º) quando o comando "Ative o SOSRouter" for disparado no chat.
+                            A ordem abaixo define a sequência exata de fallback (1º ➔ 2º ➔ 3º) quando o comando "Ative o SOSRouter" for acionado.
                         </p>
                     </div>
                     <button
@@ -315,7 +318,7 @@ export const SOSRouterDashboard: React.FC = () => {
                         className="px-3 py-1.5 bg-emerald-950/60 border border-emerald-600/40 hover:bg-emerald-900/40 text-emerald-300 text-xs font-semibold rounded-lg flex items-center gap-1.5 transition-colors"
                     >
                         <Plus className="w-3.5 h-3.5" />
-                        Adicionar Novo Provedor
+                        Adicionar Novo Fornecedor
                     </button>
                 </div>
 
@@ -335,7 +338,7 @@ export const SOSRouterDashboard: React.FC = () => {
                                 <label className="text-[11px] text-zinc-400 font-semibold block mb-1">Nome do Provedor</label>
                                 <input
                                     type="text"
-                                    placeholder="Ex: Kiro AI / Ollama Local / OpenCode Free"
+                                    placeholder="Ex: OpenCode Zen / NVIDIA NIM / OpenRouter Free"
                                     value={newProvName}
                                     onChange={(e) => setNewProvName(e.target.value)}
                                     className="w-full bg-zinc-900 border border-emerald-900/60 rounded-lg px-3 py-1.5 text-xs text-emerald-200 focus:outline-none focus:border-emerald-400 font-mono"
@@ -346,7 +349,7 @@ export const SOSRouterDashboard: React.FC = () => {
                                 <label className="text-[11px] text-zinc-400 font-semibold block mb-1">Endpoint da API (Base URL)</label>
                                 <input
                                     type="text"
-                                    placeholder="Ex: https://api.opencode.ai/v1 ou http://localhost:11434"
+                                    placeholder="Ex: https://api.opencode.ai/v1"
                                     value={newProvEndpoint}
                                     onChange={(e) => setNewProvEndpoint(e.target.value)}
                                     className="w-full bg-zinc-900 border border-emerald-900/60 rounded-lg px-3 py-1.5 text-xs text-emerald-200 focus:outline-none focus:border-emerald-400 font-mono"
@@ -356,7 +359,7 @@ export const SOSRouterDashboard: React.FC = () => {
                                 <label className="text-[11px] text-zinc-400 font-semibold block mb-1">Chave de API / Token Livre (Opcional)</label>
                                 <input
                                     type="password"
-                                    placeholder="Deixe vazio se for endpoint público ou sem auth"
+                                    placeholder="Deixe vazio se lida do Supabase / Arsenal"
                                     value={newProvKey}
                                     onChange={(e) => setNewProvKey(e.target.value)}
                                     className="w-full bg-zinc-900 border border-emerald-900/60 rounded-lg px-3 py-1.5 text-xs text-emerald-200 focus:outline-none focus:border-emerald-400 font-mono"
@@ -366,7 +369,7 @@ export const SOSRouterDashboard: React.FC = () => {
                                 <label className="text-[11px] text-zinc-400 font-semibold block mb-1">Modelo Padrão Inicial</label>
                                 <input
                                     type="text"
-                                    placeholder="Ex: deepseek-r1-distill / gemma-4-31b-it"
+                                    placeholder="Ex: oc/deepseek-v4-flash-free"
                                     value={newProvDefaultModel}
                                     onChange={(e) => setNewProvDefaultModel(e.target.value)}
                                     className="w-full bg-zinc-900 border border-emerald-900/60 rounded-lg px-3 py-1.5 text-xs text-emerald-200 focus:outline-none focus:border-emerald-400 font-mono"
@@ -391,91 +394,98 @@ export const SOSRouterDashboard: React.FC = () => {
                     </motion.form>
                 )}
 
-                {/* Cards Interativos com Badge Luminosa e Reordenação */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Grid Limpo com os 3 Blocos Funcionais */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     {providers.map((prov, index) => (
                         <div 
                             key={prov.id}
-                            className={`bg-zinc-950/70 border rounded-2xl p-4 transition-all duration-300 relative overflow-hidden group ${
+                            className={`bg-zinc-950/80 border rounded-2xl p-4 transition-all duration-300 relative overflow-hidden flex flex-col justify-between group ${
                                 prov.enabled 
-                                    ? 'border-emerald-500/30 hover:border-emerald-400/60 shadow-lg shadow-emerald-950/20' 
+                                    ? 'border-emerald-500/40 hover:border-emerald-400/80 shadow-lg shadow-emerald-950/30' 
                                     : 'border-zinc-800 opacity-60'
                             }`}
                         >
                             {/* Brilho de fundo sutil */}
                             <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 rounded-full blur-3xl pointer-events-none" />
 
-                            <div className="flex items-start justify-between gap-3 mb-3">
-                                <div className="flex items-center gap-3">
-                                    {/* Indicador Luminoso em Verde Brilhante */}
-                                    <div className="relative flex items-center justify-center">
-                                        <span className={`w-3.5 h-3.5 rounded-full ${
-                                            prov.enabled ? 'bg-emerald-400 shadow-[0_0_12px_#34d399]' : 'bg-zinc-600'
-                                        }`} />
-                                        {prov.enabled && (
-                                            <span className="absolute w-5 h-5 rounded-full bg-emerald-400/30 animate-ping" />
-                                        )}
-                                    </div>
-                                    <div>
-                                        <div className="flex items-center gap-2">
-                                            <h5 className="font-bold text-sm text-emerald-200">{prov.name}</h5>
-                                            <span className="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-950/80 border border-emerald-500/30 text-emerald-400">
-                                                {prov.priority}º na Fila
-                                            </span>
+                            <div>
+                                <div className="flex items-start justify-between gap-2 mb-3">
+                                    <div className="flex items-center gap-2.5">
+                                        {/* Indicador Luminoso em Verde Brilhante */}
+                                        <div className="relative flex items-center justify-center">
+                                            <span className={`w-3.5 h-3.5 rounded-full ${
+                                                prov.enabled ? 'bg-emerald-400 shadow-[0_0_12px_#34d399]' : 'bg-zinc-600'
+                                            }`} />
+                                            {prov.enabled && (
+                                                <span className="absolute w-5 h-5 rounded-full bg-emerald-400/30 animate-ping" />
+                                            )}
                                         </div>
-                                        <p className="text-[11px] text-zinc-400 line-clamp-1">{prov.description}</p>
+                                        <div>
+                                            <h5 className="font-bold text-sm text-emerald-200">{prov.name}</h5>
+                                            <div className="flex items-center gap-1.5 mt-0.5">
+                                                <span className="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-950/80 border border-emerald-500/30 text-emerald-400">
+                                                    {prov.priority}º na Fila
+                                                </span>
+                                                <span className="text-[9px] font-mono text-zinc-400">
+                                                    Tier {prov.priority}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Controles de Fila (Subir / Descer) e Toggle */}
+                                    <div className="flex items-center gap-1 bg-zinc-900/90 border border-emerald-900/40 rounded-lg p-1">
+                                        <button
+                                            onClick={() => movePriorityUp(index)}
+                                            disabled={index === 0}
+                                            title="Subir prioridade na fila"
+                                            className="p-1 hover:bg-emerald-900/40 text-zinc-400 hover:text-emerald-300 disabled:opacity-30 rounded transition-colors"
+                                        >
+                                            <ArrowUp className="w-3.5 h-3.5" />
+                                        </button>
+                                        <button
+                                            onClick={() => movePriorityDown(index)}
+                                            disabled={index === providers.length - 1}
+                                            title="Descer prioridade na fila"
+                                            className="p-1 hover:bg-emerald-900/40 text-zinc-400 hover:text-emerald-300 disabled:opacity-30 rounded transition-colors"
+                                        >
+                                            <ArrowDown className="w-3.5 h-3.5" />
+                                        </button>
+                                        <button
+                                            onClick={() => toggleProviderActive(prov.id)}
+                                            title={prov.enabled ? "Desativar provedor" : "Ativar provedor"}
+                                            className={`px-1.5 py-0.5 text-[9px] font-bold rounded ${
+                                                prov.enabled 
+                                                    ? 'bg-emerald-500/20 text-emerald-300 hover:bg-emerald-500/30' 
+                                                    : 'bg-zinc-800 text-zinc-400 hover:text-zinc-200'
+                                            }`}
+                                        >
+                                            {prov.enabled ? 'ON' : 'OFF'}
+                                        </button>
                                     </div>
                                 </div>
 
-                                {/* Controles de Fila (Subir / Descer) e Toggle */}
-                                <div className="flex items-center gap-1.5 bg-zinc-900/80 border border-emerald-900/40 rounded-lg p-1">
-                                    <button
-                                        onClick={() => movePriorityUp(index)}
-                                        disabled={index === 0}
-                                        title="Subir prioridade na fila"
-                                        className="p-1 hover:bg-emerald-900/40 text-zinc-400 hover:text-emerald-300 disabled:opacity-30 rounded transition-colors"
-                                    >
-                                        <ArrowUp className="w-3.5 h-3.5" />
-                                    </button>
-                                    <button
-                                        onClick={() => movePriorityDown(index)}
-                                        disabled={index === providers.length - 1}
-                                        title="Descer prioridade na fila"
-                                        className="p-1 hover:bg-emerald-900/40 text-zinc-400 hover:text-emerald-300 disabled:opacity-30 rounded transition-colors"
-                                    >
-                                        <ArrowDown className="w-3.5 h-3.5" />
-                                    </button>
-                                    <button
-                                        onClick={() => toggleProviderActive(prov.id)}
-                                        title={prov.enabled ? "Desativar provedor" : "Ativar provedor"}
-                                        className={`px-2 py-0.5 text-[10px] font-bold rounded ${
-                                            prov.enabled 
-                                                ? 'bg-emerald-500/20 text-emerald-300 hover:bg-emerald-500/30' 
-                                                : 'bg-zinc-800 text-zinc-400 hover:text-zinc-200'
-                                        }`}
-                                    >
-                                        {prov.enabled ? 'ATIVO' : 'PAUSA'}
-                                    </button>
-                                </div>
+                                <p className="text-[11px] text-zinc-400 line-clamp-2 mb-3">{prov.description}</p>
                             </div>
 
-                            {/* Informações de Endpoint & Modelos Associados */}
-                            <div className="space-y-2 text-xs">
-                                <div className="flex items-center justify-between text-[11px] text-zinc-400 bg-zinc-900/40 px-2.5 py-1.5 rounded-lg border border-emerald-900/20 font-mono">
-                                    <span className="truncate max-w-[200px]">
-                                        {prov.endpoint || 'https://api.external-pool.org/v1'}
+                            {/* Informações de Chave Mapeada, Endpoint & Modelos Associados */}
+                            <div className="space-y-2 text-xs border-t border-emerald-950/60 pt-2.5 mt-2">
+                                <div className="flex items-center justify-between text-[10px] text-zinc-400 bg-zinc-900/60 px-2.5 py-1.5 rounded-lg border border-emerald-900/30 font-mono">
+                                    <span className="text-emerald-400 font-bold flex items-center gap-1">
+                                        <Key className="w-3 h-3 text-emerald-400" />
+                                        {prov.keyEnvName || 'CHAVE_POOL'}
                                     </span>
-                                    <span className="text-emerald-400 font-semibold">
+                                    <span className="text-zinc-300">
                                         {prov.latencyMs ? `${prov.latencyMs}ms` : 'Latência: OK'}
                                     </span>
                                 </div>
 
                                 {/* Tags de Modelos Disponíveis */}
-                                <div className="flex flex-wrap gap-1.5 pt-1">
+                                <div className="flex flex-wrap gap-1 pt-1">
                                     {prov.models.map(mId => (
                                         <span 
                                             key={mId}
-                                            className="text-[10px] font-mono px-2 py-0.5 rounded bg-black/40 border border-emerald-900/40 text-emerald-300/90"
+                                            className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-black/50 border border-emerald-900/40 text-emerald-300/90 truncate max-w-full"
                                         >
                                             {mId}
                                         </span>
@@ -533,7 +543,7 @@ export const SOSRouterDashboard: React.FC = () => {
                         <div className="sm:col-span-2">
                             <input
                                 type="text"
-                                placeholder="ID do Modelo (Ex: gemini/gemini-3.5-flash-lite ou gemma-4-31b-it)"
+                                placeholder="ID do Modelo (Ex: oc/deepseek-v4-flash-free ou meta/llama-3.3-70b-instruct)"
                                 value={newModelId}
                                 onChange={(e) => setNewModelId(e.target.value)}
                                 className="w-full bg-black/50 border border-emerald-900/60 rounded-lg px-3 py-1.5 text-xs text-emerald-200 focus:outline-none focus:border-emerald-400 font-mono"
@@ -615,7 +625,7 @@ export const SOSRouterDashboard: React.FC = () => {
                             <div className="bg-black/90 px-4 py-3 border-b border-emerald-900/50 flex justify-between items-center">
                                 <div className="flex items-center gap-2 text-emerald-400 text-xs font-bold">
                                     <Terminal className="w-4 h-4" />
-                                    <span>SOSRouter Latency Scanner v2.1 • Homologação de Rede</span>
+                                    <span>SOSRouter Latency Scanner v2.2 • Homologação Trifásica</span>
                                 </div>
                                 <button
                                     onClick={() => setShowLatencyModal(false)}
@@ -628,13 +638,13 @@ export const SOSRouterDashboard: React.FC = () => {
                             {/* Conteúdo do Log */}
                             <div className="p-5 space-y-3 bg-black/60 text-xs font-mono">
                                 <div className="text-zinc-500 text-[11px] pb-2 border-b border-zinc-800">
-                                    Disparando sondas de handshake HTTPS nos endpoints do pool livre...
+                                    Disparando sondas HTTPS nos 3 Tiers reais (OpenCode Zen, NVIDIA NIM, OpenRouter Free)...
                                 </div>
 
                                 {isTestingLatency && (
                                     <div className="flex items-center gap-2 text-emerald-400 py-3 animate-pulse">
                                         <div className="w-3 h-3 border-2 border-emerald-400 border-t-transparent rounded-full animate-spin" />
-                                        <span>Testando rotas ativas (OpenCode, Kiro, Ollama, Vertex/OpenRouter)...</span>
+                                        <span>Executando handshakes nas 3 camadas de contingência...</span>
                                     </div>
                                 )}
 
@@ -645,7 +655,7 @@ export const SOSRouterDashboard: React.FC = () => {
                                             className="flex justify-between items-center bg-zinc-900/50 border border-emerald-950/60 px-3 py-2 rounded-lg"
                                         >
                                             <div className="flex items-center gap-2">
-                                                <span className="text-zinc-500">[{i + 1}]</span>
+                                                <span className="text-zinc-500">Tier {i + 1}</span>
                                                 <span className="text-emerald-200 font-bold">{res.name}</span>
                                                 <span className="text-zinc-500 text-[10px]">({res.model})</span>
                                             </div>
@@ -662,7 +672,7 @@ export const SOSRouterDashboard: React.FC = () => {
                                 {latencySummary && (
                                     <div className="mt-4 pt-3 border-t border-emerald-900/40 flex justify-between items-center">
                                         <div className="text-emerald-400 font-bold text-xs">
-                                            🟢 RESUMO: {latencySummary.passed}/{latencySummary.total} provedores responderam com sucesso.
+                                            🟢 RESUMO: {latencySummary.passed}/{latencySummary.total} Tiers responderam com sucesso.
                                         </div>
                                         <button
                                             onClick={() => setShowLatencyModal(false)}
