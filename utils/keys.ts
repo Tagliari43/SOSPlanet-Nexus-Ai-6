@@ -39,7 +39,9 @@ export function loadApiKeys(): ApiKeys {
     try {
         const saved = localStorage.getItem(USER_API_KEYS_KEY);
         if (saved) userKeys = JSON.parse(saved);
-    } catch (e) {}
+    } catch {
+        userKeys = [];
+    }
 
     // 1. Chave Primária Gemini
     const google1User = userKeys.find(k => 
@@ -59,7 +61,24 @@ export function loadApiKeys(): ApiKeys {
     const envGoogle2 = process.env.GEMINI_API_KEY_2 || process.env.GEMINI_API_KEY_SOSPLANET;
     const google2 = (google2User && google2User.trim().length > 0) ? google2User.trim() : envGoogle2;
 
-    const allGoogleKeys = Array.from(new Set([google1, google2].filter(Boolean) as string[]));
+    // Coleta todas as chaves Gemini de múltiplas contas Gmail cadastradas no Arsenal ou .env
+    const extraUserGoogleKeys = userKeys
+        .filter(k => 
+            k.service.toLowerCase().includes('google') || 
+            k.service.toLowerCase().includes('gemini') ||
+            k.id.toLowerCase().includes('gemini') ||
+            (typeof k.key === 'string' && k.key.startsWith('AIza'))
+        )
+        .map(k => k.key ? k.key.trim() : '')
+        .filter(Boolean);
+
+    const extraEnvGoogleKeys = [
+        process.env.GEMINI_API_KEY_3,
+        process.env.GEMINI_API_KEY_4,
+        process.env.GEMINI_API_KEY_5
+    ].filter(Boolean) as string[];
+
+    const allGoogleKeys = Array.from(new Set([google1, google2, ...extraUserGoogleKeys, ...extraEnvGoogleKeys].filter(Boolean) as string[]));
 
     // 3. Chave NVIDIA NIM
     const nvidiaKey = userKeys.find(k => 

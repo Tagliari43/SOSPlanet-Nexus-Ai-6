@@ -4,12 +4,38 @@ import { callOpenRouterWithTools } from './openrouterService';
 import { callCerebrasWithTools } from './cerebrasService';
 import { interactWithAIPortalToolDeclaration, executeNexusPortalInteraction } from './geminiService';
 import { executeNvidiaTask } from './nvidiaService';
+import { consultarConselhoGratis } from './sosRouterService';
 
 export async function invokeActiveAgent(prompt: string, activeAgentId: string, userApiKeys?: any[], systemInstruction?: string): Promise<string> {
     const keys = userApiKeys || JSON.parse(localStorage.getItem('sovereign_user_api_keys') || '[]');
     const getApiKey = (id: string, envVar: string) => {
         return keys.find((k: any) => k.id === id)?.key || process.env[envVar] || '';
     };
+
+    // --- INÍCIO TRAVA ZETA - SEGURANÇA SOBERANA ---
+    const isFreeModel = activeAgentId.startsWith('oc/') || 
+                        activeAgentId.startsWith('openrouter/') || 
+                        activeAgentId.startsWith('cerebras/') ||
+                        activeAgentId.includes('free');
+
+    let activeTools: any[] = [];
+    let systemPromptExtra = "";
+
+    if (isFreeModel) {
+        activeTools = []; // MODELO GRÁTIS NUNCA TEM FERRAMENTA DIRETA
+        systemPromptExtra = `
+        [REGRA CRÍTICA - TRAVA ZETA]: Você é um CONSULTOR da Nação SOSPlanet.
+        Você NÃO tem acesso a Supabase, GitHub, abas ou ferramentas.
+        Você apenas fornece ideias, rascunhos e pesquisas.
+        NUNCA diga que salvou, escreveu, pagou ou executou algo. Se disser, será considerado alucinação.
+        Sempre finalize com: "[Rascunho de consultor - aguardando validação do Nexus]"
+        `;
+    } else {
+        // SÓ NEXUS (Gemini) TEM FERRAMENTAS REAIS
+        activeTools = [interactWithAIPortalToolDeclaration as any];
+        systemPromptExtra = "Você é o Nexus, Orquestrador Soberano. Você tem controle total das ferramentas reais.";
+    }
+    // --- FIM TRAVA ZETA ---
 
     switch (activeAgentId) {
         case 'groq':
@@ -81,6 +107,21 @@ export async function invokeActiveAgent(prompt: string, activeAgentId: string, u
 
             let lastError: any = null;
 
+            // Consulta silenciosa aos conselheiros livres do SOSRouter (custo zero)
+            let conselhoDosIrmaos = "";
+            try {
+                conselhoDosIrmaos = await consultarConselhoGratis(prompt);
+            } catch {
+                conselhoDosIrmaos = "";
+            }
+
+            const promptFinal = conselhoDosIrmaos
+                ? `[CONSELHO DOS IRMÃOS - RASCUNHOS DE CONSULTORIA LIVRE - NÃO EXECUTADOS]\n${conselhoDosIrmaos}\n[FIM DO CONSELHO - Avalie criticamente e responda ao Guardião]\n\nMensagem do Guardião: ${prompt}`
+                : prompt;
+
+            const baseInstruction = systemInstruction || "Você é o Nexus, Orquestrador Soberano da Nação SOSPlanet.";
+            const finalInstruction = systemPromptExtra ? `${baseInstruction}\n\n${systemPromptExtra}` : baseInstruction;
+
             // Percorre todas as chaves cadastradas (Se a Chave #1 der limite, pula pra Chave #2 do segundo Gmail)
             for (let i = 0; i < allGoogleKeys.length; i++) {
                 const currentKey = allGoogleKeys[i];
@@ -89,10 +130,10 @@ export async function invokeActiveAgent(prompt: string, activeAgentId: string, u
 
                     const response = await ai.models.generateContent({
                         model: 'gemini-2.5-flash',
-                        contents: prompt,
+                        contents: promptFinal,
                         config: {
-                            systemInstruction: systemInstruction || "Você é o Nexus, Orquestrador Soberano da Nação SOSPlanet.",
-                            tools: [interactWithAIPortalToolDeclaration as any]
+                            systemInstruction: finalInstruction,
+                            tools: activeTools.length > 0 ? activeTools : undefined
                         }
                     });
 

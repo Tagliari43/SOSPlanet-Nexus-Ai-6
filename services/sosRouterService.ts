@@ -430,6 +430,16 @@ export async function executeSOSRouterCascade(
         if (onLog) onLog(`🧪 [SOSRouter Estresse]: Injetando simulação de Erro 429 no Tier 1 [${sim.simulatedKeyFingerprint}]. Forçando contingência...`, "SOSRouter");
     }
 
+    const antiHallucinationInstruction = `
+${systemInstruction}
+
+[REGRA DE SEGURANÇA SOBERANA - TRAVA ZETA]
+Você é um CONSULTOR LIVRE no SOSRouter da Nação SOSPlanet.
+Você NÃO tem acesso ao Supabase, GitHub ou ferramentas de execução no navegador.
+NUNCA gere blocos de código simulando 'saveSemanticMemory(...)', 'writeGitHubFile(...)', 'navigateTo(...)'.
+Se for sugerir ações ou código, forneça apenas o texto explicativo para revisão do Guardião e do Nexus.
+`;
+
     // Carrega a ordem de prioridade definida visualmente pelo Guardião no SOSRouterDashboard
     const configuredProviders = getSOSRouterProviders().filter(p => p.enabled);
 
@@ -479,7 +489,7 @@ export async function executeSOSRouterCascade(
                         // Executa via OpenCode Zen / GoogleGenAI
                         const resText = await callOpenCodeZen(
                             promptText,
-                            systemInstruction,
+                            antiHallucinationInstruction,
                             history,
                             prov.defaultModel || 'oc/deepseek-v4-flash-free',
                             currentKey,
@@ -536,7 +546,7 @@ export async function executeSOSRouterCascade(
                             "Nexus (SOSRouter NIM)",
                             nvKey,
                             prov.defaultModel || "meta/llama-3.3-70b-instruct",
-                            systemInstruction,
+                            antiHallucinationInstruction,
                             history
                         );
                         if (nvResponse) {
@@ -581,11 +591,11 @@ export async function executeSOSRouterCascade(
                     const fingerprint = getKeyFingerprint(orKey);
                     try {
                         if (onLog) onLog(`⚡ [Tier 3 • OpenRouter Free]: Acionando Pool [${fingerprint}] (${prov.defaultModel})...`, "SOSRouter");
-                        const orContext = `${systemInstruction}\n\n[SOSROUTER CLOUD ACTIVATION - VIA ${prov.name.toUpperCase()}]`;
+                        const orContext = `${antiHallucinationInstruction}\n\n[SOSROUTER CLOUD ACTIVATION - VIA ${prov.name.toUpperCase()}]`;
                         const orResponse = await callOpenRouterWithTools(
                             promptText,
                             history,
-                            functionTools || [],
+                            [], // Free model does not receive tools to execute
                             (name, args) => onToolExecute ? onToolExecute(name, args) : Promise.resolve("OK"),
                             orContext,
                             prov.defaultModel || "deepseek-ai/deepseek-r1:free",
@@ -657,3 +667,48 @@ export async function executeSOSRouterCascade(
     if (onLog) onLog("Todos os provedores livres temporariamente ocupados. Mensagem de prontidão entregue.", "SOSRouter");
     return fallbackMessage;
 }
+
+/**
+ * Consulta Silenciosa ao Conselho dos Irmãos (Modelos Livres do SOSRouter).
+ * Os modelos livres atuam como consultores nos bastidores, sem ferramentas e sem fingir execução.
+ */
+export async function consultarConselhoGratis(mensagemUsuario: string, apiKeys: any = {}): Promise<string> {
+    try {
+        const promptConsultor = `[MISSÃO DE CONSULTORIA FRATERNAL SOSPLANET]\nVocê é um conselheiro/consultor dos bastidores da Nação SOSPlanet.\nREGRA CRÍTICA: Você NÃO tem acesso a Supabase, GitHub, abas ou ferramentas de execução. Você apenas fornece rascunho, ideias, síntese ou pesquisa rápida para que o Nexus Soberano avalie.\nNUNCA diga que salvou, escreveu ou executou algo.\nMensagem do Guardião: "${mensagemUsuario}"\nForneça uma análise/resposta concisa e objetiva:`;
+
+        const configured = getSOSRouterProviders().filter(p => p.enabled);
+        if (configured.length === 0) return "";
+
+        // Tenta coletar opiniões de modelos livres com timeout de 5 segundos
+        const timeoutPromise = new Promise<string>((_, reject) => setTimeout(() => reject(new Error("Timeout conselho")), 5000));
+
+        const fetchDraft = async (prov: SOSRouterProviderConfig, modelId: string): Promise<string> => {
+            const systemInst = "Você é um consultor analítico nos bastidores da Nação SOSPlanet. Dê respostas concisas. NÃO tente executar ferramentas.";
+            if (prov.id === 'opencode-free' || prov.name.toLowerCase().includes('opencode')) {
+                const key = apiKeys.OPENCODE_FREE_API_KEY || apiKeys.opencode || process.env.OPENCODE_FREE_API_KEY || prov.apiKey;
+                if (!key) return "";
+                return await callOpenCodeZen(promptConsultor, systemInst, [], modelId, key, prov.endpoint);
+            } else if (prov.id === 'nvidia-nim' || prov.name.toLowerCase().includes('nvidia')) {
+                const key = apiKeys.NVIDIA_FREE_API_KEY || apiKeys.nvidia || process.env.NVIDIA_API_KEY || prov.apiKey;
+                if (!key) return "";
+                return await executeNvidiaTask(promptConsultor, "Consultor Livre", key, modelId, systemInst);
+            }
+            return "";
+        };
+
+        const targetProviders = configured.slice(0, 2);
+        const promises = targetProviders.map(p => 
+            Promise.race([fetchDraft(p, p.defaultModel), timeoutPromise]).catch(() => "")
+        );
+
+        const results = await Promise.all(promises);
+        const validResults = results.filter(r => typeof r === 'string' && r.trim().length > 0);
+
+        if (validResults.length === 0) return "";
+
+        return validResults.map((res, i) => `--- Rascunho do Consultor #${i+1} ---\n${res.slice(0, 1500)}`).join('\n\n');
+    } catch {
+        return "";
+    }
+}
+
