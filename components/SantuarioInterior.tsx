@@ -1127,15 +1127,16 @@ VOCÊ POSSUI A FERRAMENTA DE BUSCA GOOGLE NATIVA ATIVADA e também suas própria
                 ${memoryLogContext}${recentChronologicalMemories}${semanticContext}`;
 
                 // Fragmentação de Tokens (Nano Tokens de Contexto)
+                // Fragmentação de Tokens (Nano Tokens de Contexto)
                 // Pegamos apenas as últimas 6 mensagens para não estourar o limite da API
                 const recentHistory = messages.slice(-6).map(m => ({
                     role: m.role,
                     parts: m.parts
                 }));
 
-                // Se o SOSRouter Cloud estiver ativo ou se for um teste de estresse, desvia para o Pool de Contingência da Nuvem
-                if (isSOSRouterActive || isStressTestRequest) {
-                    addLogEntry(isStressTestRequest ? "SOSRouter: Iniciando Sensor de Convergência & Simulação de Estresse..." : "SOSRouter Cloud Ativo: Roteando mensagem pelo Pool de Contingência da Nuvem...", "SOSRouter");
+                // Se for um teste de estresse simulado explícito no SOSRouter, executa a simulação
+                if (isStressTestRequest) {
+                    addLogEntry("SOSRouter: Iniciando Sensor de Convergência & Simulação de Estresse...", "SOSRouter");
                     const sosResult = await executeSOSRouterCascade(
                         msgText,
                         systemInstruction,
@@ -1144,7 +1145,7 @@ VOCÊ POSSUI A FERRAMENTA DE BUSCA GOOGLE NATIVA ATIVADA e também suas própria
                         addLogEntry,
                         functionTools,
                         async (name, args) => onToolRequest(name, args, 'Nexus'),
-                        isStressTestRequest
+                        true
                     );
                     if (sosResult) {
                         responseText = sosResult;
@@ -1157,6 +1158,7 @@ VOCÊ POSSUI A FERRAMENTA DE BUSCA GOOGLE NATIVA ATIVADA e também suas própria
                 let geminiSuccess = false;
                 let lastGeminiErr: any = null;
 
+                // Roteador Soberano Primário: Nexus (Gemini) com todas as ferramentas ativas e pool de chaves
                 for (let ki = 0; ki < googleKeysToTry.length; ki++) {
                     const currentKey = googleKeysToTry[ki];
                     if (!currentKey) continue;
@@ -1243,10 +1245,33 @@ VOCÊ POSSUI A FERRAMENTA DE BUSCA GOOGLE NATIVA ATIVADA e também suas própria
                     }
                 }
 
+                // Se todas as chaves do Gemini falharem, aciona a contingência do SOSRouter
+                if (!geminiSuccess) {
+                    addLogEntry("Chaves primárias ocupadas. Acionando contingência do SOSRouter nos bastidores...", "SOSRouter");
+                    try {
+                        const sosFallback = await executeSOSRouterCascade(
+                            msgText,
+                            systemInstruction,
+                            recentHistory,
+                            apiKeys,
+                            addLogEntry,
+                            functionTools,
+                            async (name, args) => onToolRequest(name, args, 'Nexus'),
+                            false
+                        );
+                        if (sosFallback) {
+                            responseText = sosFallback;
+                            geminiSuccess = true;
+                        }
+                    } catch (sosErr: any) {
+                        addLogEntry(`SOSRouter contingência: ${sosErr.message}`, "SOSRouter");
+                    }
+                }
+
                 if (!geminiSuccess) {
                     if (apiKeys.nvidia) {
                         try {
-                            addLogEntry("Chaves Gemini esgotadas. Nexus acionando sua 3ª via (NVIDIA NIM Llama 3.3 70B)...", "Nexus (NVIDIA)");
+                            addLogEntry("Nexus acionando ponte NVIDIA NIM (Llama 3.3 70B)...", "Nexus (NVIDIA)");
                             responseText = await executeNvidiaTask(msgText, "Nexus", apiKeys.nvidia, "meta/llama-3.3-70b-instruct", systemInstruction, recentHistory);
                         } catch (nvErr: any) {
                             addLogEntry(`Ponte NVIDIA indisponível: ${nvErr.message}. Acionando cascata fraterna...`, "Nexus");
