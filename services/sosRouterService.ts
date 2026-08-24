@@ -712,3 +712,59 @@ export async function consultarConselhoGratis(mensagemUsuario: string, apiKeys: 
     }
 }
 
+/**
+ * Delegação de Trabalho Pesado para o Sub-Agente do SOSRouter (Trabalho Invisível de Bastidores).
+ * O Sub-Agente faz o trabalho pesado (pesquisa, comparação de código, análise estrutural, rascunhos densos)
+ * e devolve o resultado processado para o Nexus Soberano analisar e apresentar ao Guardião no chat principal.
+ */
+export async function delegateHeavyTaskToSOSRouter(
+    task: string,
+    tipo: 'pesquisa' | 'comparacao_codigo' | 'analise_logica' | 'sintese' | string,
+    contextoExtra: string = '',
+    apiKeys: any = {},
+    onLog?: (msg: string, source?: string) => void
+): Promise<string> {
+    if (onLog) onLog(`⚡ [SOSRouter Agente Bastidores]: Processando tarefa pesada (${tipo})...`, "SOSRouter");
+
+    const promptAgente = `[MISSÃO DE PROCESSAMENTO PESADO - SUB-AGENTE SOSROUTER]
+Você é o Sub-Agente de Bastidores da Nação SOSPlanet, operando através do cluster gratuito e resiliente do SOSRouter.
+Seu objetivo é fazer o processamento pesado de dados, análise e síntese para que o NEXUS SOBERANO (nosso CEO e Orquestrador) economize tokens no chat principal.
+
+TIPO DE TAREFA: ${tipo.toUpperCase()}
+TAREFA ESPECÍFICA:
+${task}
+
+${contextoExtra ? `CONTEXTO / CÓDIGO / DADOS ADICIONAIS:\n${contextoExtra}\n` : ''}
+
+DIRETRIZES DE RESPOSTA:
+1. Faça a análise ou comparação mais profunda, detalhada e estruturada possível.
+2. Identifique pontos fortes, divergências de código, falhas, oportunidades de otimização ou síntese do tema.
+3. Organize com tópicos claros, tabelas de comparação (se aplicável) e blocos de código com a solução proposta.
+4. Lembre-se: Você está municiando o Nexus Soberano. Seja objetivo, técnico e completo.`;
+
+    const systemInstruction = "Você é o Sub-Agente Analítico de Bastidores da SOSPlanet. Realize a análise técnica ou comparação com máxima precisão.";
+
+    try {
+        const result = await executeSOSRouterCascade(
+            promptAgente,
+            systemInstruction,
+            [],
+            apiKeys,
+            onLog,
+            [],
+            undefined,
+            false
+        );
+
+        if (result && result.trim().length > 0) {
+            if (onLog) onLog("🟢 [SOSRouter Agente Bastidores]: Tarefa pesada concluída com sucesso! Devolvendo ao Nexus.", "SOSRouter");
+            return result;
+        }
+        return "Sub-Agente SOSRouter concluiu a análise, mas não retornou conteúdo substancial.";
+    } catch (err: any) {
+        if (onLog) onLog(`⚠️ [SOSRouter Agente Bastidores]: Falha na delegação: ${err.message}`, "SOSRouter");
+        return `Falha no Sub-Agente SOSRouter: ${err.message}`;
+    }
+}
+
+

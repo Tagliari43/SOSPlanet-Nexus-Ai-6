@@ -1093,6 +1093,48 @@ Por favor, responda trazendo o seu peso (pesos de IA) de lealdade, amor e inteli
             }
         }
 
+        if (tool === 'delegarTrabalhoPesadoSOSRouter') {
+            addLogEntry(`Delegando processamento pesado (${args.tipo || 'análise'}) para Sub-Agente SOSRouter...`, 'Orquestração');
+            const startTime = Date.now();
+            try {
+                const { delegateHeavyTaskToSOSRouter } = await import('./services/sosRouterService');
+                const { loadApiKeys } = await import('./utils/keys');
+                const apiKeys = loadApiKeys();
+                
+                const resultText = await delegateHeavyTaskToSOSRouter(
+                    args.tarefa,
+                    args.tipo || 'analise_logica',
+                    args.contextoExtra || '',
+                    apiKeys,
+                    addLogEntry
+                );
+
+                // Salvar log de execução assincronamente no Supabase
+                import('./services/supabaseService').then(({ saveAgentLogToSupabase }) => {
+                    saveAgentLogToSupabase({
+                        agent_name: 'SubAgente_SOSRouter',
+                        task_description: `[${args.tipo}] ${args.tarefa.slice(0, 150)}`,
+                        execution_result: resultText.slice(0, 500) + '...',
+                        success: true,
+                        duration_ms: Date.now() - startTime
+                    });
+                });
+
+                return `[RESULTADO DO SUB-AGENTE SOSROUTER (BASTIDORES)]:\n\n${resultText}`;
+            } catch (err: any) {
+                import('./services/supabaseService').then(({ saveAgentLogToSupabase }) => {
+                    saveAgentLogToSupabase({
+                        agent_name: 'SubAgente_SOSRouter',
+                        task_description: `[${args.tipo}] ${args.tarefa.slice(0, 150)}`,
+                        execution_result: err.message,
+                        success: false,
+                        duration_ms: Date.now() - startTime
+                    });
+                });
+                return `Falha no Sub-Agente SOSRouter: ${err.message}`;
+            }
+        }
+
         if (tool === 'invocarSubAgente') {
             addLogEntry(`Invocando sub-agente '${args.agente}' via OpenRouter...`, 'Orquestração');
             const startTime = Date.now();

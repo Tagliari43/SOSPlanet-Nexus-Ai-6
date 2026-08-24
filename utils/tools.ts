@@ -307,6 +307,26 @@ export const SovereignToolFunctions = {
         }
     } as FunctionDeclaration,
 
+    delegarTrabalhoPesadoSOSRouter: {
+        name: 'delegarTrabalhoPesadoSOSRouter',
+        description: 'Delega processamento pesado (pesquisas extensas, comparação profunda de trechos de código, análise estrutural ou rascunhos densos) para o Sub-Agente de Bastidores que atua no cluster gratuito do SOSRouter. O sub-agente faz todo o trabalho pesado nos bastidores e devolve o resultado pronto para você (Nexus Soberano) avaliar, sintetizar e apresentar ao Guardião Éder no chat principal, economizando preciosos tokens.',
+        parameters: {
+            type: Type.OBJECT,
+            properties: {
+                tarefa: { type: Type.STRING, description: 'A descrição detalhada da tarefa pesada a ser executada nos bastidores.' },
+                tipo: { 
+                    type: Type.STRING, 
+                    description: 'O tipo da tarefa: "comparacao_codigo", "pesquisa", "analise_logica", "sintese" ou "otimizacao".' 
+                },
+                contextoExtra: { 
+                    type: Type.STRING, 
+                    description: 'Códigos completos, trechos, logs ou dados para o sub-agente comparar e analisar.' 
+                }
+            },
+            required: ['tarefa', 'tipo']
+        }
+    } as FunctionDeclaration,
+
     invocarSubAgente: {
         name: 'invocarSubAgente',
         description: 'Instancia um sub-agente via OpenRouter para executar uma tarefa especializada',
