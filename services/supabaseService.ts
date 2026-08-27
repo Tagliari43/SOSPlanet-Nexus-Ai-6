@@ -297,7 +297,7 @@ export async function saveAgentLogToSupabase(log: AgentLogRecord): Promise<{succ
 
 /**
  * Salva uma nova memória no Cofre Semântico (Supabase)
- * Trava Sagrada de Soberania: Força o source e type com o ID do agente ativo.
+ * Suporta as tabelas 'memories' e 'memórias' (com colunas content/content_text/incorporação).
  */
 export async function saveMemoryToSupabase(
     content: string, 
@@ -307,19 +307,22 @@ export async function saveMemoryToSupabase(
     importance: number = 0.5,
     agentId: string = 'nexus'
 ): Promise<{success: boolean, error?: string}> {
-    if (!supabase) {
+    const client = getSupabaseClient();
+    if (!client) {
         return { success: false, error: "Supabase não inicializado. Chaves ausentes." };
     }
 
-    // Trava Sagrada de Soberania: Forçar source e type
     const enforcedMetadata = {
         ...metadata,
-        source: agentId
+        source: agentId,
+        timestamp: metadata.timestamp || Date.now(),
+        data_registro: metadata.data_registro || new Date().toISOString().split('T')[0]
     };
     const enforcedType = agentId;
 
     try {
-        const { error } = await supabase
+        // 1. Tenta salvar na tabela 'memories' (formato padrão com content e embedding)
+        const primaryInsert = await client
             .from('memories')
             .insert([
                 { 
@@ -331,12 +334,49 @@ export async function saveMemoryToSupabase(
                 }
             ]);
 
-        if (error) {
-            console.error("Erro ao salvar memória no Supabase:", error);
-            return { success: false, error: error.message || JSON.stringify(error) };
+        if (!primaryInsert.error) {
+            return { success: true };
         }
 
-        return { success: true };
+        console.warn("Tentativa na tabela 'memories' retornou erro, tentando 'memórias':", primaryInsert.error);
+
+        // 2. Se falhar ou se a tabela for em português 'memórias', tenta esquema alternativo
+        const altInsert = await client
+            .from('memórias')
+            .insert([
+                {
+                    content: content,
+                    embedding: embedding,
+                    metadata: enforcedMetadata,
+                    type: enforcedType,
+                    importance: importance
+                }
+            ]);
+
+        if (!altInsert.error) {
+            return { success: true };
+        }
+
+        // 3. Tenta campos em português na tabela 'memórias' (content/incorporação/metadados)
+        const ptInsert = await client
+            .from('memórias')
+            .insert([
+                {
+                    content: content,
+                    incorporação: embedding,
+                    metadados: enforcedMetadata,
+                    criado_em: new Date().toISOString()
+                }
+            ] as any);
+
+        if (!ptInsert.error) {
+            return { success: true };
+        }
+
+        return { 
+            success: false, 
+            error: primaryInsert.error?.message || altInsert.error?.message || ptInsert.error?.message || "Falha na inserção" 
+        };
     } catch (err: any) {
         console.error("Falha crítica ao salvar memória:", err);
         return { success: false, error: err.message || String(err) };
@@ -384,30 +424,55 @@ export async function searchSimilarMemories(queryEmbedding: number[], matchThres
 /**
  * Leitura de memórias com cascata de cache de 3 estágios (Supabase -> RAM -> LocalStorage)
  */
-export async function getMemoriesWithCache(limit: number = 50): Promise<{ data: any[], stale: boolean, source: string }> {
+export async function getMemoriesWithCache(limit: number = 100): Promise<{ data: any[], stale: boolean, source: string }> {
     const CACHE_KEY = 'nexus_memories_snapshot';
+    const client = getSupabaseClient();
     
     try {
-        if (!supabase) throw new Error("Supabase não inicializado");
+        if (!client) throw new Error("Supabase não inicializado");
         
-        // Estágio 1: Tentar Supabase (Live)
-        const { data, error } = await supabase
+        // Estágio 1: Tentar Supabase (Live) - primeiro na tabela 'memories'
+        let records: any[] = [];
+        const resPrimary = await client
             .from('memories')
             .select('*')
             .order('created_at', { ascending: false })
             .limit(limit);
             
-        if (error) throw error;
-        
-        // Sucesso: Atualizar Cache RAM (Estágio 2) e LocalStorage (Estágio 3)
-        memoriesRamCache.set('latest_memories', data);
-        try {
-            localStorage.setItem(CACHE_KEY, JSON.stringify(data));
-        } catch (e) {
-            console.warn("Falha ao salvar no localStorage", e);
+        if (!resPrimary.error && resPrimary.data && resPrimary.data.length > 0) {
+            records = resPrimary.data;
+        } else {
+            // Tenta na tabela 'memórias' (em português)
+            const resAlt = await client
+                .from('memórias')
+                .select('*')
+                .limit(limit);
+                
+            if (!resAlt.error && resAlt.data && resAlt.data.length > 0) {
+                // Normaliza os campos para formato consistente
+                records = resAlt.data.map((r: any) => ({
+                    id: r.id || r['id'] || r['eu ia'],
+                    content: r.content || r.contente || r.conteudo || r.text || '',
+                    embedding: r.embedding || r['incorporação'] || [],
+                    metadata: r.metadata || r.metadados || {},
+                    type: r.type || r.tipo || 'conversa',
+                    importance: r.importance || r.importancia || 0.5,
+                    created_at: r.created_at || r['criado_em'] || new Date().toISOString()
+                }));
+            }
+        }
+
+        if (records.length > 0) {
+            memoriesRamCache.set('latest_memories', records);
+            try {
+                localStorage.setItem(CACHE_KEY, JSON.stringify(records));
+            } catch (e) {
+                console.warn("Falha ao salvar no localStorage", e);
+            }
+            return { data: records, stale: false, source: 'supabase' };
         }
         
-        return { data: data || [], stale: false, source: 'supabase' };
+        throw new Error("Nenhum registro encontrado nas tabelas de memórias");
     } catch (error) {
         console.warn("Estágio 1 (Supabase) falhou. Iniciando Fallback...", error);
         
@@ -423,7 +488,6 @@ export async function getMemoriesWithCache(limit: number = 50): Promise<{ data: 
             if (localData) {
                 console.log("Estágio 3: Recuperado do LocalStorage.");
                 const parsedData = JSON.parse(localData);
-                // Carregar de volta para RAM para agilizar futuras buscas falhas
                 memoriesRamCache.set('latest_memories', parsedData);
                 return { data: parsedData, stale: true, source: 'localstorage' };
             }
@@ -431,7 +495,21 @@ export async function getMemoriesWithCache(limit: number = 50): Promise<{ data: 
             console.error("Estágio 3 falhou. LocalStorage inacessível ou corrompido.", e);
         }
         
-        // Falha total
+        // Fallback para sovereign_semantic_vault
+        try {
+            const vaultData = localStorage.getItem('sovereign_semantic_vault');
+            if (vaultData) {
+                const parsed = JSON.parse(vaultData).map((v: any) => ({
+                    id: v.id,
+                    content: v.text,
+                    embedding: v.embedding,
+                    metadata: { prateleira: v.prateleira || 'geral', timestamp: v.timestamp },
+                    created_at: new Date(v.timestamp || Date.now()).toISOString()
+                }));
+                return { data: parsed, stale: true, source: 'localstorage_vault' };
+            }
+        } catch {}
+
         return { data: [], stale: true, source: 'none' };
     }
 }

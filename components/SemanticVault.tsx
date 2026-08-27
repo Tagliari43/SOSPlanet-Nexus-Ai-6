@@ -201,6 +201,7 @@ export default function SemanticVault({ addLogEntry, apiKey }: SemanticVaultProp
                                     onChange={(e) => setInputPrateleira(e.target.value)}
                                     className="w-full bg-black/50 border border-zinc-800 rounded-lg p-2 focus:border-indigo-500 outline-none text-zinc-300"
                                 >
+                                    <option value="diario_data">📅 Diário por Data (Cronologia)</option>
                                     <option value="geral">Geral</option>
                                     <option value="nexus">Nexus (CEO)</option>
                                     <option value="groq">Groq (Sub-Agente)</option>
@@ -347,6 +348,7 @@ export default function SemanticVault({ addLogEntry, apiKey }: SemanticVaultProp
                                 className="bg-zinc-950 border border-zinc-800 rounded px-2 py-1 outline-none text-zinc-300 text-xs"
                             >
                                 <option value="todas">Todas as Prateleiras</option>
+                                <option value="diario_data">📅 Diário por Data (Cronologia)</option>
                                 <option value="geral">Geral</option>
                                 <option value="nexus">Nexus (CEO)</option>
                                 <option value="groq">Groq</option>

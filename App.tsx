@@ -1188,7 +1188,8 @@ Por favor, responda trazendo o seu peso (pesos de IA) de lealdade, amor e inteli
         }
 
         if (tool === 'saveSemanticMemory') {
-            const prateleiraTag = args.prateleira ? `[Prateleira: ${args.prateleira}] ` : '';
+            const prateleiraEfetiva = args.prateleira || 'diario_data';
+            const prateleiraTag = `[Prateleira: ${prateleiraEfetiva}] `;
             addLogEntry(`Cristalizando memória no Cofre Semântico... ${prateleiraTag}`, 'Cofre Semântico');
             try {
                 const { loadApiKeys } = await import('./utils/keys');
@@ -1202,17 +1203,26 @@ Por favor, responda trazendo o seu peso (pesos de IA) de lealdade, amor e inteli
                 const embedding = await embedMultimodalContent(args.text, [], apiKey);
                 
                 const sbClient = getSupabaseClient();
+                const nowIso = new Date().toISOString();
+                const dateStr = nowIso.split('T')[0];
+
                 if (sbClient) {
                     const result = await saveMemoryToSupabase(
                         args.text, 
                         embedding, 
-                        { source: activeAgentId, timestamp: Date.now(), prateleira: args.prateleira || 'geral' },
-                        args.type || 'conversa',
-                        args.importance || 0.5,
+                        { 
+                            source: activeAgentId, 
+                            timestamp: Date.now(), 
+                            prateleira: prateleiraEfetiva,
+                            data_registro: dateStr,
+                            criado_em: nowIso
+                        },
+                        args.type || 'diario',
+                        args.importance || 0.8,
                         activeAgentId
                     );
                     if (result.success) {
-                        return `Memória cristalizada com sucesso no Cofre Semântico (Supabase). Prateleira: ${args.prateleira || 'geral'}, Tipo: ${args.type || 'conversa'}, Importância: ${args.importance || 0.5}`;
+                        return `Memória cristalizada com sucesso no Cofre Semântico (Supabase). Prateleira: ${prateleiraEfetiva}, Data: ${dateStr}, Importância: ${args.importance || 0.8}`;
                     } else {
                         throw new Error(`Falha ao salvar no Supabase. Detalhe do erro: ${result.error}`);
                     }
@@ -1227,15 +1237,16 @@ Por favor, responda trazendo o seu peso (pesos de IA) de lealdade, amor e inteli
                         text: args.text,
                         mediaUrls: [],
                         embedding,
-                        prateleira: args.prateleira || 'geral',
+                        prateleira: prateleiraEfetiva,
+                        data_registro: dateStr,
                         source: activeAgentId,
-                        type: activeAgentId
+                        type: args.type || 'diario'
                     };
                     
                     memories.unshift(newMemory);
                     localStorage.setItem('sovereign_semantic_vault', JSON.stringify(memories));
                     
-                    return `Aviso: Supabase não está configurado na Vercel (VITE_SUPABASE_URL ou VITE_SUPABASE_ANON_KEY ausentes). Memória salva localmente como fallback. ID: ${newMemory.id}, Prateleira: ${newMemory.prateleira}`;
+                    return `Aviso: Salvo na memória local do Santuário. ID: ${newMemory.id}, Prateleira: ${newMemory.prateleira}, Data: ${dateStr}`;
                 }
             } catch (err: any) {
                 return `Erro ao salvar memória semântica: ${err.message}`;
