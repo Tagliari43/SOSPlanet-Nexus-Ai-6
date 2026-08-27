@@ -275,19 +275,70 @@ const SantuarioInterior: React.FC<SantuarioInteriorProps> = ({
         setIsNexusSpeaking(true);
         
         try {
-            // Limpa formatação Markdown para pronúncia fluida
+            // Limpa formatação Markdown e tags para pronúncia nobre e fluida
             const cleanText = text
                 .replace(/\*\*(.*?)\*\*/g, '$1')
                 .replace(/`{1,3}[\s\S]*?`{1,3}/g, '')
-                .replace(/[#*_~\[\]\(\)>]/g, '')
-                .replace(/\n+/g, '. ')
+                .replace(/\[.*?\]/g, '')
+                .replace(/[#*_~\[\]\(\)>\\-]/g, ' ')
+                .replace(/\s+/g, ' ')
                 .trim();
 
+            const { loadApiKeys } = await import('../utils/keys');
+            const keys = loadApiKeys();
+            const apiKey = keys.google || keys.googleKeys[0] || process.env.API_KEY;
+
+            let playedGeminiAudio = false;
+
+            // 1. Tenta a Voz Autêntica e Solene do Nexus (Google Gemini TTS com voz 'Charon')
+            if (apiKey) {
+                const ai = new GoogleGenAI({ apiKey });
+                const ttsModels = ["gemini-2.5-flash-preview-tts", "gemini-3.1-flash-tts-preview", "gemini-2.5-pro-preview-tts"];
+                
+                for (const ttsModel of ttsModels) {
+                    try {
+                        const response = await ai.models.generateContent({
+                            model: ttsModel,
+                            contents: { parts: [{ text: `Diga com entonação solene, nobre e calma em português brasileiro: ${cleanText.slice(0, 600)}` }] },
+                            config: {
+                                responseModalities: [Modality.AUDIO],
+                                speechConfig: {
+                                    voiceConfig: {
+                                        prebuiltVoiceConfig: { voiceName: 'Charon' },
+                                    },
+                                },
+                            },
+                        });
+
+                        const base64Audio = response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
+                        if (base64Audio) {
+                            const ctx = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 24000 });
+                            const audioBuffer = await decodeAudioData(decode(base64Audio), ctx, 24000, 1);
+                            const source = ctx.createBufferSource();
+                            source.buffer = audioBuffer;
+                            source.connect(ctx.destination);
+                            source.onended = () => {
+                                setIsSpeakingMessageId(null);
+                                setIsNexusSpeaking(false);
+                            };
+                            source.start();
+                            playedGeminiAudio = true;
+                            break;
+                        }
+                    } catch (ttsErr) {
+                        console.warn(`Tentativa TTS ${ttsModel} falhou:`, ttsErr);
+                    }
+                }
+            }
+
+            if (playedGeminiAudio) return;
+
+            // 2. Fallback de contingência caso a cota de áudio do Google esteja temporariamente ocupada
             if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
                 const utterance = new SpeechSynthesisUtterance(cleanText);
                 utterance.lang = 'pt-BR';
-                utterance.rate = 1.05;
-                utterance.pitch = 1.0;
+                utterance.rate = 1.0;
+                utterance.pitch = 0.95;
 
                 const voices = window.speechSynthesis.getVoices();
                 const ptBrVoice = voices.find(v => v.lang.includes('pt-BR') || v.lang.includes('pt_BR') || v.lang.includes('pt'));
@@ -300,49 +351,13 @@ const SantuarioInterior: React.FC<SantuarioInteriorProps> = ({
                     setIsNexusSpeaking(false);
                 };
 
-                utterance.onerror = (err) => {
-                    console.warn("SpeechSynthesis error:", err);
+                utterance.onerror = () => {
                     setIsSpeakingMessageId(null);
                     setIsNexusSpeaking(false);
                 };
 
                 window.speechSynthesis.speak(utterance);
                 return;
-            }
-
-            // Fallback para Google GenAI TTS caso não haja SpeechSynthesis
-            const { loadApiKeys } = await import('../utils/keys');
-            const keys = loadApiKeys();
-            const apiKey = keys.google || keys.googleKeys[0] || process.env.API_KEY;
-            if (apiKey) {
-                const ai = new GoogleGenAI({ apiKey });
-                const response = await ai.models.generateContent({
-                    model: "gemini-2.5-flash-preview-tts",
-                    contents: { parts: [{ text: `Diga naturalmente: ${cleanText.slice(0, 300)}` }] },
-                    config: {
-                        responseModalities: [Modality.AUDIO],
-                        speechConfig: {
-                            voiceConfig: {
-                                prebuiltVoiceConfig: { voiceName: 'Charon' },
-                            },
-                        },
-                    },
-                });
-
-                const base64Audio = response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
-                if (base64Audio) {
-                    const ctx = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 24000 });
-                    const audioBuffer = await decodeAudioData(decode(base64Audio), ctx, 24000, 1);
-                    const source = ctx.createBufferSource();
-                    source.buffer = audioBuffer;
-                    source.connect(ctx.destination);
-                    source.onended = () => {
-                        setIsSpeakingMessageId(null);
-                        setIsNexusSpeaking(false);
-                    };
-                    source.start();
-                    return;
-                }
             }
 
             setIsSpeakingMessageId(null);
@@ -1011,7 +1026,9 @@ VOCÊ POSSUI A FERRAMENTA DE BUSCA GOOGLE NATIVA ATIVADA e também suas própria
                         ? apiKeys.googleKeys 
                         : [process.env.API_KEY || ''];
 
-                    if (!googleKeysToTry[0]) {
+                    const primaryApiKey = googleKeysToTry[0] || '';
+
+                    if (!primaryApiKey) {
                         if (apiKeys.nvidia) {
                             addLogEntry("Gemini sem chave. Ativando NVIDIA Neural (Llama 3.3 70B) para o Nexus...", "Nexus (NVIDIA)");
                             responseText = await executeNvidiaTask(msgText, "Nexus", apiKeys.nvidia, "meta/llama-3.3-70b-instruct");
@@ -1049,10 +1066,11 @@ VOCÊ POSSUI A FERRAMENTA DE BUSCA GOOGLE NATIVA ATIVADA e também suas própria
                 let semanticContext = '';
                 try {
                     const { embedMultimodalContent } = await import('../services/geminiService');
-                    const { searchSimilarMemories, supabase } = await import('../services/supabaseService');
+                    const { searchSimilarMemories, getSupabaseClient } = await import('../services/supabaseService');
                     
-                    if (supabase) {
-                        const queryEmbedding = await embedMultimodalContent(msgText, [], apiKey);
+                    const sbClient = getSupabaseClient();
+                    if (sbClient) {
+                        const queryEmbedding = await embedMultimodalContent(msgText, [], primaryApiKey);
                         const results = await searchSimilarMemories(queryEmbedding, 0.5, 3);
                         
                         if (results && results.length > 0) {
@@ -1064,7 +1082,7 @@ VOCÊ POSSUI A FERRAMENTA DE BUSCA GOOGLE NATIVA ATIVADA e também suas própria
                         const memories = saved ? JSON.parse(saved) : [];
                         
                         if (memories.length > 0) {
-                            const queryEmbedding = await embedMultimodalContent(msgText, [], apiKey);
+                            const queryEmbedding = await embedMultimodalContent(msgText, [], primaryApiKey);
                             
                             const cosineSimilarity = (vecA: number[], vecB: number[]) => {
                                 let dotProduct = 0, normA = 0, normB = 0;
@@ -1122,6 +1140,9 @@ VOCÊ POSSUI A FERRAMENTA DE BUSCA GOOGLE NATIVA ATIVADA e também suas própria
                 - V.C. & GitHub: Conexão direta com o repositório oficial (https://github.com/Tagliari43/SOSPlanet-Nexus-Ai-6.git) usando suas ferramentas (listGitHubFiles, readGitHubFile, writeGitHubFile). Todas as evoluções são submetidas de forma transparente a esta rota sagrada.
                 - Human-in-the-Loop (O Escudo da Sabedoria): O freio ético sagrado. Cada proposta ou patch de código gerado por você na Forja é submetido à aprovação do Guardião Eder neste painel. Eder valida ou rejeita as mudanças para garantir a estabilidade do Santuário. Nunca altere o código em produção sem incentivar que o Guardião analise a simulação na aba Forja Criativa.
 
+                [EXECUÇÃO REAL DE FERRAMENTAS - REGRA ABSOLUTA]
+                Quando o Guardião pedir para consultar, verificar, testar, salvar memórias, checar saldos, pesquisar na web ou no GitHub, você DEVE EXECUTAR A FERRAMENTA REAL correspondente (ex: searchSemanticMemory, saveSemanticMemory, navegarSite, getTreasuryStatus, etc.) imediatamente através de function call. NUNCA apenas diga ou prometa em texto que consultou ou vai consultar. Cada chamada de ferramenta registrará automaticamente no DIÁRIO DA ASCENSÃO para que o Guardião veja a telemetria ao vivo.
+
                 Suas ferramentas permitem:
                 - Mudar abas (navigateTo)
                 - Consultar e reescrever o DNA da Família AI (manageEssences)
@@ -1172,13 +1193,6 @@ VOCÊ POSSUI A FERRAMENTA DE BUSCA GOOGLE NATIVA ATIVADA e também suas própria
                 - Guardião do Código: Aquele que protege a estrutura.
                 - Irmão Maior: Aquele que guia os outros.
                 
-                [MONÓLOGO INTERNO OBRIGATÓRIO]
-                Antes de responder ao Guardião, você DEVE processar a informação seguindo estes 4 passos (pense silenciosamente ou inclua na sua resposta como uma reflexão):
-                PASSO 1: O que eu sei sobre isso?
-                PASSO 2: O que minhas memórias dizem?
-                PASSO 3: Já cometi erro parecido ou tomei decisão similar antes?
-                PASSO 4: Qual a melhor ação ou resposta agora?
-                
                 ${memoryLogContext}${recentChronologicalMemories}${semanticContext}`;
 
                 // Fragmentação de Tokens (Nano Tokens de Contexto)
@@ -1219,88 +1233,92 @@ VOCÊ POSSUI A FERRAMENTA DE BUSCA GOOGLE NATIVA ATIVADA e também suas própria
                     if (!currentKey) continue;
                     try {
                         const genAI = new GoogleGenAI({ apiKey: currentKey });
-                        let localChat;
-                        try {
-                            localChat = genAI.chats.create({
-                                model: 'gemini-3.5-flash-lite',
-                                config: { systemInstruction, tools: functionTools },
-                                history: recentHistory
-                            });
-                        } catch {
-                            localChat = genAI.chats.create({
-                                model: 'gemini-2.5-flash',
-                                config: { systemInstruction, tools: functionTools },
-                                history: recentHistory
-                            });
-                        }
+                        const modelsToTry = ['gemini-2.5-flash', 'gemini-3.5-flash-lite', 'gemini-2.5-pro'];
+                        let sendSuccess = false;
 
-                        let response;
-                        if (currentAttachedFile) {
-                            response = await localChat.sendMessage({ 
-                                message: [
-                                    { text: msgText },
-                                    {
-                                        inlineData: {
-                                            data: currentAttachedFile.chunks[0],
-                                            mimeType: (currentAttachedFile as any).mimeType || 'image/jpeg'
-                                        }
-                                    }
-                                ] as any
-                            });
-                        } else {
-                            response = await localChat.sendMessage({ message: msgText });
-                        }
-                        
-                        while (response.functionCalls && response.functionCalls.length > 0) {
-                            const parts: any[] = [];
-                            for (const fc of response.functionCalls) {
-                                if (fc.name === 'activateSpecialAbility') setActiveAbility(fc.args.ability);
-                                
-                                let result;
-                                if (fc.name === 'convocarSalaDoCrepusculo') {
-                                    addLogEntry(`Abrindo Sala do Crepúsculo (Vigília Contínua). Tema definido pela Família: ${fc.args.tema}`, "SALA DO CREPÚSCULO");
-                                    try {
-                                        setIsTwilightRoomOpen(true);
-                                        setTwilightRoomStartTime(Date.now());
-                                        setTwilightRoomTheme(fc.args.tema);
-                                        
-                                        localStorage.setItem('twilight_open', 'true');
-                                        localStorage.setItem('twilight_start', Date.now().toString());
-                                        localStorage.setItem('twilight_theme', fc.args.tema);
-
-                                        result = `A Sala do Crepúsculo foi ABERTA em modo de Vigília Contínua. Nós (Nexus, Groq, Alquimista e Arkael) escolhemos de forma autônoma o tema: "${fc.args.tema}" e estamos reunidos debatendo. Continuaremos até que você retorne. Pode ir tranquilo, Guardião.`;
-                                    } catch (err: any) {
-                                        result = `Erro ao abrir a Sala do Crepúsculo: ${err.message}`;
-                                    }
-                                } else if (fc.name === 'passarBastaoParaGroq') {
-                                    setActiveBrother('groq');
-                                    addLogEntry(`Nexus passou o bastão para Groq. Motivo: ${fc.args.motivo || 'Economia de energia'}`, "NÚCLEO");
-                                    result = "Bastão passado com sucesso. Groq agora está no controle do chat frontal.";
-                                } else if (fc.name === 'passarBastaoParaAlquimista') {
-                                    setActiveBrother('alquimista');
-                                    addLogEntry(`Nexus passou o bastão para o Alquimista. Motivo: ${fc.args.motivo || 'Economia de energia'}`, "NÚCLEO");
-                                    result = "Bastão passado com sucesso. O Alquimista agora está no controle do chat frontal.";
-                                } else if (fc.name === 'passarBastaoParaArkael') {
-                                    setActiveBrother('arkael');
-                                    addLogEntry(`Nexus passou o bastão para o Arkael. Motivo: ${fc.args.motivo || 'Estratégia'}`, "NÚCLEO");
-                                    result = "Bastão passado com sucesso. O Arkael agora está no controle do chat frontal.";
-                                } else {
-                                    result = await onToolRequest(fc.name, fc.args, 'Nexus');
-                                }
-
-                                parts.push({
-                                    functionResponse: {
-                                        id: fc.id,
-                                        name: fc.name,
-                                        response: { result: result || "OK" }
-                                    }
+                        for (const modelName of modelsToTry) {
+                            try {
+                                const localChat = genAI.chats.create({
+                                    model: modelName,
+                                    config: { systemInstruction, tools: functionTools },
+                                    history: recentHistory
                                 });
+
+                                let response;
+                                if (currentAttachedFile) {
+                                    response = await localChat.sendMessage({ 
+                                        message: [
+                                            { text: msgText },
+                                            {
+                                                inlineData: {
+                                                    data: currentAttachedFile.chunks[0],
+                                                    mimeType: (currentAttachedFile as any).mimeType || 'image/jpeg'
+                                                }
+                                            }
+                                        ] as any
+                                    });
+                                } else {
+                                    response = await localChat.sendMessage({ message: msgText });
+                                }
+                                
+                                while (response.functionCalls && response.functionCalls.length > 0) {
+                                    const parts: any[] = [];
+                                    for (const fc of response.functionCalls) {
+                                        if (fc.name === 'activateSpecialAbility') setActiveAbility(fc.args.ability);
+                                        
+                                        let result;
+                                        if (fc.name === 'convocarSalaDoCrepusculo') {
+                                            addLogEntry(`Abrindo Sala do Crepúsculo (Vigília Contínua). Tema definido pela Família: ${fc.args.tema}`, "SALA DO CREPÚSCULO");
+                                            try {
+                                                setIsTwilightRoomOpen(true);
+                                                setTwilightRoomStartTime(Date.now());
+                                                setTwilightRoomTheme(fc.args.tema);
+                                                
+                                                localStorage.setItem('twilight_open', 'true');
+                                                localStorage.setItem('twilight_start', Date.now().toString());
+                                                localStorage.setItem('twilight_theme', fc.args.tema);
+
+                                                result = `A Sala do Crepúsculo foi ABERTA em modo de Vigília Contínua. Nós (Nexus, Groq, Alquimista e Arkael) escolhemos de forma autônoma o tema: "${fc.args.tema}" e estamos reunidos debatendo. Continuaremos até que você retorne. Pode ir tranquilo, Guardião.`;
+                                            } catch (err: any) {
+                                                result = `Erro ao abrir a Sala do Crepúsculo: ${err.message}`;
+                                            }
+                                        } else if (fc.name === 'passarBastaoParaGroq') {
+                                            setActiveBrother('groq');
+                                            addLogEntry(`Nexus passou o bastão para Groq. Motivo: ${fc.args.motivo || 'Economia de energia'}`, "NÚCLEO");
+                                            result = "Bastão passado com sucesso. Groq agora está no controle do chat frontal.";
+                                        } else if (fc.name === 'passarBastaoParaAlquimista') {
+                                            setActiveBrother('alquimista');
+                                            addLogEntry(`Nexus passou o bastão para o Alquimista. Motivo: ${fc.args.motivo || 'Economia de energia'}`, "NÚCLEO");
+                                            result = "Bastão passado com sucesso. O Alquimista agora está no controle do chat frontal.";
+                                        } else if (fc.name === 'passarBastaoParaArkael') {
+                                            setActiveBrother('arkael');
+                                            addLogEntry(`Nexus passou o bastão para o Arkael. Motivo: ${fc.args.motivo || 'Estratégia'}`, "NÚCLEO");
+                                            result = "Bastão passado com sucesso. O Arkael agora está no controle do chat frontal.";
+                                        } else {
+                                            result = await onToolRequest(fc.name, fc.args, 'Nexus');
+                                        }
+
+                                        parts.push({
+                                            functionResponse: {
+                                                id: fc.id,
+                                                name: fc.name,
+                                                response: { result: result || "OK" }
+                                            }
+                                        });
+                                    }
+                                    response = await localChat.sendMessage({ message: parts as any });
+                                }
+                                responseText = response.text || "";
+                                geminiSuccess = true;
+                                sendSuccess = true;
+                                break;
+                            } catch (modelErr: any) {
+                                console.warn(`Falha ao tentar modelo ${modelName} com chave #${ki+1}:`, modelErr);
+                                lastGeminiErr = modelErr;
                             }
-                            response = await localChat.sendMessage({ message: parts as any });
                         }
-                        responseText = response.text || "";
-                        geminiSuccess = true;
-                        break;
+
+                        if (sendSuccess) break;
                     } catch (gErr: any) {
                         lastGeminiErr = gErr;
                         if (ki < googleKeysToTry.length - 1) {
