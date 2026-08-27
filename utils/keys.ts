@@ -43,42 +43,69 @@ export function loadApiKeys(): ApiKeys {
         userKeys = [];
     }
 
-    // 1. Chave Primária Gemini
-    const google1User = userKeys.find(k => 
+    // 1. Coleta todas as chaves Gemini cadastradas no Arsenal (localStorage) e .env
+    const userGeminiKey1 = userKeys.find(k => 
+        k.service.toLowerCase() === 'gemini_api_key_1' ||
         k.service.toLowerCase() === 'google gemini' || 
         k.service.toLowerCase() === 'gemini api' ||
+        k.id === 'google-default' ||
         k.id === 'gemini-key'
-    )?.key;
-    const envGoogle1 = process.env.GEMINI_API_KEY || process.env.API_KEY || sovereignKeys.google;
-    const google1 = (google1User && google1User.trim().length > 0) ? google1User.trim() : envGoogle1;
+    )?.key?.trim();
 
-    // 2. Chave Secundária Gemini 2
-    const google2User = userKeys.find(k => 
-        k.service.toLowerCase().includes('gemini_api_key_2') || 
-        k.service.toLowerCase().includes('gemini 2') ||
+    const userGeminiKey2 = userKeys.find(k => 
+        k.service.toLowerCase() === 'gemini_api_key_2' || 
+        k.service.toLowerCase() === 'gemini 2' ||
         k.id === 'gemini-key-2'
-    )?.key;
-    const envGoogle2 = process.env.GEMINI_API_KEY_2 || process.env.GEMINI_API_KEY_SOSPLANET;
-    const google2 = (google2User && google2User.trim().length > 0) ? google2User.trim() : envGoogle2;
+    )?.key?.trim();
 
-    // Coleta todas as chaves Gemini de múltiplas contas Gmail cadastradas no Arsenal ou .env
+    const userGeminiKey3 = userKeys.find(k => 
+        k.service.toLowerCase() === 'gemini_api_key_3' || 
+        k.service.toLowerCase() === 'gemini 3'
+    )?.key?.trim();
+
+    const userGeminiKey4 = userKeys.find(k => 
+        k.service.toLowerCase() === 'gemini_api_key_4' || 
+        k.service.toLowerCase() === 'gemini 4'
+    )?.key?.trim();
+
+    const userGeminiKey5 = userKeys.find(k => 
+        k.service.toLowerCase() === 'gemini_api_key_5' || 
+        k.service.toLowerCase() === 'gemini 5'
+    )?.key?.trim();
+
+    // Chave histórica clássica (antiga chave 2 que é a primária de confiança de Eder)
+    const historicalClassicKey = 'AIzaSyCHsqXSX1-jSseLcIhydG2JEAy8yGQJ3fk';
+
+    const envGoogle1 = process.env.GEMINI_API_KEY || process.env.API_KEY || sovereignKeys.google;
+    const envGoogle2 = process.env.GEMINI_API_KEY_2 || process.env.GEMINI_API_KEY_SOSPLANET;
+    const envGoogle3 = process.env.GEMINI_API_KEY_3;
+    const envGoogle4 = process.env.GEMINI_API_KEY_4;
+    const envGoogle5 = process.env.GEMINI_API_KEY_5;
+
+    // Coleta todas as chaves Gemini extras cadastradas
     const extraUserGoogleKeys = userKeys
         .filter(k => 
             k.service.toLowerCase().includes('google') || 
             k.service.toLowerCase().includes('gemini') ||
             k.id.toLowerCase().includes('gemini') ||
-            (typeof k.key === 'string' && k.key.startsWith('AIza'))
+            (typeof k.key === 'string' && (k.key.startsWith('AIza') || k.key.startsWith('AQ.')))
         )
         .map(k => k.key ? k.key.trim() : '')
         .filter(Boolean);
 
-    const extraEnvGoogleKeys = [
-        process.env.GEMINI_API_KEY_3,
-        process.env.GEMINI_API_KEY_4,
-        process.env.GEMINI_API_KEY_5
+    // Lista ordenada com prioridade na chave primária clássica / key_2, seguida pelas demais chaves vivas
+    const orderedCandidateKeys = [
+        userGeminiKey2 || envGoogle2 || historicalClassicKey,
+        userGeminiKey1 || envGoogle1,
+        userGeminiKey3 || envGoogle3,
+        userGeminiKey4 || envGoogle4,
+        userGeminiKey5 || envGoogle5,
+        ...extraUserGoogleKeys
     ].filter(Boolean) as string[];
 
-    const allGoogleKeys = Array.from(new Set([google1, google2, ...extraUserGoogleKeys, ...extraEnvGoogleKeys].filter(Boolean) as string[]));
+    const allGoogleKeys = Array.from(new Set(orderedCandidateKeys));
+    const google1 = allGoogleKeys[0] || '';
+    const google2 = allGoogleKeys[1] || google1;
 
     // 3. Chave NVIDIA NIM
     const nvidiaKey = userKeys.find(k => 

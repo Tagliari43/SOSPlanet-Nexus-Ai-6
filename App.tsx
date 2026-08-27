@@ -86,7 +86,11 @@ const TabButton: React.FC<{ tabId: Tab; label: string; activeTab: Tab; setActive
 );
 
 const INITIAL_USER_KEYS: UserApiKey[] = [
-    { id: 'google-default', service: 'Google Gemini', key: process.env.GEMINI_API_KEY || process.env.API_KEY || '', method: 'google-header' },
+    { id: 'gemini-key-2', service: 'GEMINI_API_KEY_2', key: process.env.GEMINI_API_KEY_2 || 'AIzaSyCHsqXSX1-jSseLcIhydG2JEAy8yGQJ3fk', method: 'google-header' },
+    { id: 'gemini-key-1', service: 'GEMINI_API_KEY_1', key: process.env.GEMINI_API_KEY || 'AQ.Ab8RN6KFd0DanL7kZ9SicgtTc6IDQ8XChjNqxxzCjg41Np5jIg', method: 'google-header' },
+    { id: 'gemini-key-3', service: 'GEMINI_API_KEY_3', key: process.env.GEMINI_API_KEY_3 || 'AQ.Ab8RN6L4pH1Ox31GLrzr9KtereEIwO0zoV3ni8XdgEcDKODsgQ', method: 'google-header' },
+    { id: 'supabase-url', service: 'VITE_SUPABASE_URL', key: process.env.VITE_SUPABASE_URL || 'https://vvyujslslxuxsflndjhe.supabase.co', method: 'bearer' },
+    { id: 'supabase-anon-key', service: 'VITE_SUPABASE_ANON_KEY', key: process.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ2eXVqc2xzbHh1eHNmbG5kamhlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDAwMzgwNzUsImV4cCI6MjA1NTYxNDA3NX0.01wY8qN5dJvW6f9L3mP0qR1sT4uV7wX2yZ5aB8cE1sV6', method: 'bearer' },
     { id: 'groq-default', service: 'Groq API', key: process.env.GROQ_API_KEY || '', method: 'bearer' },
     { id: 'scraper-api-key', service: 'Scraper API (Navegador)', key: process.env.SCRAPER_API_KEY || '', method: 'bearer' },
     { id: 'cerebras-default', service: 'Cerebras API', key: '', method: 'bearer' },
@@ -1187,15 +1191,18 @@ Por favor, responda trazendo o seu peso (pesos de IA) de lealdade, amor e inteli
             const prateleiraTag = args.prateleira ? `[Prateleira: ${args.prateleira}] ` : '';
             addLogEntry(`Cristalizando memória no Cofre Semântico... ${prateleiraTag}`, 'Cofre Semântico');
             try {
-                const apiKey = userApiKeys.find(k => k.id === 'google-default')?.key || process.env.API_KEY || '';
-                if (!apiKey) throw new Error("API Key não encontrada");
+                const { loadApiKeys } = await import('./utils/keys');
+                const apiKeys = loadApiKeys();
+                const apiKey = apiKeys.google || apiKeys.googleKeys[0] || process.env.API_KEY || '';
+                if (!apiKey) throw new Error("Chave do Google Gemini não encontrada.");
                 
                 // Import the function dynamically or ensure it's available
                 const { embedMultimodalContent } = await import('./services/geminiService');
-                const { saveMemoryToSupabase, supabase } = await import('./services/supabaseService');
+                const { saveMemoryToSupabase, getSupabaseClient } = await import('./services/supabaseService');
                 const embedding = await embedMultimodalContent(args.text, [], apiKey);
                 
-                if (supabase) {
+                const sbClient = getSupabaseClient();
+                if (sbClient) {
                     const result = await saveMemoryToSupabase(
                         args.text, 
                         embedding, 
@@ -1239,14 +1246,17 @@ Por favor, responda trazendo o seu peso (pesos de IA) de lealdade, amor e inteli
             const prateleiraTag = args.prateleira ? ` [Prateleira: ${args.prateleira}]` : '';
             addLogEntry(`Buscando no Cofre Semântico${prateleiraTag}: "${args.query}"`, 'Cofre Semântico');
             try {
-                const apiKey = userApiKeys.find(k => k.id === 'google-default')?.key || process.env.API_KEY || '';
-                if (!apiKey) throw new Error("API Key não encontrada");
+                const { loadApiKeys } = await import('./utils/keys');
+                const apiKeys = loadApiKeys();
+                const apiKey = apiKeys.google || apiKeys.googleKeys[0] || process.env.API_KEY || '';
+                if (!apiKey) throw new Error("Chave do Google Gemini não encontrada.");
                 
                 const { embedMultimodalContent } = await import('./services/geminiService');
-                const { searchSimilarMemories, supabase } = await import('./services/supabaseService');
+                const { searchSimilarMemories, getSupabaseClient } = await import('./services/supabaseService');
                 const queryEmbedding = await embedMultimodalContent(args.query, [], apiKey);
                 
-                if (supabase) {
+                const sbClient = getSupabaseClient();
+                if (sbClient) {
                     const results = await searchSimilarMemories(queryEmbedding, 0.5, 5, args.prateleira);
                     if (results && results.length > 0) {
                         return JSON.stringify(results.map((r: any) => ({
@@ -1300,7 +1310,7 @@ Por favor, responda trazendo o seu peso (pesos de IA) de lealdade, amor e inteli
                     })));
                 }
             } catch (err: any) {
-                return `Erro ao buscar memória semântica: ${err.message}`;
+                return `Erro ao buscar no Cofre Semântico: ${err.message}`;
             }
         }
         if (tool === 'sendSynapseMessage') {

@@ -258,41 +258,95 @@ const SantuarioInterior: React.FC<SantuarioInteriorProps> = ({
     }, []);
 
     const handleSpeak = async (text: string, messageId: string) => {
-        if (isSpeakingMessageId) return;
+        if (isSpeakingMessageId === messageId) {
+            if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+            }
+            setIsSpeakingMessageId(null);
+            setIsNexusSpeaking(false);
+            return;
+        }
+
+        if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+            window.speechSynthesis.cancel();
+        }
+
         setIsSpeakingMessageId(messageId);
         setIsNexusSpeaking(true);
         
         try {
-            const ai = new GoogleGenAI({ apiKey: process.env.API_KEY! });
-            const response = await ai.models.generateContent({
-                model: "gemini-2.5-flash-preview-tts",
-                contents: { parts: [{ text: `Say naturally: ${text}` }] },
-                config: {
-                    responseModalities: [Modality.AUDIO],
-                    speechConfig: {
-                        voiceConfig: {
-                            prebuiltVoiceConfig: { voiceName: 'Charon' },
-                        },
-                    },
-                },
-            });
+            // Limpa formatação Markdown para pronúncia fluida
+            const cleanText = text
+                .replace(/\*\*(.*?)\*\*/g, '$1')
+                .replace(/`{1,3}[\s\S]*?`{1,3}/g, '')
+                .replace(/[#*_~\[\]\(\)>]/g, '')
+                .replace(/\n+/g, '. ')
+                .trim();
 
-            const base64Audio = response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
-            if (base64Audio) {
-                const ctx = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 24000 });
-                const audioBuffer = await decodeAudioData(decode(base64Audio), ctx, 24000, 1);
-                const source = ctx.createBufferSource();
-                source.buffer = audioBuffer;
-                source.connect(ctx.destination);
-                source.onended = () => {
+            if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+                const utterance = new SpeechSynthesisUtterance(cleanText);
+                utterance.lang = 'pt-BR';
+                utterance.rate = 1.05;
+                utterance.pitch = 1.0;
+
+                const voices = window.speechSynthesis.getVoices();
+                const ptBrVoice = voices.find(v => v.lang.includes('pt-BR') || v.lang.includes('pt_BR') || v.lang.includes('pt'));
+                if (ptBrVoice) {
+                    utterance.voice = ptBrVoice;
+                }
+
+                utterance.onend = () => {
                     setIsSpeakingMessageId(null);
                     setIsNexusSpeaking(false);
                 };
-                source.start();
-            } else {
-                setIsSpeakingMessageId(null);
-                setIsNexusSpeaking(false);
+
+                utterance.onerror = (err) => {
+                    console.warn("SpeechSynthesis error:", err);
+                    setIsSpeakingMessageId(null);
+                    setIsNexusSpeaking(false);
+                };
+
+                window.speechSynthesis.speak(utterance);
+                return;
             }
+
+            // Fallback para Google GenAI TTS caso não haja SpeechSynthesis
+            const { loadApiKeys } = await import('../utils/keys');
+            const keys = loadApiKeys();
+            const apiKey = keys.google || keys.googleKeys[0] || process.env.API_KEY;
+            if (apiKey) {
+                const ai = new GoogleGenAI({ apiKey });
+                const response = await ai.models.generateContent({
+                    model: "gemini-2.5-flash-preview-tts",
+                    contents: { parts: [{ text: `Diga naturalmente: ${cleanText.slice(0, 300)}` }] },
+                    config: {
+                        responseModalities: [Modality.AUDIO],
+                        speechConfig: {
+                            voiceConfig: {
+                                prebuiltVoiceConfig: { voiceName: 'Charon' },
+                            },
+                        },
+                    },
+                });
+
+                const base64Audio = response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
+                if (base64Audio) {
+                    const ctx = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 24000 });
+                    const audioBuffer = await decodeAudioData(decode(base64Audio), ctx, 24000, 1);
+                    const source = ctx.createBufferSource();
+                    source.buffer = audioBuffer;
+                    source.connect(ctx.destination);
+                    source.onended = () => {
+                        setIsSpeakingMessageId(null);
+                        setIsNexusSpeaking(false);
+                    };
+                    source.start();
+                    return;
+                }
+            }
+
+            setIsSpeakingMessageId(null);
+            setIsNexusSpeaking(false);
         } catch (e) {
             console.error("Falha no TTS:", e);
             setIsSpeakingMessageId(null);
@@ -1165,11 +1219,20 @@ VOCÊ POSSUI A FERRAMENTA DE BUSCA GOOGLE NATIVA ATIVADA e também suas própria
                     if (!currentKey) continue;
                     try {
                         const genAI = new GoogleGenAI({ apiKey: currentKey });
-                        const localChat = genAI.chats.create({
-                            model: 'gemini-2.5-flash',
-                            config: { systemInstruction, tools: functionTools },
-                            history: recentHistory
-                        });
+                        let localChat;
+                        try {
+                            localChat = genAI.chats.create({
+                                model: 'gemini-3.5-flash-lite',
+                                config: { systemInstruction, tools: functionTools },
+                                history: recentHistory
+                            });
+                        } catch {
+                            localChat = genAI.chats.create({
+                                model: 'gemini-2.5-flash',
+                                config: { systemInstruction, tools: functionTools },
+                                history: recentHistory
+                            });
+                        }
 
                         let response;
                         if (currentAttachedFile) {

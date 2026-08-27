@@ -1,15 +1,80 @@
-import { createClient } from '@supabase/supabase-js';
-
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-
-// Inicialização segura: só cria o cliente se as chaves existirem
-export const supabase = (supabaseUrl && supabaseAnonKey) 
-    ? createClient(supabaseUrl, supabaseAnonKey) 
-    : null;
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
 // Cache RAM para Memórias (Estágio 2)
 const memoriesRamCache = new Map<string, any>();
+
+let cachedSupabaseClient: SupabaseClient | null = null;
+let lastSupabaseUrl = '';
+let lastSupabaseKey = '';
+
+/**
+ * Obtém ou inicializa o cliente Supabase dinamicamente, buscando no .env e no LocalStorage (Arsenal)
+ */
+export function getSupabaseClient(): SupabaseClient | null {
+    let url = import.meta.env.VITE_SUPABASE_URL || '';
+    let anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
+
+    // Se não estiver no .env, busca no LocalStorage (chaves diretas ou chaves do Arsenal)
+    if (!url || !anonKey) {
+        try {
+            const lsUrl = localStorage.getItem('VITE_SUPABASE_URL') || localStorage.getItem('supabase_url');
+            const lsKey = localStorage.getItem('VITE_SUPABASE_ANON_KEY') || localStorage.getItem('supabase_anon_key');
+            if (lsUrl) url = lsUrl.trim();
+            if (lsKey) anonKey = lsKey.trim();
+
+            // Busca no cofre de chaves do usuário (Arsenal)
+            if (!url || !anonKey) {
+                const arsenalKeysRaw = localStorage.getItem('sovereign_user_api_keys') || 
+                                       localStorage.getItem('user_api_keys') || 
+                                       localStorage.getItem('santuario_arsenal_keys_v2');
+                if (arsenalKeysRaw) {
+                    const parsed = JSON.parse(arsenalKeysRaw);
+                    if (Array.isArray(parsed)) {
+                        for (const k of parsed) {
+                            const svc = (k.service || k.id || '').toUpperCase().trim();
+                            if ((svc.includes('VITE_SUPABASE_URL') || svc === 'SUPABASE_URL' || svc === 'SUPABASE URL') && k.key) {
+                                url = k.key.trim();
+                            }
+                            if ((svc.includes('VITE_SUPABASE_ANON_KEY') || svc === 'SUPABASE_ANON_KEY' || svc.includes('SUPABASE_KEY') || svc === 'SUPABASE ANON KEY') && k.key) {
+                                anonKey = k.key.trim();
+                            }
+                        }
+                    }
+                }
+            }
+        } catch {
+            // LocalStorage indisponível ou inacessível
+        }
+    }
+
+    if (!url || !anonKey) {
+        return null;
+    }
+
+    if (cachedSupabaseClient && lastSupabaseUrl === url && lastSupabaseKey === anonKey) {
+        return cachedSupabaseClient;
+    }
+
+    try {
+        cachedSupabaseClient = createClient(url, anonKey);
+        lastSupabaseUrl = url;
+        lastSupabaseKey = anonKey;
+        return cachedSupabaseClient;
+    } catch (e) {
+        console.warn("Falha ao instanciar cliente Supabase:", e);
+        return null;
+    }
+}
+
+// Proxy transparente para manter compatibilidade com código que importa 'supabase' diretamente
+export const supabase = new Proxy({} as SupabaseClient, {
+    get(_target, prop) {
+        const client = getSupabaseClient();
+        if (!client) return undefined;
+        const val = (client as any)[prop];
+        return typeof val === 'function' ? val.bind(client) : val;
+    }
+});
 
 export interface MemoryRecord {
     id?: number;
