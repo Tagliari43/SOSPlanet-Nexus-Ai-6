@@ -25,7 +25,8 @@
     "puppeteer": "^25.4.0",
     "react": "^19.2.3",
     "react-dom": "^19.2.3",
-    "react-leaflet": "^5.0.0"
+    "react-leaflet": "^5.0.0",
+    "vercel-plugin": "^0.0.1"
   },
   "devDependencies": {
     "@resvg/resvg-js": "^2.6.2",

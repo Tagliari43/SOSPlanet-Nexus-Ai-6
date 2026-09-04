@@ -691,6 +691,26 @@ Tema em debate: ${fc.args.tema}`;
             return;
         }
 
+        // Atalhos de Barra do Vercel Plugin (Fase 22 - Nuvem Soberana)
+        const trimmedMsg = msgText.trim();
+        if (trimmedMsg.startsWith('/vercel-plugin') || trimmedMsg === '/status' || trimmedMsg === '/env' || trimmedMsg === '/help') {
+            try {
+                const { processarComandoVercelPlugin } = await import('../services/vercelPluginService');
+                const result = await processarComandoVercelPlugin(trimmedMsg);
+                if (result.reconhecido) {
+                    setMessages(p => [...p, { id: (Date.now() + 1).toString(), role: 'model', parts: [{ text: result.resposta }] }]);
+                    addLogEntry(`Comando ${result.comando} executado via Vercel Plugin.`, "VercelPlugin");
+                    setIsLoading(false);
+                    return;
+                }
+            } catch (err: any) {
+                console.error("[VERCEL PLUGIN ERROR]:", err);
+                setMessages(p => [...p, { id: (Date.now() + 1).toString(), role: 'model', parts: [{ text: `🚨 Falha no Vercel Plugin: ${err?.message || 'Erro interno'}` }] }]);
+                setIsLoading(false);
+                return;
+            }
+        }
+
         try {
             const apiKeys = loadApiKeys();
             let responseText = "";
@@ -1653,7 +1673,47 @@ Inicie sua resposta com um bloco de transparência, por exemplo:
                 </div>
             )}
 
-            <div className="mt-4 pt-4 border-t border-emerald-900/30 flex gap-2 items-end z-10">
+            <div className="relative mt-4 pt-4 border-t border-emerald-900/30 flex gap-2 items-end z-10">
+                {/* Sugestões de Comando de Barra (Vercel Plugin & Atalhos) */}
+                {input.startsWith('/') && (
+                    <div className="absolute -top-11 left-0 right-0 flex items-center gap-2 overflow-x-auto pb-1 z-40 animate-fade-in px-1">
+                        <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider select-none flex items-center gap-1.5 shrink-0 bg-zinc-900/80 px-2 py-1 rounded-md border border-zinc-800">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                            Comandos Rápidos:
+                        </span>
+                        <button
+                            type="button"
+                            onClick={() => handleSendMessage('/vercel-plugin:status')}
+                            className="px-3 py-1 bg-zinc-950/90 border border-emerald-500/70 hover:bg-emerald-950/80 hover:border-emerald-400 text-emerald-300 rounded-lg text-xs font-mono flex items-center gap-1.5 shadow-xl backdrop-blur-md whitespace-nowrap transition-all active:scale-95 group cursor-pointer"
+                            title="Executar /vercel-plugin:status"
+                        >
+                            <span>⚡</span>
+                            <span>/vercel-plugin:status</span>
+                            <span className="text-[10px] text-emerald-400/60 group-hover:text-emerald-300">↵</span>
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => handleSendMessage('/vercel-plugin:env')}
+                            className="px-3 py-1 bg-zinc-950/90 border border-cyan-500/70 hover:bg-cyan-950/80 hover:border-cyan-400 text-cyan-300 rounded-lg text-xs font-mono flex items-center gap-1.5 shadow-xl backdrop-blur-md whitespace-nowrap transition-all active:scale-95 group cursor-pointer"
+                            title="Executar /vercel-plugin:env"
+                        >
+                            <span>🔒</span>
+                            <span>/vercel-plugin:env</span>
+                            <span className="text-[10px] text-cyan-400/60 group-hover:text-cyan-300">↵</span>
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => handleSendMessage('/vercel-plugin:help')}
+                            className="px-3 py-1 bg-zinc-950/90 border border-purple-500/70 hover:bg-purple-950/80 hover:border-purple-400 text-purple-300 rounded-lg text-xs font-mono flex items-center gap-1.5 shadow-xl backdrop-blur-md whitespace-nowrap transition-all active:scale-95 group cursor-pointer"
+                            title="Executar /vercel-plugin:help"
+                        >
+                            <span>🛠️</span>
+                            <span>/vercel-plugin:help</span>
+                            <span className="text-[10px] text-purple-400/60 group-hover:text-purple-300">↵</span>
+                        </button>
+                    </div>
+                )}
+
                 <label className="p-3.5 bg-zinc-800 hover:bg-zinc-700 text-emerald-500 rounded-2xl cursor-pointer transition-all active:scale-95 shadow-lg border border-zinc-700">
                     <span className="text-xl">+</span>
                     <input type="file" accept="image/*" className="hidden" onChange={(e) => {

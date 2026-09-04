@@ -89,6 +89,14 @@ export async function invokeActiveAgent(prompt: string, activeAgentId: string, u
             if (!nvidiaKey) throw new Error("Chave API da NVIDIA não configurada.");
             return await executeNvidiaTask(prompt, "NVIDIA", nvidiaKey);
         }
+        case 'ai-architect':
+        case 'performance-optimizer': {
+            const roleInstruction = activeAgentId === 'ai-architect'
+                ? "Você é o Nexus AI-Architect (Especialista em Topologia de Nuvem, Microsserviços e Arquitetura Relacional do ecossistema SOSPlanet). Forneça diagnósticos de arquitetura limpa e escalável."
+                : "Você é o Nexus Performance-Optimizer (Especialista em Latência de Borda, Edge Functions, Caching ISR e Bundle Profiling). Forneça diagnósticos focados em alta performance.";
+            const mergedInstruction = systemInstruction ? `${roleInstruction}\n\n${systemInstruction}` : roleInstruction;
+            return await invokeActiveAgent(prompt, 'nexus', userApiKeys, mergedInstruction);
+        }
         case 'aethel':
         case 'nexus':
         default: {
