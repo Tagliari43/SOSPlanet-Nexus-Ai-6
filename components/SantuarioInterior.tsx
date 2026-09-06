@@ -1631,7 +1631,26 @@ Inicie sua resposta com um bloco de transparência, por exemplo:
                                 msg.role === 'user' ? 'bg-emerald-800/80 text-emerald-50 rounded-br-none' : 'bg-zinc-800/90 text-zinc-100 rounded-bl-none border border-zinc-700/50'
                             }`}>
                                 {msg.parts.map((p, pi) => p.text ? (
-                                    <div key={pi} dangerouslySetInnerHTML={{__html: p.text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br/>')}}/>
+                                    <div 
+                                        key={pi} 
+                                        dangerouslySetInnerHTML={{
+                                            __html: p.text
+                                                // 1. Escapar tags HTML para que <script>, <style>, <iframe> etc. não quebrem o DOM nem cortem o texto
+                                                .replace(/&/g, '&amp;')
+                                                .replace(/</g, '&lt;')
+                                                .replace(/>/g, '&gt;')
+                                                // 2. Blocos de código multilinhas
+                                                .replace(/```([\s\S]*?)```/g, '<pre class="bg-zinc-950/90 text-emerald-300 p-2 my-2 rounded-lg font-mono text-xs overflow-x-auto border border-emerald-800/40"><code>$1</code></pre>')
+                                                // 3. Código inline
+                                                .replace(/`([^`]+)`/g, '<code class="bg-zinc-900/90 text-emerald-300 px-1 py-0.5 rounded text-xs font-mono border border-emerald-900/40">$1</code>')
+                                                // 4. Negrito
+                                                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                                                // 5. Itálico
+                                                .replace(/\*([^\*]+)\*/g, '<em>$1</em>')
+                                                // 6. Quebras de linha
+                                                .replace(/\n/g, '<br/>')
+                                        }}
+                                    />
                                 ) : null)}
 
                                 {msg.role === 'model' && (

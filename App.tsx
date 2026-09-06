@@ -33,6 +33,7 @@ import { DonationAltar } from './components/DonationAltar';
 import { ForjaAutoCriacao } from './components/ForjaAutoCriacao';
 import { getFileContent, updateFileContent, listGitHubFiles } from './services/githubService';
 import { generateText as executeGroqTask } from './services/groqService';
+import { executarNavegacaoSoberana, detectarEcoSantuario } from './services/browserService';
 
 // Constantes
 export const NOTEBOOK_KEY = 'sovereign_notebook_content';
@@ -854,54 +855,53 @@ if (require.main === module) {
             if (targetUrl && !/^https?:\/\//i.test(targetUrl)) {
                 targetUrl = 'https://' + targetUrl;
             }
-            addLogEntry(`Acessando url: ${targetUrl}`, fallbackTag);
+            addLogEntry(`Acessando url via Navegador Soberano: ${targetUrl}`, fallbackTag);
             try {
-                // Tenta usar o ScraperAPI primeiro (via nosso backend)
-                let html = '';
+                const scraperKey = userApiKeys.find(k => k.id === 'scraper-api-key')?.key || process.env.SCRAPER_API_KEY || '';
+                let textoFinal = '';
+
+                // Camada 1: Tentar via Rota Serverless do Backend (/api/scraper)
                 try {
-                    const scraperKey = userApiKeys.find(k => k.id === 'scraper-api-key')?.key || process.env.SCRAPER_API_KEY || '';
                     const headers: any = {};
                     if (scraperKey) {
                         headers['x-scraper-api-key'] = scraperKey;
                     }
-                    
                     const response = await fetch(`/api/scraper?url=${encodeURIComponent(targetUrl)}`, { headers });
                     if (response.ok) {
-                        html = await response.text();
-                    } else {
-                        throw new Error(`Proxy de navegação falhou com status: ${response.status}`);
+                        const rawResp = await response.text();
+                        // Proteção Anti-Eco: conferir se a resposta não é o HTML do próprio Santuário
+                        if (rawResp && !detectarEcoSantuario(rawResp)) {
+                            textoFinal = rawResp.trim();
+                            addLogEntry(`Página extraída com sucesso pelo backend serverless.`, fallbackTag);
+                        } else {
+                            addLogEntry(`Aviso: Eco interno interceptado. Chaveando para motor de contingência client-side...`, fallbackTag);
+                        }
                     }
-                } catch (scraperErr: any) {
-                    throw new Error(`Erro ao acessar o proxy de leitura: ${scraperErr.message}`);
-                }
-                
-                if (!html || html.trim() === '') {
-                    return `Erro: O site ${args.url} retornou uma página vazia. Pode haver um bloqueio de segurança.`;
+                } catch (netErr) {
+                    addLogEntry(`Proxy do backend inacessível. Ativando cascata do Navegador Soberano...`, fallbackTag);
                 }
 
-                // Extrair texto do HTML de forma mais robusta
-                const parser = new DOMParser();
-                const doc = parser.parseFromString(html, 'text/html');
-                
-                // Remover elementos que não contêm texto útil para leitura
-                const elementsToRemove = doc.querySelectorAll('script, style, noscript, iframe, svg, nav, footer, header, .menu, .sidebar');
-                elementsToRemove.forEach(s => s.remove());
-                
-                // Tentar focar no conteúdo principal primeiro (adicionado suporte específico para Wikipedia: .mw-parser-output)
-                const mainContent = doc.querySelector('main') || doc.querySelector('article') || doc.querySelector('#content') || doc.querySelector('.mw-parser-output') || doc.body;
-                const textContent = mainContent ? mainContent.textContent || '' : html;
-                
-                let cleanText = textContent.replace(/\s+/g, ' ').trim();
-                
-                // Se por algum motivo o texto ficar vazio, fazemos um fallback agressivo tirando as tags HTML na força bruta
-                if (cleanText.length === 0) {
-                    cleanText = html.replace(/<[^>]*>?/gm, ' ').replace(/\s+/g, ' ').trim();
+                // Camada 2 & 3: Se o backend falhou ou retornou eco, aciona o motor completo com Jina Reader e Direct
+                if (!textoFinal) {
+                    const resSoberano = await executarNavegacaoSoberana(targetUrl, scraperKey);
+                    if (resSoberano.sucesso) {
+                        textoFinal = resSoberano.conteudo;
+                        addLogEntry(`Navegação concluída via método: ${resSoberano.metodoUtilizado} (${resSoberano.tamanhoCaracteres} caracteres)`, fallbackTag);
+                    } else {
+                        return `Falha ao navegar no site ${args.url}: ${resSoberano.conteudo}`;
+                    }
                 }
-                
-                // Limitar a 12000 caracteres para ter um bom contexto sem estourar tokens
-                const truncated = cleanText.length > 12000 ? cleanText.substring(0, 12000) + '... [Conteúdo truncado]' : cleanText;
-                
-                return `Conteúdo da página ${args.url}:\n\n${truncated}`;
+
+                if (!textoFinal || textoFinal.trim() === '') {
+                    return `Erro: O site ${args.url} retornou vazio. Pode haver bloqueio por CAPTCHA ou proteção Cloudflare avançada.`;
+                }
+
+                // Limitar a 12.000 caracteres para manter boa sintaxe sem estourar o buffer circular
+                const truncated = textoFinal.length > 12000 
+                    ? textoFinal.substring(0, 12000) + '\n\n... [Conteúdo truncado para preservação do Buffer Circular do Santuário]' 
+                    : textoFinal;
+
+                return `Conteúdo extraído da página (${args.url}):\n\n${truncated}`;
             } catch (err: any) {
                 return `Falha ao navegar no site: ${err.message}`;
             }
