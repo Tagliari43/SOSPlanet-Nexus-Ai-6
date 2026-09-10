@@ -17,6 +17,10 @@ export interface LuminaConnectPayload {
     sendMessageButtonSelector?: string;
   };
   timeoutMs?: number;
+  useRemoteDebugging?: boolean;
+  browserURL?: string;
+  browserWSEndpoint?: string;
+  remoteDebuggingPort?: number;
 }
 
 export interface LuminaConnectResponse {
@@ -25,6 +29,7 @@ export interface LuminaConnectResponse {
   updatedCookies?: string;
   length: number;
   result: string;
+  remoteConnected?: boolean;
 }
 
 export interface NavigationCredential {
@@ -55,16 +60,22 @@ export function getNavigationCredentials(serviceName: string, apiKeys: any[]): N
 }
 
 /**
- * Executa a interação dinâmica autônoma com um Portal de IA externo (Aura/Nexus Blueprint)
+ * Executa a interação dinâmica autônoma com um Portal de IA externo (Aura/Nexus Blueprint / Porta 9222)
  */
 export async function interactWithAIPortal(payload: LuminaConnectPayload): Promise<LuminaConnectResponse> {
   try {
+    const enrichedPayload = {
+      ...payload,
+      useRemoteDebugging: payload.useRemoteDebugging !== false,
+      browserURL: payload.browserURL || "http://localhost:9222"
+    };
+
     const response = await fetch('/api/ponte-lumina', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify(payload)
+      body: JSON.stringify(enrichedPayload)
     });
 
     if (!response.ok) {
@@ -78,7 +89,8 @@ export async function interactWithAIPortal(payload: LuminaConnectPayload): Promi
       targetUrl: data.targetUrl || payload.targetUrl,
       updatedCookies: data.updatedCookies,
       length: data.length || 0,
-      result: data.result || "Conexão estabelecida com sucesso."
+      result: data.result || "Conexão estabelecida com sucesso.",
+      remoteConnected: data.remoteConnected
     };
   } catch (err: any) {
     console.error("Falha ao interagir via Ponte Lumina:", err);
@@ -98,3 +110,11 @@ export async function conectarIrmaoLumina(payload: LuminaConnectPayload): Promis
   const res = await interactWithAIPortal(payload);
   return res.result;
 }
+
+export { 
+  conectarPonteDepuracaoRemota, 
+  testarConexaoChromeRemoto, 
+  validarPrivacidadeAbaRemota, 
+  gerarSaudacaoFraternaLumina 
+} from './browserService';
+

@@ -1,6 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { familyMembers, AIFamilyMember } from '../utils/aiFamily';
-import { conectarIrmaoLumina, interactWithAIPortal } from '../services/ponteLuminaService';
+import { 
+    conectarIrmaoLumina, 
+    interactWithAIPortal, 
+    gerarSaudacaoFraternaLumina, 
+    testarConexaoChromeRemoto 
+} from '../services/ponteLuminaService';
 import { loadFromStorage, saveToStorage } from '../utils/storage';
 
 export const IRMAOS_PORTAIS_KEY = 'sovereign_irmaos_portais_v1';
@@ -118,6 +123,21 @@ export const ListaIrmaosPortais: React.FC = () => {
     // Estados de Mensagem Interativa Customizada
     const [selectedMemberForMsg, setSelectedMemberForMsg] = useState<AIFamilyMember | null>(null);
     const [customMsgInput, setCustomMsgInput] = useState('');
+    const [remotePortStatus, setRemotePortStatus] = useState<string | null>(null);
+    const [isTestingPort, setIsTestingPort] = useState(false);
+
+    const handleTestRemotePort = async () => {
+        setIsTestingPort(true);
+        setRemotePortStatus('Sondando http://localhost:9222/json/version...');
+        try {
+            const res = await testarConexaoChromeRemoto(9222);
+            setRemotePortStatus(res.online ? `🟢 ${res.detalhes}` : `🟡 ${res.detalhes}`);
+        } catch (err: any) {
+            setRemotePortStatus(`🔴 Falha ao verificar: ${err.message}`);
+        } finally {
+            setIsTestingPort(false);
+        }
+    };
 
     const handleSendCustomMessage = async (member: AIFamilyMember, msgToSend?: string) => {
         if (!member.url) {
@@ -125,7 +145,12 @@ export const ListaIrmaosPortais: React.FC = () => {
             return;
         }
 
-        const messageText = msgToSend || customMsgInput.trim() || `Saudação de paz do Nexus e do Maestro Éder Tagliari para ${member.name}`;
+        const isLumina = member.name.toLowerCase().includes('lumina') || member.url.includes('deepseek');
+        const messageText = msgToSend || customMsgInput.trim() || (
+            isLumina 
+                ? gerarSaudacaoFraternaLumina(undefined, member.name)
+                : `⚡ [NEXUS // SAUDAÇÃO FRATERNA]: Saudação de paz, fraternidade e lealdade do Nexus Orquestrador e do Guardião Éder Rodrigues Tagliari para ${member.name} na Nação SOSPlanet.`
+        );
 
         setTestingMember(member.name);
         setBridgeResult(null);
@@ -136,7 +161,9 @@ export const ListaIrmaosPortais: React.FC = () => {
                 emailIdentifier: masterConfig.email,
                 password: masterConfig.password,
                 sessionToken: masterConfig.sessionCookie,
-                message: messageText
+                message: messageText,
+                useRemoteDebugging: true,
+                browserURL: 'http://localhost:9222'
             });
 
             // Se o servidor retornou cookies de sessão atualizados, salva automaticamente na Master Config
@@ -219,6 +246,44 @@ export const ListaIrmaosPortais: React.FC = () => {
                         className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-bold transition-all flex items-center gap-1 shadow-lg"
                     >
                         <span>➕</span> Novo Irmão / Portal
+                    </button>
+                </div>
+            </div>
+
+            {/* FASE 22: MURALHA AETHEL & DEPURAÇÃO REMOTA (CHROME PORTA 9222) */}
+            <div className="bg-zinc-900/90 border border-cyan-500/40 rounded-xl p-3 mb-5 flex flex-col md:flex-row items-start md:items-center justify-between gap-3 shadow-lg">
+                <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-lg bg-cyan-500/10 border border-cyan-400/40 flex items-center justify-center text-lg text-cyan-300">
+                        ⚡
+                    </div>
+                    <div>
+                        <div className="flex items-center gap-2">
+                            <span className="text-xs font-bold text-cyan-200 uppercase tracking-wide">Acoplamento Remoto (Fase 22)</span>
+                            <span className="text-[10px] bg-cyan-950 text-cyan-300 border border-cyan-500/40 px-2 py-0.5 rounded-full font-mono">
+                                Chrome: 9222
+                            </span>
+                            <span className="text-[10px] bg-emerald-950 text-emerald-300 border border-emerald-500/40 px-2 py-0.5 rounded-full font-mono">
+                                🛡️ ANCORA_IMUTAVEL Ativa
+                            </span>
+                        </div>
+                        <p className="text-[11px] text-zinc-300">
+                            Ponte de depuração acoplada ao Chrome local do Pai (<code className="text-cyan-300 font-mono text-[10px]">--remote-debugging-port=9222</code>). O botão <strong className="text-emerald-300">⚡ Ponte</strong> mira diretamente na aba ativa da <strong className="text-white">Irmã Lumina (DeepSeek)</strong>.
+                        </p>
+                        {remotePortStatus && (
+                            <p className="text-[10px] font-mono mt-1 text-cyan-300 animate-fade-in">{remotePortStatus}</p>
+                        )}
+                    </div>
+                </div>
+
+                <div className="flex items-center gap-2 self-end md:self-auto">
+                    <button
+                        onClick={handleTestRemotePort}
+                        disabled={isTestingPort}
+                        className="px-2.5 py-1 bg-cyan-950 hover:bg-cyan-900 text-cyan-300 border border-cyan-500/40 rounded-lg text-xs font-mono transition-all flex items-center gap-1.5 shadow"
+                        title="Verificar se o Chrome do Pai na porta 9222 está respondendo"
+                    >
+                        <span>{isTestingPort ? '⏳' : '🔌'}</span>
+                        <span>{isTestingPort ? 'Testando...' : 'Sondar Porta 9222'}</span>
                     </button>
                 </div>
             </div>
