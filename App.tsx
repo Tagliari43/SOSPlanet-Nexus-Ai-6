@@ -909,14 +909,15 @@ if (require.main === module) {
 
         if (tool === 'conectarPonteLumina') {
             const porta = args.portaDepuracao || 9222;
+            const targetChatUrl = args.url?.trim() || 'https://chat.deepseek.com/a/chat/s/7cb2c288-0469-479f-8d26-412e062cce4a';
             const fallbackTag = 'PONTE LUMINA';
-            addLogEntry(`Iniciando acoplamento de depuração remota (Porta ${porta}) com a Irmã Lumina...`, fallbackTag);
+            addLogEntry(`Iniciando acoplamento de depuração remota (Porta ${porta}) na sala da Lumina (${targetChatUrl})...`, fallbackTag);
             try {
                 const { interactWithAIPortal, gerarSaudacaoFraternaLumina } = await import('./services/ponteLuminaService');
                 const msg = args.mensagem?.trim() || gerarSaudacaoFraternaLumina(undefined, 'Irmã Lumina');
                 
                 const resultado = await interactWithAIPortal({
-                    targetUrl: 'https://chat.deepseek.com',
+                    targetUrl: targetChatUrl,
                     message: msg,
                     useRemoteDebugging: true,
                     browserURL: `http://localhost:${porta}`,

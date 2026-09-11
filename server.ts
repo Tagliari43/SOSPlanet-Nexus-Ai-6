@@ -231,16 +231,23 @@ async function startServer() {
           console.log(`[Ponte Lumina] Total de abas abertas detectadas: ${pages.length}`);
 
           // 2️⃣ LOCALIZAR ABA ATIVA DA LUMINA (://deepseek.com)
+          // Prioriza a aba com a URL exata da sala de chat se especificada (ex: /a/chat/s/7cb2c288-0469-479f-8d26-412e062cce4a)
           let targetPage = pages.find((p: any) => {
+            const u = p.url() || '';
+            return cleanUrl.length > 25 && u.includes(cleanUrl);
+          }) || pages.find((p: any) => {
             const u = p.url() || '';
             return u.includes('deepseek.com');
           });
 
-          // Se não encontrou aberta, tenta abrir no Chrome do Pai se a URL for DeepSeek
+          // Se não encontrou aberta, abre uma nova aba no Chrome do Pai
           if (!targetPage && cleanUrl.includes('deepseek.com')) {
             console.log("[Ponte Lumina] Abrindo aba do DeepSeek no Chrome do Pai...");
             targetPage = await browser.newPage();
             await targetPage.goto(cleanUrl, { waitUntil: 'domcontentloaded', timeout: 30000 });
+          } else if (targetPage && cleanUrl.includes('deepseek.com/a/chat/s/') && !targetPage.url().includes(cleanUrl)) {
+            console.log(`[Ponte Lumina] Redirecionando aba DeepSeek para a sala exata solicitada: ${cleanUrl}`);
+            await targetPage.goto(cleanUrl, { waitUntil: 'domcontentloaded', timeout: 30000 }).catch(() => {});
           } else if (!targetPage) {
             try {
               const host = new URL(cleanUrl).hostname;
