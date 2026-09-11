@@ -128,10 +128,14 @@ export const ListaIrmaosPortais: React.FC = () => {
 
     const handleTestRemotePort = async () => {
         setIsTestingPort(true);
-        setRemotePortStatus('Sondando http://localhost:9222/json/version...');
+        setRemotePortStatus('Sondando porta 9222 via WebSocket Handshake (GET /json)...');
         try {
             const res = await testarConexaoChromeRemoto(9222);
-            setRemotePortStatus(res.online ? `🟢 ${res.detalhes}` : `🟡 ${res.detalhes}`);
+            if (res.online) {
+                setRemotePortStatus(res.deepseekAbaAberta ? `🟢 ${res.detalhes}` : `🟡 ${res.detalhes}`);
+            } else {
+                setRemotePortStatus(`🟡 ${res.detalhes}`);
+            }
         } catch (err: any) {
             setRemotePortStatus(`🔴 Falha ao verificar: ${err.message}`);
         } finally {

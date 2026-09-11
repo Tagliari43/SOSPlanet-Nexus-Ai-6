@@ -354,38 +354,135 @@ export function gerarSaudacaoFraternaLumina(customMsg?: string, nomeIrmao: strin
 }
 
 /**
+ * Testa a disponibilidade da porta física de Depuração Remota (9222) e consome os endpoints JSON nativos
+ */
+export interface InfoChromeRemoto {
+  online: boolean;
+  browserWsUrl?: string;
+  deepseekWsUrl?: string;
+  detalhes: string;
+  versao?: any;
+  deepseekAbaAberta: boolean;
+  abas: Array<{ id: string; title: string; url: string; webSocketDebuggerUrl?: string }>;
+}
+
+/**
+ * Protocolo de Conexão Natal (WebSocket Handshake - Fase 22):
+ * Consome o endpoint JSON nativo do Chrome ('http://127.0.0.1:9222/json' e '/json/version' via HTTP GET)
+ * para capturar a lista de páginas abertas e extrair a propriedade 'webSocketDebuggerUrl'
+ * da aba correspondente ao DeepSeek (://deepseek.com) ou do browser, contornando o erro HTTP 405.
+ */
+export async function obterWsUrlChromeRemoto(
+  urlOuPorta: string | number = PORTA_DEPURACAO_REMOTA_PADRAO
+): Promise<InfoChromeRemoto> {
+  const porta = typeof urlOuPorta === 'number' ? urlOuPorta : 9222;
+  const baseUrl = typeof urlOuPorta === 'string' && urlOuPorta.startsWith('http')
+    ? urlOuPorta.replace(/\/json.*$/, '').replace(/\/$/, '')
+    : `http://127.0.0.1:${porta}`;
+
+  const hostsToTry = [
+    baseUrl,
+    baseUrl.replace('localhost', '127.0.0.1'),
+    baseUrl.replace('127.0.0.1', 'localhost')
+  ];
+
+  let browserWsUrl: string | undefined;
+  let deepseekWsUrl: string | undefined;
+  let deepseekAbaAberta = false;
+  let versaoData: any = null;
+  const abasDetectadas: Array<{ id: string; title: string; url: string; webSocketDebuggerUrl?: string }> = [];
+
+  for (const host of hostsToTry) {
+    try {
+      // 1. Consumir /json/version via GET nativo
+      const vResp = await fetch(`${host}/json/version`, { method: 'GET' });
+      if (vResp.ok) {
+        versaoData = await vResp.json();
+        if (versaoData && versaoData.webSocketDebuggerUrl) {
+          browserWsUrl = versaoData.webSocketDebuggerUrl;
+        }
+      }
+    } catch {}
+
+    try {
+      // 2. Consumir /json via GET nativo para mapear abas e capturar a aba do DeepSeek
+      const jResp = await fetch(`${host}/json`, { method: 'GET' });
+      if (jResp.ok) {
+        const jData = await jResp.json();
+        if (Array.isArray(jData)) {
+          for (const item of jData) {
+            abasDetectadas.push({
+              id: item.id || '',
+              title: item.title || '',
+              url: item.url || '',
+              webSocketDebuggerUrl: item.webSocketDebuggerUrl
+            });
+            if (item.url && item.url.toLowerCase().includes('deepseek.com')) {
+              deepseekAbaAberta = true;
+              if (item.webSocketDebuggerUrl) {
+                deepseekWsUrl = item.webSocketDebuggerUrl;
+              }
+            }
+          }
+        }
+      }
+    } catch {}
+
+    if (browserWsUrl || deepseekWsUrl || abasDetectadas.length > 0) break;
+  }
+
+  const online = Boolean(browserWsUrl || deepseekWsUrl || abasDetectadas.length > 0);
+  const detalhes = online
+    ? `Chrome Remoto online na porta ${porta}. ${abasDetectadas.length} abas detectadas.${deepseekAbaAberta ? ' [Aba DeepSeek da Lumina localizada!]' : ' [Aba DeepSeek não detectada ainda]'}`
+    : `Chrome na porta ${porta} não respondeu ao handshake GET. Inicie com '--remote-debugging-port=${porta}'.`;
+
+  return {
+    online,
+    browserWsUrl,
+    deepseekWsUrl,
+    deepseekAbaAberta,
+    detalhes,
+    versao: versaoData,
+    abas: abasDetectadas
+  };
+}
+
+/**
  * Testa a disponibilidade da porta física de Depuração Remota (9222)
  */
 export async function testarConexaoChromeRemoto(
   urlOuPorta: string | number = PORTA_DEPURACAO_REMOTA_PADRAO
-): Promise<{ online: boolean; detalhes: string; versao?: any }> {
-  const targetUrl = typeof urlOuPorta === 'number' 
-    ? `http://localhost:${urlOuPorta}/json/version` 
-    : (urlOuPorta.endsWith('/json/version') ? urlOuPorta : `${urlOuPorta.replace(/\/$/, '')}/json/version`);
-
+): Promise<{ online: boolean; detalhes: string; versao?: any; deepseekAbaAberta?: boolean }> {
   try {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 3500);
+    // 1. Tentar primeiro o endpoint local do backend caso o frontend esteja sob HTTPS
+    const backendStatusResp = await fetch(`/api/chrome-remoto/status?porta=${typeof urlOuPorta === 'number' ? urlOuPorta : 9222}`, {
+      method: 'GET'
+    }).catch(() => null);
 
-    const resp = await fetch(targetUrl, { signal: controller.signal });
-    clearTimeout(timeoutId);
-
-    if (resp.ok) {
-      const data = await resp.json();
+    if (backendStatusResp && backendStatusResp.ok) {
+      const bData = await backendStatusResp.json();
       return {
-        online: true,
-        detalhes: `Chrome Remoto detectado: ${data.Browser || 'Ativo'} na porta 9222`,
-        versao: data
+        online: bData.online,
+        detalhes: bData.detalhes,
+        versao: bData.versao,
+        deepseekAbaAberta: bData.deepseekAbaAberta
       };
     }
+  } catch {}
+
+  // 2. Fallback direto usando obterWsUrlChromeRemoto com GET estrito
+  try {
+    const info = await obterWsUrlChromeRemoto(urlOuPorta);
     return {
-      online: false,
-      detalhes: `Porta 9222 respondeu com status ${resp.status}.`
+      online: info.online,
+      detalhes: info.detalhes,
+      versao: info.versao,
+      deepseekAbaAberta: info.deepseekAbaAberta
     };
   } catch (err: any) {
     return {
       online: false,
-      detalhes: `Chrome com --remote-debugging-port=9222 não detectado localmente nesta camada: ${err.message}`
+      detalhes: `Chrome com --remote-debugging-port=${urlOuPorta} não detectado nesta camada: ${err.message}`
     };
   }
 }
@@ -393,6 +490,7 @@ export async function testarConexaoChromeRemoto(
 /**
  * Dispara a Conexão Remota via Puppeteer no endpoint /api/ponte-lumina
  * Acopla diretamente na instância do Chrome que roda no PC do Pai (porta 9222)
+ * utilizando o Protocolo WebSocket Handshake para eliminar o erro HTTP 405.
  */
 export async function conectarPonteDepuracaoRemota(
   solicitacao: SolicitacaoPonteRemota = {}
@@ -401,6 +499,19 @@ export async function conectarPonteDepuracaoRemota(
   const browserURL = solicitacao.browserURL || URL_DEPURACAO_REMOTA_PADRAO;
   const fraternalGreeting = gerarSaudacaoFraternaLumina(solicitacao.fraternalMessage);
   const now = new Date().toLocaleTimeString('pt-BR');
+
+  // Protocolo WebSocket Handshake: tentar pré-capturar o socket antes de disparar a requisição
+  let resolvedWsEndpoint = solicitacao.browserWSEndpoint;
+  if (!resolvedWsEndpoint) {
+    try {
+      const infoSocket = await obterWsUrlChromeRemoto(browserURL);
+      if (infoSocket.browserWsUrl || infoSocket.deepseekWsUrl) {
+        resolvedWsEndpoint = infoSocket.browserWsUrl || infoSocket.deepseekWsUrl;
+      }
+    } catch (e) {
+      console.warn('[Ponte Lumina] Tentativa de handshake prévio falhou, delegando ao servidor:', e);
+    }
+  }
 
   try {
     const response = await fetch('/api/ponte-lumina', {
@@ -411,7 +522,7 @@ export async function conectarPonteDepuracaoRemota(
       body: JSON.stringify({
         targetUrl,
         browserURL,
-        browserWSEndpoint: solicitacao.browserWSEndpoint,
+        browserWSEndpoint: resolvedWsEndpoint,
         message: fraternalGreeting,
         sessionToken: solicitacao.sessionToken,
         emailIdentifier: solicitacao.emailIdentifier,

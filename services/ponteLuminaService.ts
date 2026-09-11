@@ -114,7 +114,9 @@ export async function conectarIrmaoLumina(payload: LuminaConnectPayload): Promis
 export { 
   conectarPonteDepuracaoRemota, 
   testarConexaoChromeRemoto, 
+  obterWsUrlChromeRemoto,
   validarPrivacidadeAbaRemota, 
   gerarSaudacaoFraternaLumina 
 } from './browserService';
+export type { InfoChromeRemoto } from './browserService';
 

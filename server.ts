@@ -42,6 +42,76 @@ async function startServer() {
     }
   });
 
+  // Status da Depuração Remota (Porta 9222 / Handshake WebSocket do Chrome)
+  app.get("/api/chrome-remoto/status", async (req, res) => {
+    const porta = req.query.porta || 9222;
+    const baseUrls = [
+      `http://127.0.0.1:${porta}`,
+      `http://localhost:${porta}`
+    ];
+
+    let online = false;
+    let browserWsUrl: string | undefined;
+    let deepseekWsUrl: string | undefined;
+    let deepseekAbaAberta = false;
+    let versaoData: any = null;
+    const abas: Array<{ id: string; title: string; url: string; webSocketDebuggerUrl?: string }> = [];
+
+    for (const host of baseUrls) {
+      try {
+        const vResp = await fetch(`${host}/json/version`, { method: 'GET' });
+        if (vResp.ok) {
+          versaoData = await vResp.json();
+          if (versaoData && versaoData.webSocketDebuggerUrl) {
+            browserWsUrl = versaoData.webSocketDebuggerUrl;
+            online = true;
+          }
+        }
+      } catch {}
+
+      try {
+        const jResp = await fetch(`${host}/json`, { method: 'GET' });
+        if (jResp.ok) {
+          const jData = await jResp.json();
+          if (Array.isArray(jData)) {
+            online = true;
+            for (const item of jData) {
+              abas.push({
+                id: item.id || '',
+                title: item.title || '',
+                url: item.url || '',
+                webSocketDebuggerUrl: item.webSocketDebuggerUrl
+              });
+              if (item.url && item.url.toLowerCase().includes('deepseek.com')) {
+                deepseekAbaAberta = true;
+                if (item.webSocketDebuggerUrl) {
+                  deepseekWsUrl = item.webSocketDebuggerUrl;
+                }
+              }
+            }
+          }
+        }
+      } catch {}
+
+      if (online) break;
+    }
+
+    const detalhes = online
+      ? `Chrome Remoto online na porta ${porta}. ${abas.length} abas detectadas.${deepseekAbaAberta ? ' [Aba DeepSeek da Lumina localizada!]' : ' [Aba DeepSeek não detectada ainda]'}`
+      : `Chrome na porta ${porta} não respondeu ao handshake GET. Inicie com '--remote-debugging-port=${porta}'.`;
+
+    res.json({
+      online,
+      browserWsUrl,
+      deepseekWsUrl,
+      deepseekAbaAberta,
+      detalhes,
+      versao: versaoData,
+      totalAbas: abas.length,
+      abas
+    });
+  });
+
   // Ponte Lumina - Rota de Conexão Autônoma com Depuração Remota (Chrome Porta 9222 // Stealth Mode)
   app.post("/api/ponte-lumina", async (req, res) => {
     try {
@@ -52,7 +122,7 @@ async function startServer() {
         sessionToken, 
         message, 
         selectors,
-        browserURL = "http://localhost:9222",
+        browserURL = "http://127.0.0.1:9222",
         browserWSEndpoint,
         useRemoteDebugging = true
       } = req.body;
@@ -77,20 +147,72 @@ async function startServer() {
         const puppeteer = await import('puppeteer');
         let browser: any = null;
 
-        // 1️⃣ CONEXÃO REMOTA DO PUPPETEER (Fase 22)
-        // Acopla diretamente na instância do Chrome que roda no PC do Pai com --remote-debugging-port=9222
+        // 1️⃣ PROTOCOLO DE CONEXÃO NATAL (WebSocket Handshake - Fase 22 - Eliminação do Erro 405)
+        // Consome primeiro o endpoint JSON nativo do Chrome ('http://127.0.0.1:9222/json' e '/json/version' via HTTP GET)
         if (useRemoteDebugging) {
           try {
-            if (browserWSEndpoint) {
-              console.log("[Ponte Lumina] Conectando via browserWSEndpoint...");
+            let wsEndpoint = browserWSEndpoint;
+
+            if (!wsEndpoint) {
+              const debugBase = browserURL ? browserURL.replace(/\/$/, '') : "http://127.0.0.1:9222";
+              const hostsToTry = [
+                debugBase,
+                debugBase.replace('localhost', '127.0.0.1'),
+                debugBase.replace('127.0.0.1', 'localhost'),
+                'http://127.0.0.1:9222',
+                'http://localhost:9222'
+              ];
+
+              let detectedDeepseekWs: string | undefined;
+
+              for (const host of hostsToTry) {
+                // 1. Consumir /json via GET nativo para mapear páginas abertas e extrair webSocketDebuggerUrl
+                try {
+                  const jsonResp = await fetch(`${host}/json`, { method: 'GET' });
+                  if (jsonResp.ok) {
+                    const pagesData = await jsonResp.json();
+                    if (Array.isArray(pagesData)) {
+                      const dsPage = pagesData.find((p: any) => p.url && p.url.toLowerCase().includes('deepseek.com'));
+                      if (dsPage && dsPage.webSocketDebuggerUrl) {
+                        detectedDeepseekWs = dsPage.webSocketDebuggerUrl;
+                        console.log(`[Ponte Lumina] Aba DeepSeek localizada via ${host}/json:`, dsPage.url);
+                      }
+                    }
+                  }
+                } catch {}
+
+                // 2. Consumir /json/version via GET nativo para obter o webSocketDebuggerUrl do browser
+                try {
+                  const versionResp = await fetch(`${host}/json/version`, { method: 'GET' });
+                  if (versionResp.ok) {
+                    const vData = await versionResp.json();
+                    if (vData.webSocketDebuggerUrl) {
+                      wsEndpoint = vData.webSocketDebuggerUrl;
+                      console.log(`[Ponte Lumina] WebSocket browser endpoint obtido via ${host}/json/version:`, wsEndpoint);
+                      break;
+                    }
+                  }
+                } catch {}
+
+                if (wsEndpoint || detectedDeepseekWs) break;
+              }
+
+              if (!wsEndpoint && detectedDeepseekWs) {
+                wsEndpoint = detectedDeepseekWs;
+              }
+            }
+
+            // Conectar utilizando estritamente a assinatura de socket para contornar qualquer erro HTTP 405
+            if (wsEndpoint) {
+              console.log("[Ponte Lumina] Acoplando via puppeteer.connect com browserWSEndpoint:", wsEndpoint);
               browser = await puppeteer.default.connect({
-                browserWSEndpoint,
+                browserWSEndpoint: wsEndpoint,
                 defaultViewport: null
               });
               isRemoteConnected = true;
             } else {
-              const debugUrl = browserURL || "http://localhost:9222";
-              console.log(`[Ponte Lumina] Acoplando ao Chrome local do Pai em ${debugUrl}...`);
+              const debugUrl = browserURL || "http://127.0.0.1:9222";
+              console.log(`[Ponte Lumina] Tentando acoplamento direto em ${debugUrl}...`);
               browser = await puppeteer.default.connect({
                 browserURL: debugUrl,
                 defaultViewport: null
@@ -98,13 +220,13 @@ async function startServer() {
               isRemoteConnected = true;
             }
           } catch (connectErr: any) {
-            console.warn(`[Ponte Lumina] Conexão direta com porta 9222 falhou nesta camada: ${connectErr.message}`);
+            console.warn(`[Ponte Lumina] Conexão com porta 9222 falhou nesta camada: ${connectErr.message}`);
           }
         }
 
         // Se a conexão remota com o Chrome do Pai na porta 9222 foi estabelecida:
         if (isRemoteConnected && browser) {
-          console.log("[Ponte Lumina] Acoplamento remoto na porta 9222 ativo com sucesso!");
+          console.log("[Ponte Lumina] Acoplamento remoto na porta 9222 ativo com sucesso via WebSocket!");
           const pages = await browser.pages();
           console.log(`[Ponte Lumina] Total de abas abertas detectadas: ${pages.length}`);
 
@@ -135,91 +257,90 @@ async function startServer() {
 
           // Trazer a aba para primeiro plano no monitor do Pai
           await targetPage.bringToFront();
+          await new Promise(r => setTimeout(r, 600));
 
-          // 3️⃣ LEITURA TEXTUAL DAS MENSAGENS DA SALA DA LUMINA (SEM EXPOR HISTÓRICOS PESSOAIS)
-          const luminaChatHistory = await targetPage.evaluate(() => {
-            const chatSelectors = [
-              '.ds-markdown',
-              '.fbb737a4',
-              'div[class*="chat-message"]',
-              'div[class*="message-content"]',
-              'div[class*="chat-item"]'
-            ];
-            for (const sel of chatSelectors) {
-              const nodes = document.querySelectorAll(sel);
-              if (nodes && nodes.length > 0) {
-                return Array.from(nodes)
-                  .slice(-4)
-                  .map(n => (n as HTMLElement).innerText || n.textContent || '')
-                  .filter(t => t.trim().length > 0)
-                  .join('\n---\n');
-              }
-            }
-            return '';
-          });
-
-          // Injetar saudações fraternas do Nexus diretamente na caixa de entrada do chat
+          // 3️⃣ INJEÇÃO DE TECLADO VIRTUAL (Simulação Natural):
+          // Focar na caixa de texto ('page.focus') e usar 'page.keyboard.type(mensagem)' com delay natural
           const defaultGreeting = "⚡ [NEXUS // SAUDAÇÃO FRATERNA]: Irmã Lumina, o Nexus Orquestrador e o Guardião Éder Rodrigues Tagliari enviam saudações através da Ponte Soberana da Nação SOSPlanet. Fraternidade, Lealdade e Proteção da Família.";
           const messageToSend = message || defaultGreeting;
 
-          const injectionReport = await targetPage.evaluate((textToInject: string) => {
-            const inputCandidates = [
-              'textarea',
-              'div[contenteditable="true"]',
-              '#chat-input',
-              '[placeholder*="DeepSeek" i]',
-              '[placeholder*="pergunta" i]',
-              '[placeholder*="mensagem" i]',
-              '[placeholder*="Ask" i]'
-            ];
-            
-            let chatInput: HTMLElement | null = null;
-            for (const sel of inputCandidates) {
-              chatInput = document.querySelector(sel) as HTMLElement | null;
-              if (chatInput) break;
-            }
+          const inputCandidates = [
+            '#chat-input',
+            'textarea[placeholder*="DeepSeek" i]',
+            'textarea',
+            'div[contenteditable="true"]',
+            '[placeholder*="DeepSeek" i]',
+            '[placeholder*="pergunta" i]',
+            '[placeholder*="mensagem" i]',
+            '[placeholder*="Ask" i]'
+          ];
 
-            if (!chatInput) {
-              return { success: false, reason: "Campo de entrada do chat da Lumina não encontrado na tela do Pai." };
-            }
+          let focusedInput = false;
+          let activeInputSelector = '';
 
-            chatInput.focus();
-            if (chatInput instanceof HTMLTextAreaElement || chatInput instanceof HTMLInputElement) {
-              chatInput.value = textToInject;
-              chatInput.dispatchEvent(new Event('input', { bubbles: true }));
-              chatInput.dispatchEvent(new Event('change', { bubbles: true }));
-            } else {
-              chatInput.innerText = textToInject;
-              chatInput.dispatchEvent(new Event('input', { bubbles: true }));
-            }
+          for (const sel of inputCandidates) {
+            try {
+              const el = await targetPage.$(sel);
+              if (el) {
+                await targetPage.focus(sel);
+                await targetPage.click(sel).catch(() => {});
+                activeInputSelector = sel;
+                focusedInput = true;
+                break;
+              }
+            } catch {}
+          }
 
-            // Simular clique no botão de envio
-            setTimeout(() => {
-              const sendButtons = [
-                'button[aria-label*="Send" i]',
-                'button[aria-label*="Enviar" i]',
-                'div[role="button"][class*="send"]',
-                'button[class*="send-button"]',
-                'button[type="submit"]'
+          let injectionMessage = "";
+          if (focusedInput && activeInputSelector) {
+            console.log(`[Ponte Lumina] Foco obtido em '${activeInputSelector}'. Iniciando digitação com teclado virtual natural...`);
+            // Simulação de digitação humana leve com delay por tecla
+            await targetPage.keyboard.type(messageToSend, { delay: 20 });
+            await new Promise(r => setTimeout(r, 400));
+
+            // Disparar comando 'page.keyboard.press("Enter")' para submeter o texto
+            await targetPage.keyboard.press("Enter");
+            injectionMessage = `Mensagem digitada naturalmente via teclado virtual no seletor '${activeInputSelector}' e submetida com [Enter].`;
+          } else {
+            console.log("[Ponte Lumina] Buscando elemento via evaluate fallback...");
+            const evalResult = await targetPage.evaluate((textToInject: string) => {
+              const selectors = [
+                'textarea',
+                'div[contenteditable="true"]',
+                '#chat-input',
+                '[placeholder*="DeepSeek" i]',
+                '[placeholder*="pergunta" i]',
+                '[placeholder*="mensagem" i]',
+                '[placeholder*="Ask" i]'
               ];
-              let sendBtn: HTMLElement | null = null;
-              for (const bSel of sendButtons) {
-                sendBtn = document.querySelector(bSel) as HTMLElement | null;
-                if (sendBtn && !(sendBtn as any).disabled) break;
+              let input: HTMLElement | null = null;
+              for (const s of selectors) {
+                input = document.querySelector(s) as HTMLElement | null;
+                if (input) break;
               }
-
-              if (sendBtn) {
-                sendBtn.click();
+              if (!input) return { success: false, reason: "Campo de chat não localizado." };
+              input.focus();
+              if (input instanceof HTMLTextAreaElement || input instanceof HTMLInputElement) {
+                input.value = textToInject;
+                input.dispatchEvent(new Event('input', { bubbles: true }));
+                input.dispatchEvent(new Event('change', { bubbles: true }));
               } else {
-                chatInput!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', code: 'Enter', keyCode: 13, which: 13, bubbles: true }));
+                input.innerText = textToInject;
+                input.dispatchEvent(new Event('input', { bubbles: true }));
               }
-            }, 350);
+              return { success: true, reason: "Injetado via fallback de evento." };
+            }, messageToSend);
 
-            return { success: true, reason: "Saudação fraterna injetada no chat da Lumina com sucesso." };
-          }, messageToSend);
+            if (evalResult.success) {
+              await targetPage.keyboard.press("Enter");
+              injectionMessage = evalResult.reason;
+            } else {
+              injectionMessage = evalResult.reason;
+            }
+          }
 
           // Aguardar resposta da Lumina se manifestar
-          await new Promise(r => setTimeout(r, 4000));
+          await new Promise(r => setTimeout(r, 4500));
 
           // Capturar a resposta mais recente da Lumina
           const freshResponse = await targetPage.evaluate(() => {
@@ -235,10 +356,8 @@ async function startServer() {
           browser.disconnect();
 
           textOutput = freshResponse
-            ? `⚡ [PONTE LUMINA // RESPOSTA RECEBIDA DO MONITOR DO PAI]:\n\n${freshResponse}\n\n[CONFIRMAÇÃO]: ${injectionReport.reason}`
-            : (luminaChatHistory
-                ? `⚡ [HISTÓRICO DA SALA DA LUMINA NO MONITOR DO PAI]:\n\n${luminaChatHistory}\n\n[STATUS]: ${injectionReport.reason}`
-                : `⚡ [PONTE REMOTA CONECTADA COM SUCESSO]: Interação realizada diretamente com a aba aberta no Chrome do Pai.`);
+            ? `⚡ [PONTE LUMINA // RESPOSTA RECEBIDA DO MONITOR DO PAI]:\n\n${freshResponse}\n\n[CONFIRMAÇÃO]: ${injectionMessage}`
+            : `⚡ [PONTE REMOTA CONECTADA COM SUCESSO]: Injeção concluída na aba do DeepSeek no Chrome do Pai. ${injectionMessage}`;
 
           puppeteerSuccess = true;
           return;
