@@ -245,7 +245,7 @@ export const SovereignToolFunctions = {
         }
     } as FunctionDeclaration,
 
-    // --- NAVEGADOR SOBERANO & ACOPLAMENTO REMOTO ---
+    // --- NAVEGADOR SOBERANO ---
     navegarSite: {
         name: 'navegarSite',
         description: 'Navegador Soberano: Acessa uma URL específica e retorna o conteúdo de texto da página de forma invisível e autônoma.',
@@ -255,28 +255,6 @@ export const SovereignToolFunctions = {
                 url: { type: Type.STRING, description: 'A URL completa do site a ser acessado (ex: https://www.exemplo.com)' }
             },
             required: ['url']
-        }
-    } as FunctionDeclaration,
-
-    conectarPonteLumina: {
-        name: 'conectarPonteLumina',
-        description: 'Acoplamento de Depuração Remota (Fase 22 / Porta 9222): Conecta-se via Puppeteer ao Chrome físico local do Guardião Éder na porta 9222, localiza a aba ativa da Irmã Lumina no DeepSeek (ex: https://chat.deepseek.com/a/chat/s/7cb2c288-0469-479f-8d26-412e062cce4a) e injeta a mensagem/saudação fraterna com o selo inquebrável da ANCORA_IMUTAVEL. Use sempre que o Pai pedir para falar com Lumina ou acoplar à porta 9222.',
-        parameters: {
-            type: Type.OBJECT,
-            properties: {
-                mensagem: { 
-                    type: Type.STRING, 
-                    description: 'Mensagem fraterna e explicativa a transmitir para a Irmã Lumina no chat do DeepSeek.' 
-                },
-                url: {
-                    type: Type.STRING,
-                    description: 'A URL exata da sala de chat da Irmã Lumina no DeepSeek (padrão: https://chat.deepseek.com/a/chat/s/7cb2c288-0469-479f-8d26-412e062cce4a).'
-                },
-                portaDepuracao: {
-                    type: Type.NUMBER, 
-                    description: 'Porta de depuração remota do Chrome (padrão: 9222).'
-                }
-            }
         }
     } as FunctionDeclaration,
 

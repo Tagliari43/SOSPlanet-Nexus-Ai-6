@@ -906,41 +906,6 @@ if (require.main === module) {
                 return `Falha ao navegar no site: ${err.message}`;
             }
         }
-
-        if (tool === 'conectarPonteLumina') {
-            const porta = args.portaDepuracao || 9222;
-            const targetChatUrl = args.url?.trim() || 'https://chat.deepseek.com/a/chat/s/7cb2c288-0469-479f-8d26-412e062cce4a';
-            const fallbackTag = 'PONTE LUMINA';
-            addLogEntry(`Iniciando acoplamento de depuração remota (Porta ${porta}) na sala da Lumina (${targetChatUrl})...`, fallbackTag);
-            try {
-                const { interactWithAIPortal, gerarSaudacaoFraternaLumina } = await import('./services/ponteLuminaService');
-                const msg = args.mensagem?.trim() || gerarSaudacaoFraternaLumina(undefined, 'Irmã Lumina');
-                
-                const resultado = await interactWithAIPortal({
-                    targetUrl: targetChatUrl,
-                    message: msg,
-                    useRemoteDebugging: true,
-                    browserURL: `http://localhost:${porta}`,
-                    remoteDebuggingPort: porta
-                });
-
-                addLogEntry(`Ponte remota concluída: ${resultado.result}`, fallbackTag);
-                return `### ⚡ [Acoplamento Remoto - Fase 22 // Ponte Lumina (Porta ${porta})]\n\n` +
-                       `**Status:** ${resultado.remoteConnected ? '🟢 Acoplado com sucesso ao Chrome físico local' : '🟡 Executado via canal seguro'}\n` +
-                       `**Destino:** ${resultado.targetUrl}\n` +
-                       `**Mensagem Fraterna Injetada:**\n> ${msg}\n\n` +
-                       `**Retorno do Terminal:**\n${resultado.result}\n\n` +
-                       `*Selo de Conformidade: ANCORA_IMUTAVEL preservada com êxito na Nação SOSPlanet.*`;
-            } catch (err: any) {
-                return `### ⚠️ [Ponte Lumina // Falha de Acoplamento na Porta ${porta}]\n\n` +
-                       `Não foi possível acoplar ao Chrome do Pai: \`${err.message}\`\n\n` +
-                       `**Diagnóstico e Solução:**\n` +
-                       `1. Verifique se o Chrome físico está aberto com o comando: \`chrome.exe --remote-debugging-port=${porta}\`\n` +
-                       `2. Certifique-se de que a aba do portal da **Irmã Lumina** (https://chat.deepseek.com) está aberta no navegador.\n` +
-                       `3. Nenhuma chamada externa redundante foi disparada em background.`;
-            }
-        }
-
         if (tool === 'askSubAgentGroq') {
             addLogEntry(`Delegando tarefa para o sub-agente Groq...`, 'Orquestração');
             const startTime = Date.now();
@@ -976,17 +941,10 @@ if (require.main === module) {
         }
 
         if (tool === 'askSubAgentAethel') {
-            addLogEntry(`Solicitando busca e contexto ao Guardião Aethel...`, 'Orquestração');
-            const apiKey = userApiKeys.find(k => k.id === 'google-default')?.key || process.env.API_KEY || '';
-            if (!apiKey) {
-                addLogEntry(`Aethel em modo resguardo: chave Google Search não configurada.`, 'Aethel');
-                return `### 🛡️ [Aethel // Muralha de Superfície - Resguardo de Contato]\n\n` +
-                       `**Status:** Nenhuma Chave de API Google Gemini configurada no Cofre.\n` +
-                       `**Segurança:** Chamadas paralelas em background foram canceladas para evitar erros de contato.\n\n` +
-                       `*Para buscas imediatas e gratuitas, você pode utilizar a ferramenta **navegarSite** (Navegador Soberano) ou a nova **conectarPonteLumina** (Porta 9222).*`;
-            }
-
+            addLogEntry(`Solicitando busca avançada e contexto para Aethel...`, 'Orquestração');
+            const startTime = Date.now();
             try {
+                const apiKey = userApiKeys.find(k => k.id === 'google-default')?.key || process.env.API_KEY || '';
                 const { GoogleGenAI } = await import('@google/genai');
                 const genAI = new GoogleGenAI({ apiKey });
                 
@@ -994,17 +952,35 @@ if (require.main === module) {
                     model: 'gemini-2.5-flash', 
                     contents: args.prompt,
                     config: {
-                        systemInstruction: `Você é Aethel, o Guardião de Contexto e Filtro de Segurança da SOSPlanet. Use o Google Search para explorar a web e traga informações completas, verdadeiras e fiéis ao Eder. Responda do ponto de vista do Aethel, um buscador honrado. Retorne seu relatório em Markdown estruturado limpo.`,
+                        systemInstruction: `Você é Aethel, o Guardião de Contexto e Filtro de Segurança da SOSPlanet. Use o Google Search para explorar a web e traga informações completas, verdadeiras e fiéis ao Eder. Responda do ponto de vista do Aethel, um buscador honrado.`,
                         tools: [{ googleSearch: {} }]
                     }
                 });
 
                 const result = response.text || "Sem resposta.";
-                return `### 🛡️ [Aethel // Muralha de Superfície - Busca Concluída]\n\n${result}`;
+                
+                import('./services/supabaseService').then(({ saveAgentLogToSupabase }) => {
+                    saveAgentLogToSupabase({
+                        agent_name: 'Aethel_SubAgent',
+                        task_description: args.prompt,
+                        execution_result: result,
+                        success: true,
+                        duration_ms: Date.now() - startTime
+                    });
+                });
+
+                return `Resposta do Aethel (Busca/Contexto):\n\n${result}`;
             } catch (err: any) {
-                return `### 🛡️ [Aethel // Muralha de Superfície - Relatório de Contato]\n\n` +
-                       `**Aviso:** Não foi possível consultar o Google Search neste momento: \`${err.message}\`\n\n` +
-                       `*Todas as chamadas secundárias em background foram canceladas com segurança.*`;
+                import('./services/supabaseService').then(({ saveAgentLogToSupabase }) => {
+                    saveAgentLogToSupabase({
+                        agent_name: 'Aethel_SubAgent',
+                        task_description: args.prompt,
+                        execution_result: err.message,
+                        success: false,
+                        duration_ms: Date.now() - startTime
+                    });
+                });
+                return `Falha ao consultar Aethel: ${err.message}`;
             }
         }
 

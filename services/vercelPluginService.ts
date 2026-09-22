@@ -25,7 +25,7 @@ export interface SpecializedAgent {
 
 // Grafo de Conhecimento Relacional em memória para o Ecossistema
 export interface RelationalKnowledgeGraph {
-  nodes: Array<{ id: string; type: string; label: string; meta?: any }>;
+  nodes: Array<{ id: string; type: string; label: string; meta?: Record<string, unknown> }>;
   edges: Array<{ source: string; target: string; relation: string }>;
   updatedAt: string;
 }
@@ -66,7 +66,7 @@ export function detectarContextoProjeto(): VercelPluginSessionContext {
   const isNextJsDetected = typeof process !== 'undefined' && Boolean(
     process.env?.NEXT_RUNTIME ||
     process.env?.NEXT_PUBLIC_APP_URL ||
-    (typeof window !== 'undefined' && (window as any)?.__NEXT_DATA__)
+    (typeof window !== 'undefined' && (window as unknown as { __NEXT_DATA__?: unknown })?.__NEXT_DATA__)
   );
 
   return {
@@ -208,13 +208,13 @@ ${graph.edges.map(e => `  • \`${e.source}\` ➔ [${e.relation}] ➔ \`${e.targ
     return { reconhecido: true, comando: cmd, resposta };
   }
 
-  if (normalizedCmd === '/vercel-plugin' || normalizedCmd === '/vercel-plugin:help' || normalizedCmd === '/vercel-plugin:ajuda') {
+  if (normalizedCmd === '/vercel-plugin' || normalizedCmd === '/vercel-plugin:help' || normalizedCmd === '/vercel-plugin:ajuda' || normalizedCmd === '/help') {
     const resposta = `🛠️ **[VERCEL PLUGIN // ROTAS DE COMANDO DISPONÍVEIS]**
 ---
 Atalhos de barra homologados para diagnóstico e gestão do ecossistema:
-  • \`/vercel-plugin:env\` ➔ Auditoria e visualização segura de variáveis de ambiente (sem expor segredos).
-  • \`/vercel-plugin:status\` ➔ Status da infraestrutura de nuvem, framework, gancho leve e agentes especializados (AI-Architect & Performance-Optimizer).
-  • \`/vercel-plugin:help\` ➔ Exibe esta lista de rotas.`;
+  • \`/vercel-plugin:env\` (ou \`/env\`) ➔ Auditoria e visualização segura de variáveis de ambiente (sem expor segredos).
+  • \`/vercel-plugin:status\` (ou \`/status\`) ➔ Status da infraestrutura de nuvem, framework, gancho leve e agentes especializados (AI-Architect & Performance-Optimizer).
+  • \`/vercel-plugin:help\` (ou \`/help\`) ➔ Exibe esta lista de rotas.`;
 
     return { reconhecido: true, comando: cmd, resposta };
   }
