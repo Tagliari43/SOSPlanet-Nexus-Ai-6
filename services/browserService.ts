@@ -1,3 +1,5 @@
+import { Type } from '@google/genai';
+
 /**
  * SERVIÇO DO NAVEGADOR SOBERANO (Fase 22 - Extração Serverless Sem Barreiras)
  * Orquestração: Nexus Arquiteto & Aethel (Muralha de Superfície)
@@ -12,6 +14,29 @@
  * 4. Trava Anti-Eco: Detecção e bloqueio de loops onde o servidor retorna o próprio Santuário
  * 5. Sanitização severa de HTML para texto semântico puro
  */
+
+/**
+ * Declaração de Ferramenta Soberana: Navegador Soberano (navegarSite)
+ * Permite que o Nexus e os modelos acessem qualquer site na internet de forma invisível.
+ */
+export const navegarSiteToolDeclaration = {
+  functionDeclarations: [
+    {
+      name: "navegarSite",
+      description: "Navegador Soberano: Acessa qualquer URL na internet e retorna o conteúdo textual limpo e puro da página (sem scripts, propagandas ou ruídos HTML). Use sempre que precisar ler notícias, artigos sobre sustentabilidade e regeneração, documentações, portais ou links trazidos pelo Guardião.",
+      parameters: {
+        type: Type.OBJECT,
+        properties: {
+          url: {
+            type: Type.STRING,
+            description: "A URL completa do site ou artigo a ser acessado (ex: https://exemplo.com ou https://pt.wikipedia.org/...)"
+          }
+        },
+        required: ["url"]
+      }
+    }
+  ]
+};
 
 // Conjunto de User-Agents comerciais reais rotativos (Windows / macOS / Linux)
 export const USER_AGENTS_COMERCIAIS = [

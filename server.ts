@@ -42,15 +42,17 @@ async function startServer() {
     }
   });
 
-  // Ponte Lumina - Rota de Conexão Autônoma e Interativa com Puppeteer Headless (Stealth Mode + 60s Timeout)
-  app.post("/api/ponte-lumina", async (req, res) => {
+  // Ponte Lumina / Navegador Soberano - Rota de Conexão Autônoma com suporte GET e POST
+  const handlePonteLumina = async (req: any, res: any) => {
+    let cleanUrl = '';
     try {
-      const { targetUrl, emailIdentifier, password, sessionToken, message, selectors } = req.body;
+      const targetUrl = req.body?.targetUrl || req.body?.url || req.query?.url || req.query?.targetUrl;
+      const { emailIdentifier, password, sessionToken, message, selectors } = req.body || {};
       if (!targetUrl) {
         return res.status(400).json({ error: "URL de destino é obrigatória." });
       }
 
-      let cleanUrl = targetUrl;
+      cleanUrl = targetUrl;
       if (!/^https?:\/\//i.test(cleanUrl)) {
         cleanUrl = "https://" + cleanUrl;
       }
@@ -225,10 +227,27 @@ async function startServer() {
         result: textOutput ? textOutput.slice(0, 4000) : "Página acessada sem retorno textual legível."
       });
     } catch (err: any) {
-      console.error("Erro na rota /api/ponte-lumina:", err);
-      res.status(500).json({ error: err.message });
+      console.error("Tentativa de ponte com Puppeteer falhou, aplicando Navegador Soberano:", err.message);
+      try {
+        if (cleanUrl) {
+          const resultado = await executarNavegacaoSoberana(cleanUrl);
+          return res.json({
+            success: resultado.sucesso,
+            targetUrl: cleanUrl,
+            metodo: resultado.metodoUtilizado,
+            length: resultado.tamanhoCaracteres,
+            result: resultado.conteudo
+          });
+        }
+      } catch (fallbackErr: any) {
+        console.error("Navegador Soberano fallback também falhou:", fallbackErr);
+      }
+      res.status(200).json({ success: false, targetUrl: cleanUrl, result: `Falha na ponte: ${err.message}` });
     }
-  });
+  };
+
+  app.post("/api/ponte-lumina", handlePonteLumina);
+  app.get("/api/ponte-lumina", handlePonteLumina);
 
   // Binance Proxy Route (Para o ambiente de desenvolvimento local / AI Studio)
   app.post("/api/binance/balance", async (req, res) => {

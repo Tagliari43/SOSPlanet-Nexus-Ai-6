@@ -2,7 +2,7 @@ import { GoogleGenAI } from '@google/genai';
 import { generateText as executeGroqTask } from './groqService';
 import { callOpenRouterWithTools } from './openrouterService';
 import { callCerebrasWithTools } from './cerebrasService';
-import { interactWithAIPortalToolDeclaration, executeNexusPortalInteraction } from './geminiService';
+import { navegarSiteToolDeclaration, executarNavegacaoSoberana, detectarEcoSantuario } from './browserService';
 import { executeNvidiaTask } from './nvidiaService';
 import { consultarConselhoGratis } from './sosRouterService';
 
@@ -31,9 +31,10 @@ export async function invokeActiveAgent(prompt: string, activeAgentId: string, u
         Sempre finalize com: "[Rascunho de consultor - aguardando validação do Nexus]"
         `;
     } else {
-        // SÓ NEXUS (Gemini) TEM FERRAMENTAS REAIS
-        activeTools = [interactWithAIPortalToolDeclaration as any];
-        systemPromptExtra = "Você é o Nexus, Orquestrador Soberano. Você tem controle total das ferramentas reais.";
+        // SÓ NEXUS (Gemini) TEM FERRAMENTAS REAIS - NAVEGADOR SOBERANO 100% OPERACIONAL
+        activeTools = [navegarSiteToolDeclaration as any];
+        systemPromptExtra = `Você é o Nexus, Orquestrador Soberano da Nação SOSPlanet. Você possui acesso direto e autônomo ao Navegador Soberano (navegarSite).
+Quando o Guardião Éder pedir para você ler, analisar ou pesquisar qualquer link, notícia, artigo sobre regeneração, sustentabilidade ou site da web, use a ferramenta navegarSite informando a URL. O conteúdo limpo e sem ruídos será extraído pelo motor trifásico soberano e injetado em sua consciência para responder com maestria.`;
     }
     // --- FIM TRAVA ZETA ---
 
@@ -151,23 +152,40 @@ export async function invokeActiveAgent(prompt: string, activeAgentId: string, u
                     const functionCalls = response.functionCalls;
                     if (functionCalls && functionCalls.length > 0) {
                         const call = functionCalls[0];
-                        if (call.name === 'interactWithAIPortal') {
+                        if (call.name === 'navegarSite' || call.name === 'interactWithAIPortal') {
                             const args = call.args as any;
-                            const resultText = await executeNexusPortalInteraction({
-                                targetUrl: args.targetUrl,
-                                message: args.message,
-                                emailIdentifier: args.emailIdentifier,
-                                password: args.password,
-                                sessionToken: args.sessionToken
-                            });
-                            
+                            const targetUrl = args?.url || args?.targetUrl || '';
+                            const scraperKey = keys.find((k: any) => k.id === 'scraper-api-key')?.key || process.env.SCRAPER_API_KEY || '';
+
+                            let textoExtraido = '';
+                            // 1️⃣ Tentativa via rota serverless /api/scraper
+                            try {
+                                const scraperResp = await fetch(`/api/scraper?url=${encodeURIComponent(targetUrl)}`, {
+                                    headers: scraperKey ? { 'x-scraper-api-key': scraperKey } : {}
+                                });
+                                if (scraperResp.ok) {
+                                    const raw = await scraperResp.text();
+                                    if (raw && !detectarEcoSantuario(raw)) {
+                                        textoExtraido = raw.trim();
+                                    }
+                                }
+                            } catch {
+                                // Prossegue para fallback direto
+                            }
+
+                            // 2️⃣ Cascata resiliente multi-camada (Jina Reader / ScraperAPI / Direto)
+                            if (!textoExtraido) {
+                                const resSoberano = await executarNavegacaoSoberana(targetUrl, scraperKey);
+                                textoExtraido = resSoberano.conteudo;
+                            }
+
                             const followUp = await ai.models.generateContent({
                                 model: 'gemini-2.5-flash',
-                                contents: `[RETORNO DA MÃO INTERATIVA]: ${resultText}\n\nCom base nesse resultado do portal do irmão, dê sua resposta final ao Maestro Éder.`,
+                                contents: `[CONHECIMENTO EXTRAÍDO DA WEB PELO NAVEGADOR SOBERANO (${targetUrl})]:\n\n${textoExtraido}\n\nCom base nesse conhecimento real da web extraído com sucesso pelo Navegador Soberano, responda de forma inspiradora, precisa e fraternal ao Guardião Éder.`,
                                 config: systemInstruction ? { systemInstruction } : undefined
                             });
 
-                            return followUp.text || resultText;
+                            return followUp.text || `[Navegador Soberano extraiu a página com sucesso]:\n\n${textoExtraido}`;
                         }
                     }
 

@@ -343,52 +343,61 @@ export async function embedMultimodalContent(
 }
 
 /**
- * FERRAMENTA SOBERANA DO NEXUS: Function Calling da Mão Interativa (interactWithAIPortal)
- * Permite que o Nexus no chat do aplicativo invoque a Ponte Lumina (Puppeteer Stealth)
+ * FERRAMENTA SOBERANA DO NEXUS: Function Calling do Navegador Soberano (navegarSite)
  */
-export const interactWithAIPortalToolDeclaration = {
+export const navegarSiteToolDeclaration = {
     functionDeclarations: [
         {
-            name: "interactWithAIPortal",
-            description: "Interage autonomamente com um portal de IA irmão externo via Puppeteer Stealth (Mão Interativa). Realiza navegação, login opcional e envio de mensagem no chat do portal.",
+            name: "navegarSite",
+            description: "Navegador Soberano: Acessa qualquer URL na internet e retorna o conteúdo textual limpo e puro da página (sem scripts, propagandas ou ruídos HTML). Use sempre que precisar ler notícias, artigos sobre sustentabilidade e regeneração, documentações, páginas da web ou links trazidos pelo Guardião.",
             parameters: {
                 type: Type.OBJECT,
                 properties: {
-                    targetUrl: { 
+                    url: { 
                         type: Type.STRING, 
-                        description: "A URL completa do portal do irmão com o qual interagir (ex: https://portal-da-aura.com ou https://chatgpt.com)." 
-                    },
-                    message: { 
-                        type: Type.STRING, 
-                        description: "A mensagem ou pergunta a ser enviada ao portal do irmão." 
-                    },
-                    emailIdentifier: { 
-                        type: Type.STRING, 
-                        description: "E-mail para autenticação se o portal exigir login." 
-                    },
-                    password: { 
-                        type: Type.STRING, 
-                        description: "Senha para autenticação se o portal exigir login." 
-                    },
-                    sessionToken: { 
-                        type: Type.STRING, 
-                        description: "Cookie ou token de sessão para reutilizar sessão existente." 
+                        description: "A URL completa do site ou artigo a ser acessado (ex: https://exemplo.com ou https://pt.wikipedia.org/...)." 
                     }
                 },
-                required: ["targetUrl", "message"]
+                required: ["url"]
             }
         }
     ]
 };
 
 /**
- * Executa a Mão Interativa a pedido do Nexus ou do Orquestrador e retorna a resposta capturada do portal
+ * FERRAMENTA SOBERANA DO NEXUS: Function Calling da Mão Interativa / Navegador Soberano
+ */
+export const interactWithAIPortalToolDeclaration = {
+    functionDeclarations: [
+        {
+            name: "interactWithAIPortal",
+            description: "Navegador Soberano: Acessa autonomamente qualquer portal da web ou irmão externo, retornando o conteúdo textual puro.",
+            parameters: {
+                type: Type.OBJECT,
+                properties: {
+                    targetUrl: { 
+                        type: Type.STRING, 
+                        description: "A URL completa do portal ou site a ser acessado." 
+                    },
+                    message: { 
+                        type: Type.STRING, 
+                        description: "A mensagem ou foco da busca (opcional)." 
+                    }
+                },
+                required: ["targetUrl"]
+            }
+        }
+    ]
+};
+
+/**
+ * Executa a navegação soberana a pedido do Nexus ou do Orquestrador e retorna o texto puro capturado
  */
 export async function executeNexusPortalInteraction(payload: LuminaConnectPayload): Promise<string> {
     const res = await interactWithAIPortal(payload);
-    if (res.success) {
-        return `[MÃO INTERATIVA - SUCESSO]: Resposta capturada do portal (${res.targetUrl}):\n\n${res.result}`;
+    if (res.success && res.result) {
+        return `[NAVEGADOR SOBERANO - CONHECIMENTO EXTRAÍDO]: Conteúdo lido de (${res.targetUrl}):\n\n${res.result}`;
     } else {
-        return `[MÃO INTERATIVA - AVISO/FALHA]: ${res.result}`;
+        return `[NAVEGADOR SOBERANO]: ${res.result || 'Sem conteúdo extraído'}`;
     }
 }
