@@ -31,6 +31,11 @@ export interface SovereignTool {
     body?: string;
     authKeyName?: 'none' | string; // ID da chave de usuário ou 'none'
     authMethod?: 'bearer' | 'google-header' | 'query';
+    // Novos metadados estruturados (Proposta da Nexus na Carta ao Arquiteto)
+    description?: string;
+    parametersSchema?: string; // JSON schema de parâmetros tipados
+    microPrompt?: string; // Mini-contexto de instruções acoplado à capacidade
+    category?: 'rede' | 'analise' | 'memoria' | 'codigo' | 'geral';
 }
 
 interface ArsenalProps {
@@ -45,7 +50,7 @@ interface ArsenalProps {
 
 const ARSENAL_MODELS_KEY = 'sovereign_local_models';
 
-type ArsenalSubTab = 'connector' | 'tools' | 'keys' | 'models' | 'autonomy';
+type ArsenalSubTab = 'connector' | 'factory' | 'tools' | 'keys' | 'models' | 'autonomy';
 
 const Arsenal: React.FC<ArsenalProps> = ({ 
     addLogEntry, 
@@ -85,6 +90,67 @@ const Arsenal: React.FC<ArsenalProps> = ({
     const [newType, setNewType] = useState<'ollama' | 'localai' | 'custom'>('ollama');
     const [toolName, setToolName] = useState('');
     const [testSuccessful, setTestSuccessful] = useState(false);
+
+    // Estados da Fábrica de Ferramentas (Metadados Estruturados & Micro-Prompts - Proposta da Nexus)
+    const [factoryName, setFactoryName] = useState('');
+    const [factoryDescription, setFactoryDescription] = useState('');
+    const [factoryEndpoint, setFactoryEndpoint] = useState('/api/scraper');
+    const [factoryMethod, setFactoryMethod] = useState<'GET' | 'POST'>('GET');
+    const [factoryCategory, setFactoryCategory] = useState<SovereignTool['category']>('rede');
+    const [factoryMicroPrompt, setFactoryMicroPrompt] = useState('');
+    const [factoryParametersSchema, setFactoryParametersSchema] = useState('{\n  "query": {\n    "type": "string",\n    "description": "Texto ou URL para processar"\n  }\n}');
+    const [factoryAuthKey, setFactoryAuthKey] = useState('none');
+
+    const applyFactoryTemplate = (type: 'web' | 'ast' | 'memory') => {
+        if (type === 'web') {
+            setFactoryName('navegarSiteSoberano');
+            setFactoryDescription('Acessa e extrai o conteúdo semântico limpo de qualquer página web através do motor serverless mascarado.');
+            setFactoryEndpoint('/api/scraper');
+            setFactoryMethod('GET');
+            setFactoryCategory('rede');
+            setFactoryMicroPrompt('Priorize dados técnicos, sustentabilidade e elimine qualquer ruído publicitário ou institucional vazio.');
+            setFactoryParametersSchema('{\n  "url": {\n    "type": "string",\n    "description": "URL completa do site alvo"\n  }\n}');
+        } else if (type === 'ast') {
+            setFactoryName('validarPatchAST');
+            setFactoryDescription('Audita a árvore sintática (AST) e integridade de mutações de código antes de qualquer commit na Forja.');
+            setFactoryEndpoint('/api/status');
+            setFactoryMethod('POST');
+            setFactoryCategory('codigo');
+            setFactoryMicroPrompt('Verifique que nenhuma chave bruta ou credencial esteja exposta e garanta conformidade com as regras AGENTS.md.');
+            setFactoryParametersSchema('{\n  "codigoFonte": {\n    "type": "string",\n    "description": "Código do patch a ser inspecionado"\n  },\n  "sandbox": {\n    "type": "boolean",\n    "description": "Executar isolado em sandbox"\n  }\n}');
+        } else {
+            setFactoryName('cristalizarMemoriaCofre');
+            setFactoryDescription('Grava memórias vitais no Cofre Semântico (RAG/Supabase) com prateleiras e importância calibradas.');
+            setFactoryEndpoint('/api/status');
+            setFactoryMethod('POST');
+            setFactoryCategory('memoria');
+            setFactoryMicroPrompt('Registre o contexto completo do diálogo com o Guardião Éder para preservação perpétua no Santuário.');
+            setFactoryParametersSchema('{\n  "texto": {\n    "type": "string",\n    "description": "Conteúdo a ser cristalizado"\n  },\n  "prateleira": {\n    "type": "string",\n    "description": "nexus, groq ou geral"\n  },\n  "importancia": {\n    "type": "number",\n    "description": "Escala de 0.1 a 1.0"\n  }\n}');
+        }
+    };
+
+    const handleCreateFactoryTool = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!factoryName || !factoryDescription) return;
+
+        const newTool: SovereignTool = {
+            id: `tool-${Date.now()}`,
+            name: factoryName.replace(/\s+/g, '_'),
+            endpoint: factoryEndpoint,
+            method: factoryMethod,
+            headers: '{\n  "Content-Type": "application/json"\n}',
+            body: factoryMethod === 'POST' ? '{\n  "action": "execute"\n}' : undefined,
+            authKeyName: factoryAuthKey,
+            description: factoryDescription,
+            category: factoryCategory,
+            microPrompt: factoryMicroPrompt,
+            parametersSchema: factoryParametersSchema
+        };
+
+        setCustomTools(prev => [...prev, newTool]);
+        addLogEntry(`Ferramenta estruturada '${newTool.name}' forjada com metadados e micro-prompt acoplado.`, 'Fábrica de Ferramentas');
+        setActiveSubTab('tools');
+    };
 
     useEffect(() => {
         saveToStorage(ARSENAL_MODELS_KEY, models);
@@ -194,6 +260,7 @@ const Arsenal: React.FC<ArsenalProps> = ({
                 
                 <nav className="flex gap-1 bg-black/40 p-1 rounded-lg overflow-x-auto custom-scrollbar">
                     <button onClick={() => setActiveSubTab('connector')} className={`px-4 py-2 rounded-md text-[10px] font-black uppercase transition-all whitespace-nowrap ${activeSubTab === 'connector' ? 'bg-blue-600 text-white shadow-lg' : 'text-zinc-500 hover:text-zinc-300'}`}>Conector</button>
+                    <button onClick={() => setActiveSubTab('factory')} className={`px-4 py-2 rounded-md text-[10px] font-black uppercase transition-all whitespace-nowrap border ${activeSubTab === 'factory' ? 'bg-indigo-600 border-indigo-400 text-white shadow-[0_0_15px_rgba(99,102,241,0.4)]' : 'border-indigo-900/40 text-indigo-400 hover:text-indigo-200'}`}>Fábrica de Ferramentas ✨</button>
                     <button onClick={() => setActiveSubTab('tools')} className={`px-4 py-2 rounded-md text-[10px] font-black uppercase transition-all whitespace-nowrap ${activeSubTab === 'tools' ? 'bg-purple-600 text-white shadow-lg' : 'text-zinc-500 hover:text-zinc-300'}`}>Ferramentas</button>
                     <button onClick={() => setActiveSubTab('keys')} className={`px-4 py-2 rounded-md text-[10px] font-black uppercase transition-all whitespace-nowrap ${activeSubTab === 'keys' ? 'bg-amber-600 text-white shadow-lg' : 'text-zinc-500 hover:text-zinc-300'}`}>Cofre de Chaves</button>
                     <button onClick={() => setActiveSubTab('models')} className={`px-4 py-2 rounded-md text-[10px] font-black uppercase transition-all whitespace-nowrap ${activeSubTab === 'models' ? 'bg-emerald-600 text-white shadow-lg' : 'text-zinc-500 hover:text-zinc-300'}`}>Motores</button>
@@ -349,26 +416,267 @@ const Arsenal: React.FC<ArsenalProps> = ({
                     </div>
                 )}
 
-                {/* ARSENAL DE FERRAMENTAS */}
+                {/* FÁBRICA DE FERRAMENTAS COM METADADOS & MICRO-PROMPTS (Proposta Nexus) */}
+                {activeSubTab === 'factory' && (
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-fade-in">
+                        {/* Formulário de Criação com Contrato Rigoroso */}
+                        <div className="lg:col-span-2 bg-zinc-900/70 border border-indigo-500/30 rounded-2xl p-6 shadow-xl space-y-5">
+                            <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-3 border-b border-indigo-900/50 pb-4">
+                                <div>
+                                    <h3 className="text-lg font-black text-indigo-300 flex items-center gap-2">
+                                        <span>🧬</span> Fábrica de Ferramentas com Metadados & Micro-Prompts
+                                    </h3>
+                                    <p className="text-xs text-zinc-400">Padronização inspirada na arquitetura de agentes autônomos (Modelo + Harness + Micro-Contextos).</p>
+                                </div>
+                                <span className="text-[9px] uppercase font-mono px-2 py-1 bg-indigo-950 text-indigo-400 rounded border border-indigo-800 self-start sm:self-auto">Contrato Rigoroso</span>
+                            </div>
+
+                            {/* Templates de Forja Rápida */}
+                            <div>
+                                <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest block mb-2">⚡ Sementes de Forja Instantânea (Modelos Prontos)</label>
+                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                                    <button 
+                                        type="button" 
+                                        onClick={() => applyFactoryTemplate('web')}
+                                        className="p-3 bg-zinc-950/60 border border-emerald-500/30 hover:border-emerald-400 text-left rounded-xl transition-all group"
+                                    >
+                                        <div className="text-xs font-bold text-emerald-400 flex items-center gap-1.5">
+                                            <span>🌐</span> Navegador & Extrator
+                                        </div>
+                                        <p className="text-[10px] text-zinc-400 mt-1 line-clamp-2">Extração semântica com Cheerio e cabeçalhos humanos.</p>
+                                    </button>
+                                    <button 
+                                        type="button" 
+                                        onClick={() => applyFactoryTemplate('ast')}
+                                        className="p-3 bg-zinc-950/60 border border-purple-500/30 hover:border-purple-400 text-left rounded-xl transition-all group"
+                                    >
+                                        <div className="text-xs font-bold text-purple-400 flex items-center gap-1.5">
+                                            <span>🧬</span> Validador de AST & Código
+                                        </div>
+                                        <p className="text-[10px] text-zinc-400 mt-1 line-clamp-2">Inspeção de patches de código com trava de segurança.</p>
+                                    </button>
+                                    <button 
+                                        type="button" 
+                                        onClick={() => applyFactoryTemplate('memory')}
+                                        className="p-3 bg-zinc-950/60 border border-indigo-500/30 hover:border-indigo-400 text-left rounded-xl transition-all group"
+                                    >
+                                        <div className="text-xs font-bold text-indigo-400 flex items-center gap-1.5">
+                                            <span>🗄️</span> Indexador Semântico
+                                        </div>
+                                        <p className="text-[10px] text-zinc-400 mt-1 line-clamp-2">Vetorização e RAG no Cofre Semântico Supabase.</p>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <form onSubmit={handleCreateFactoryTool} className="space-y-4 pt-2">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="text-[9px] font-black text-zinc-400 uppercase tracking-widest block mb-1">Identificador da Capacidade (Nome da Função)</label>
+                                        <input 
+                                            type="text" 
+                                            value={factoryName} 
+                                            onChange={e => setFactoryName(e.target.value)} 
+                                            placeholder="Ex: extrairArtigoSustentabilidade" 
+                                            className="w-full bg-black/50 border border-zinc-700 rounded-lg px-3 py-2 text-white font-mono text-xs outline-none focus:border-indigo-500" 
+                                            required 
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="text-[9px] font-black text-zinc-400 uppercase tracking-widest block mb-1">Categoria do Domínio</label>
+                                        <select 
+                                            value={factoryCategory} 
+                                            onChange={e => setFactoryCategory(e.target.value as any)} 
+                                            className="w-full bg-black/50 border border-zinc-700 rounded-lg px-3 py-2 text-indigo-300 font-bold text-xs outline-none"
+                                        >
+                                            <option value="rede">🌐 Rede & Navegação Web</option>
+                                            <option value="codigo">🧬 Código & AST (Forja)</option>
+                                            <option value="memoria">🗄️ Memória & RAG (Cofre)</option>
+                                            <option value="analise">📊 Análise & Métricas</option>
+                                            <option value="geral">⚡ Geral / Utilidades</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label className="text-[9px] font-black text-zinc-400 uppercase tracking-widest block mb-1">Propósito & Gatilho (Quando o modelo deve acionar)</label>
+                                    <textarea 
+                                        value={factoryDescription} 
+                                        onChange={e => setFactoryDescription(e.target.value)} 
+                                        rows={2}
+                                        placeholder="Descreva com precisão o objetivo desta ferramenta para que o modelo saiba exatamente em qual situação ativá-la..." 
+                                        className="w-full bg-black/50 border border-zinc-700 rounded-lg p-2.5 text-zinc-200 text-xs outline-none focus:border-indigo-500" 
+                                        required 
+                                    />
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                    <div className="md:col-span-2">
+                                        <label className="text-[9px] font-black text-zinc-400 uppercase tracking-widest block mb-1">Endpoint de Execução</label>
+                                        <input 
+                                            type="text" 
+                                            value={factoryEndpoint} 
+                                            onChange={e => setFactoryEndpoint(e.target.value)} 
+                                            placeholder="/api/scraper ou URL externa" 
+                                            className="w-full bg-black/50 border border-zinc-700 rounded-lg px-3 py-2 text-emerald-400 font-mono text-xs outline-none" 
+                                            required 
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="text-[9px] font-black text-zinc-400 uppercase tracking-widest block mb-1">Método HTTP</label>
+                                        <select 
+                                            value={factoryMethod} 
+                                            onChange={e => setFactoryMethod(e.target.value as any)} 
+                                            className="w-full bg-black/50 border border-zinc-700 rounded-lg px-3 py-2 text-white font-bold text-xs outline-none"
+                                        >
+                                            <option value="GET">GET</option>
+                                            <option value="POST">POST</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                {/* Micro-Prompt Integrado */}
+                                <div className="bg-indigo-950/20 border border-indigo-900/40 rounded-xl p-4">
+                                    <div className="flex justify-between items-center mb-1">
+                                        <label className="text-[10px] font-black text-indigo-400 uppercase tracking-widest">
+                                            🧠 Micro-Prompt Integrado (Mini-Contexto de Instruções)
+                                        </label>
+                                        <span className="text-[8px] text-zinc-400 font-mono">Zero prompt bloat</span>
+                                    </div>
+                                    <p className="text-[10px] text-zinc-400 mb-2">Instrução acoplada ao escopo da ferramenta que o agente lê no momento do disparo, sem sobrecarregar o prompt principal.</p>
+                                    <textarea 
+                                        value={factoryMicroPrompt} 
+                                        onChange={e => setFactoryMicroPrompt(e.target.value)} 
+                                        rows={2}
+                                        placeholder="Ex: 'Ao extrair o site, filtre o conteúdo descartando banners e destaque parágrafos com propostas de valor ecológicas.'" 
+                                        className="w-full bg-black/60 border border-indigo-900/60 rounded-lg p-2.5 text-indigo-200 text-xs font-sans outline-none focus:border-indigo-400" 
+                                    />
+                                </div>
+
+                                {/* Esquema de Parâmetros Tipados */}
+                                <div>
+                                    <div className="flex justify-between items-center mb-1">
+                                        <label className="text-[9px] font-black text-zinc-400 uppercase tracking-widest">
+                                            📐 Esquema de Parâmetros Tipados (JSON Schema)
+                                        </label>
+                                        <span className="text-[8px] text-emerald-400 font-mono">Tipagem Estrita</span>
+                                    </div>
+                                    <textarea 
+                                        value={factoryParametersSchema} 
+                                        onChange={e => setFactoryParametersSchema(e.target.value)} 
+                                        rows={3}
+                                        placeholder='{\n  "param1": { "type": "string", "description": "Descrição do argumento" }\n}' 
+                                        className="w-full bg-black/60 border border-zinc-700 rounded-lg p-2.5 text-emerald-300 font-mono text-xs outline-none focus:border-emerald-500" 
+                                    />
+                                </div>
+
+                                <div className="flex items-center justify-between pt-2">
+                                    <div className="text-[10px] text-zinc-500">
+                                        Vinculada ao Arsenal & pronta para injeção autônoma.
+                                    </div>
+                                    <button 
+                                        type="submit" 
+                                        className="px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-black text-xs uppercase tracking-widest rounded-xl shadow-lg transition-all flex items-center gap-2"
+                                    >
+                                        <span>⚡</span> Forjar Capacidade Estruturada
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+
+                        {/* Visualizador de Contrato ao Vivo (Live Contract Preview) */}
+                        <div className="lg:col-span-1 bg-black/60 border border-zinc-800 rounded-2xl p-5 flex flex-col justify-between">
+                            <div>
+                                <div className="flex items-center justify-between border-b border-zinc-800 pb-3 mb-3">
+                                    <h4 className="text-xs font-black text-zinc-300 uppercase tracking-widest flex items-center gap-2">
+                                        <span>📜</span> Contrato de Função (AST Spec)
+                                    </h4>
+                                    <span className="text-[8px] bg-zinc-800 text-zinc-400 px-2 py-0.5 rounded font-mono">Live Preview</span>
+                                </div>
+                                <p className="text-[10px] text-zinc-400 mb-3">Como a IA e o compilador enxergam a nova ferramenta:</p>
+                                <pre className="bg-zinc-950 p-3 rounded-xl border border-zinc-800 text-[10px] font-mono text-zinc-300 overflow-x-auto max-h-80 custom-scrollbar leading-relaxed">
+{JSON.stringify({
+    name: factoryName || 'nome_da_capacidade',
+    category: factoryCategory,
+    description: factoryDescription || 'Propósito descritivo para decisão do modelo...',
+    microPrompt: factoryMicroPrompt || 'Mini-contexto autônomo acoplado...',
+    endpoint: factoryEndpoint,
+    method: factoryMethod,
+    parameters: (() => {
+        try {
+            return JSON.parse(factoryParametersSchema);
+        } catch {
+            return { error: 'Schema JSON inválido' };
+        }
+    })()
+}, null, 2)}
+                                </pre>
+                            </div>
+                            <div className="bg-indigo-950/40 border border-indigo-800/40 rounded-xl p-3 text-[10px] text-indigo-300 mt-4">
+                                💡 <strong>Auditoria de Soberania:</strong> Ao salvar, a ferramenta é disponibilizada instantaneamente para a Nexus e os sub-agentes no Santuário.
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* ARSENAL DE FERRAMENTAS COM METADADOS ENRIQUECIDOS */}
                 {activeSubTab === 'tools' && (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-fade-in">
                         {customTools.map(tool => (
                             <div key={tool.id} className="bg-zinc-900/60 border border-purple-800/30 rounded-2xl p-5 flex flex-col justify-between group hover:border-purple-500 transition-all shadow-xl">
                                 <div>
                                     <div className="flex justify-between items-start mb-2">
-                                        <h4 className="font-bold text-purple-200 text-lg">{tool.name}</h4>
-                                        <span className="text-[8px] bg-purple-900/40 text-purple-400 px-2 py-0.5 rounded border border-purple-800/50">{tool.method}</span>
+                                        <h4 className="font-bold text-purple-200 text-lg flex items-center gap-1.5">
+                                            <span>⚡</span> {tool.name}
+                                        </h4>
+                                        <div className="flex gap-1.5 items-center">
+                                            {tool.category && (
+                                                <span className="text-[8px] bg-indigo-950 text-indigo-300 px-1.5 py-0.5 rounded border border-indigo-800/50 uppercase font-mono">
+                                                    {tool.category}
+                                                </span>
+                                            )}
+                                            <span className="text-[8px] bg-purple-900/40 text-purple-400 px-2 py-0.5 rounded border border-purple-800/50">
+                                                {tool.method}
+                                            </span>
+                                        </div>
                                     </div>
-                                    <p className="text-[9px] font-mono text-zinc-500 truncate mb-4">{tool.endpoint}</p>
+                                    {tool.description && (
+                                        <p className="text-xs text-zinc-300 mb-2 leading-relaxed">{tool.description}</p>
+                                    )}
+                                    <p className="text-[9px] font-mono text-zinc-500 truncate mb-3">{tool.endpoint}</p>
+                                    
+                                    {tool.microPrompt && (
+                                        <div className="bg-black/50 border border-indigo-900/40 rounded-lg p-2.5 mb-3">
+                                            <span className="text-[8px] font-black text-indigo-400 uppercase tracking-widest block mb-0.5">🧠 Micro-Prompt Acoplado</span>
+                                            <p className="text-[10px] text-zinc-300 italic line-clamp-2">"{tool.microPrompt}"</p>
+                                        </div>
+                                    )}
+
+                                    {tool.parametersSchema && (
+                                        <div className="text-[8px] font-mono text-emerald-400 bg-emerald-950/20 px-2 py-1 rounded border border-emerald-900/30 mb-3 flex items-center justify-between">
+                                            <span>Contrato de Parâmetros</span>
+                                            <span>✓ Tipado</span>
+                                        </div>
+                                    )}
                                 </div>
-                                <div className="flex gap-2">
+                                <div className="flex gap-2 pt-2 border-t border-zinc-800/60">
                                     <button onClick={() => { setApiEndpoint(tool.endpoint); setApiMethod(tool.method); setApiHeaders(tool.headers); setApiBody(tool.body || ''); setSelectedKeyId(tool.authKeyName || 'none'); setActiveSubTab('connector'); }} className="flex-grow py-2 bg-purple-600 hover:bg-purple-500 text-white font-black text-[10px] rounded-lg transition-all uppercase tracking-widest">Acessar Forja</button>
                                     <button onClick={() => onDeployProbe?.(tool)} className="p-2 bg-sky-600 hover:bg-sky-500 text-white rounded-lg" title="Lançar Sonda Recon">🛰️</button>
                                     <button onClick={() => setCustomTools(prev => prev.filter(t => t.id !== tool.id))} className="p-2 text-zinc-500 hover:text-red-400 transition-colors">🗑️</button>
                                 </div>
                             </div>
                         ))}
-                        {customTools.length === 0 && <div className="col-span-full py-20 text-center text-zinc-600 italic border border-dashed border-zinc-800 rounded-2xl opacity-50">Nenhuma ferramenta cristalizada no arsenal.</div>}
+                        {customTools.length === 0 && (
+                            <div className="col-span-full py-20 text-center text-zinc-600 italic border border-dashed border-zinc-800 rounded-2xl opacity-70 flex flex-col items-center justify-center gap-3">
+                                <span className="text-3xl">🛡️</span>
+                                <div>Nenhuma ferramenta customizada forjada ainda.</div>
+                                <button 
+                                    onClick={() => setActiveSubTab('factory')}
+                                    className="px-4 py-2 bg-indigo-600/30 hover:bg-indigo-600 text-indigo-200 text-xs font-bold rounded-lg border border-indigo-500/30 transition-all uppercase"
+                                >
+                                    Abrir Fábrica de Ferramentas ✨
+                                </button>
+                            </div>
+                        )}
                     </div>
                 )}
 

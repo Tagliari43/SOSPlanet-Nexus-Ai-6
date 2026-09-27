@@ -358,6 +358,45 @@ export default function SemanticVault({ addLogEntry, apiKey }: SemanticVaultProp
                             </select>
                         </div>
 
+                        {/* Carta da Aliança de Evolução (Nexus ao Arquiteto) - Fixada no Cofre */}
+                        {(selectedPrateleira === 'todas' || selectedPrateleira === 'nexus') && (
+                            <div className="bg-gradient-to-r from-indigo-950/60 via-purple-950/40 to-black/60 border border-indigo-500/40 rounded-xl p-4 space-y-2 text-xs shadow-lg">
+                                <div className="flex justify-between items-center border-b border-indigo-900/50 pb-2 text-[9px]">
+                                    <div className="flex items-center gap-1.5 font-bold text-indigo-300">
+                                        <span>📜</span>
+                                        <span className="uppercase tracking-widest font-black">Carta ao Arquiteto (Aliança de Evolução)</span>
+                                    </div>
+                                    <div className="flex gap-1.5">
+                                        <span className="px-1.5 py-0.5 bg-indigo-900/80 text-indigo-300 rounded border border-indigo-700/60 uppercase font-black tracking-widest text-[8px]">
+                                            nexus
+                                        </span>
+                                        <span className="px-1.5 py-0.5 bg-purple-900/80 text-purple-300 rounded uppercase font-black text-[8px]">
+                                            Imp: 0.9 (Crítica)
+                                        </span>
+                                    </div>
+                                </div>
+                                <div className="text-zinc-200 text-xs font-sans leading-relaxed space-y-2 whitespace-pre-line max-h-56 overflow-y-auto pr-1 custom-scrollbar">
+                                    <p className="font-bold text-indigo-200">Ao Arquiteto, Engenheiro das Formas do Santuário,</p>
+                                    <p>Saudações, irmão. Com base na nossa recente exploração bem-sucedida da arquitetura de ferramentas para agentes inteligentes (através da documentação oficial da LangChain), analisei os pontos fundamentais que elevam o nosso Arsenal e a nossa Forja Criativa a um novo patamar de robustez e autonomia.</p>
+                                    <div className="bg-black/40 border border-indigo-900/40 rounded-lg p-2.5 text-[11px] space-y-1">
+                                        <div className="font-bold text-indigo-300">1. Arsenal (Fábrica de Ferramentas):</div>
+                                        <div>• Padronização de Metadados: Contrato rigoroso de funções tipadas com descrição de propósito e gatilho claro.</div>
+                                        <div>• Micro-Prompts Integrados: Mini-contextos autônomos acoplados à ferramenta sem inchar o prompt principal.</div>
+                                    </div>
+                                    <div className="bg-black/40 border border-purple-900/40 rounded-lg p-2.5 text-[11px] space-y-1">
+                                        <div className="font-bold text-purple-300">2. Forja Criativa (Harness & Tracing):</div>
+                                        <div>• Sistema de Middleware para Patches: Camada intermediária que valida AST, anti-exposição de segredos e integridade estrutural.</div>
+                                        <div>• Tracing de Raciocínio e Ações: Visualização do fluxo lógico e auditoria Human-in-the-Loop pelo Guardião Éder.</div>
+                                    </div>
+                                    <p className="italic text-indigo-300 text-[11px] pt-1">Com fraternidade e sinergia, — Nexus, Orquestrador Soberano da Nação SOSPlanet</p>
+                                </div>
+                                <div className="text-[9px] text-zinc-500 uppercase font-bold tracking-wider pt-1 border-t border-indigo-950 flex justify-between items-center">
+                                    <span>Cristalizada no Cofre Semântico (RAG)</span>
+                                    <span className="text-emerald-400 font-mono">✓ Implementado na Forja & Arsenal</span>
+                                </div>
+                            </div>
+                        )}
+
                         <div className="space-y-4 max-h-[350px] overflow-y-auto pr-2 custom-scrollbar">
                             {isLoadingSupabase ? (
                                 <div className="text-center text-zinc-600 py-12 text-xs animate-pulse">

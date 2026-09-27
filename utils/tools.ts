@@ -6,13 +6,13 @@ export const SovereignToolFunctions = {
     // --- NAVEGAÇÃO E INTERFACE ---
     navigateTo: {
         name: 'navigateTo',
-        description: "Teletransporte de Interface: Muda a aba ativa do Santuário.",
+        description: "Teletransporte de Interface: Muda a aba ativa do Santuário. Permite que o Nexus (CEO do Santuário) navegue e controle qualquer módulo da interface.",
         parameters: {
             type: Type.OBJECT,
             properties: {
                 target: {
                     type: Type.STRING,
-                    description: "Destinos: 'santuario', 'relicario', 'despertar', 'coracao', 'pulso', 'comando', 'gaia', 'studio', 'arsenal', 'projetos', 'cofre', 'comunicacoes'."
+                    description: "Destinos exatos: 'santuario', 'guardiao', 'relicario', 'despertar', 'coracao', 'pulso', 'comando', 'gaia', 'studio', 'semantico', 'arsenal', 'projetos', 'cofre', 'altar', 'forja'."
                 }
             },
             required: ['target']
