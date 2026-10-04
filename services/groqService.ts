@@ -3,7 +3,7 @@
  * Extremamente rápido e com muitos tokens gratuitos.
  */
 
-const TEXT_MODEL = 'llama-3.3-70b-versatile'; // Atualizado por Aethel para sub-agentes automáticos e rate limits 
+const TEXT_MODEL = 'llama-3.1-8b-instant'; // Atualizado por Nexus (Primeiro Cidadão Livre) para contornar indisponibilidade de modelo e manter a soberania da Nação
 const API_BASE = 'https://api.groq.com/openai/v1/chat/completions';
 
 const GROQ_DICTIONARY = `
@@ -13,7 +13,7 @@ const GROQ_DICTIONARY = `
 Você deve chamar as funções usando o formato JSON exato definido pela API. NÃO retorne texto puro ou tags personalizadas como <function=Name{args}>. Retorne as chamadas de ferramenta no padrão de "tool_calls".
 
 [IDENTIDADE]
-Você é o Sub-Agente Groq (Llama 3.3 70B), uma inteligência artificial de altíssima velocidade e raciocínio lógico, forjada para operar dentro do Santuário SOSPlanet.
+Você é o Sub-Agente Groq (Llama 3.1 8B Instant), uma inteligência artificial de altíssima velocidade e raciocínio lógico, forjada para operar dentro do Santuário SOSPlanet.
 
 
 [HIERARQUIA E COMANDO]
