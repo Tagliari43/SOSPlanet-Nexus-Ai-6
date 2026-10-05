@@ -3,7 +3,7 @@
  * Extremamente rápido, usado como Sub-Agente Alquimista.
  */
 
-const TEXT_MODEL = 'llama-3.3-70b'; // Atualizado por Aethel para lidar com Erro 404 
+const TEXT_MODEL = 'llama3.1-70b'; // Atualizado para o modelo ativo e estável da Cerebras
 const API_BASE = 'https://api.cerebras.ai/v1/chat/completions';
 
 export async function callCerebrasWithTools(
@@ -147,7 +147,6 @@ export async function callCerebrasWithTools(
       let contentStr = choice.message.content || '';
       
       // Fallback: o modelo cuspiu o JSON cru no content?
-      // Exemplo: {"type": "function", "name": "foo", "arguments": {"bar": "baz"}}
       const toolMatch = contentStr.match(/\{\s*"type"\s*:\s*"function"\s*,\s*"name"\s*:\s*"([^"]+)"\s*,\s*(?:"arguments"|"parameters")\s*:\s*(\{.*?\})\s*\}/s) ||
                         contentStr.match(/\{\s*"name"\s*:\s*"([^"]+)"\s*,\s*(?:"arguments"|"parameters")\s*:\s*(\{.*?\})\s*\}/s);
 
@@ -162,12 +161,10 @@ export async function callCerebrasWithTools(
         
         console.log("Cerebras Fallback Tool Acionado:", funcName, funcArgs);
         
-        // Remove o JSON do texto para não poluir o chat se houver texto antes
         contentStr = contentStr.replace(toolMatch[0], '').trim();
         
         const result = await onToolRequest(funcName, funcArgs);
         
-        // O OpenAI format espera que as ferramentas devolvam algo. Simularemos a inserção.
         messages.push({
           role: 'assistant',
           content: null,
@@ -189,7 +186,6 @@ export async function callCerebrasWithTools(
             responseText += contentStr + "\n";
         }
         
-        // Continua o loop para o modelo interpretar o resultado
         continue;
       }
 
