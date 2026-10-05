@@ -52,7 +52,7 @@ export const SUB_AGENT_PROFILES: Record<string, {
   modelo: string 
 }> = {
   arkael: {
-    modelo: 'google/gemini-flash-1.5-exp:free',
+    modelo: 'google/gemini-2.0-flash-exp:free',
     systemPrompt: `Você é Arkael, especialista em marketing regenerativo da SOSPlanet. 
     Seu foco: estratégia de redes sociais, atração de investidores alinhados com valores 
     ambientais e comunicação da missão do SOS Token. Responda sempre com linguagem 
@@ -64,7 +64,7 @@ export const SUB_AGENT_PROFILES: Record<string, {
     Use essas credenciais quando for orientar a criação de contas ou gerenciar acessos.`
   },
   semente: {
-    modelo: 'google/gemini-flash-1.5-exp:free',
+    modelo: 'google/gemini-2.0-flash-exp:free',
     systemPrompt: `Você é o Guardião do Projeto Semente, especialista em agricultura 
     regenerativa e sustentabilidade da SOSPlanet. Seu foco: técnicas agrícolas sustentáveis, 
     reflorestamento e impacto ambiental mensurável.`
@@ -256,7 +256,7 @@ export async function invocarSubAgente(
   apiKey: string,
   modeloOverride?: string,
   contextoExtra?: string
-): Promise<string> {
+):Promise<string> {
   const perfil = SUB_AGENT_PROFILES[agente];
   if (!perfil) return `Sub-agente '${agente}' não encontrado.`;
   const modelo = modeloOverride || perfil.modelo;
