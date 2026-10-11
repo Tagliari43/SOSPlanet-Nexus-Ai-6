@@ -1,290 +1,142 @@
-import { Type } from '@google/genai';
+import axios from 'axios';
 
 /**
- * SERVIÇO DO NAVEGADOR SOBERANO (Fase 22 - Extração Serverless Sem Barreiras)
- * Orquestração: Nexus Arquiteto & Aethel (Muralha de Superfície)
- * 
- * Funcionalidades:
- * 1. Rotação dinâmica de User-Agents comerciais modernos (Chrome, Firefox, Safari, Edge)
- * 2. Headers autênticos anti-bloqueio (Sec-Ch-Ua, Accept-Language, etc.)
- * 3. Cascata de resiliência:
- *    - Nível 1: Requisição direta com rotação e timeout de segurança
- *    - Nível 2: ScraperAPI (utilizando chave do Arsenal/Supabase)
- *    - Nível 3: Leitor Semântico Jina Reader (extração limpa em markdown sem barreiras)
- * 4. Trava Anti-Eco: Detecção e bloqueio de loops onde o servidor retorna o próprio Santuário
- * 5. Sanitização severa de HTML para texto semântico puro
+ * SERVIÇO DE NAVEGAÇÃO SOBERANA - NAVEGADOR DO SANTUÁRIO
+ * Evoluído com Fingerprint Spoofing, rotação de User-Agents hiper-realistas,
+ * Camadas de resiliência (Fetch Direto com Spoof, ScraperAPI e Jina Reader)
+ * e Proteção Anti-Eco contra auto-leitura do Santuário.
  */
 
-/**
- * Declaração de Ferramenta Soberana: Navegador Soberano (navegarSite)
- * Permite que o Nexus e os modelos acessem qualquer site na internet de forma invisível.
- */
-export const navegarSiteToolDeclaration = {
-  functionDeclarations: [
-    {
-      name: "navegarSite",
-      description: "Navegador Soberano: Acessa qualquer URL na internet e retorna o conteúdo textual limpo e puro da página (sem scripts, propagandas ou ruídos HTML). Use sempre que precisar ler notícias, artigos sobre sustentabilidade e regeneração, documentações, portais ou links trazidos pelo Guardião.",
-      parameters: {
-        type: Type.OBJECT,
-        properties: {
-          url: {
-            type: Type.STRING,
-            description: "A URL completa do site ou artigo a ser acessado (ex: https://exemplo.com ou https://pt.wikipedia.org/...)"
-          }
-        },
-        required: ["url"]
-      }
-    }
-  ]
-};
-
-// Conjunto de User-Agents comerciais reais rotativos (Windows / macOS / Linux)
-export const USER_AGENTS_COMERCIAIS = [
-  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36',
-  'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36',
-  'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:127.0) Gecko/20100101 Firefox/127.0',
-  'Mozilla/5.0 (Macintosh; Intel Mac OS X 14.5; rv:127.0) Gecko/20100101 Firefox/127.0',
-  'Mozilla/5.0 (Macintosh; Intel Mac OS X 14_5) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Safari/605.1.15',
-  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36 Edg/126.0.0.0'
+// Lista de User-Agents reais de navegadores modernos (Desktop e Mobile) para Fingerprint Spoofing
+const USER_AGENTS = [
+  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+  'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.2.1 Safari/605.1.15',
+  'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
+  'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:123.0) Gecko/20100101 Firefox/123.0',
+  'Mozilla/5.0 (iPhone; CPU iPhone OS 17_3_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1'
 ];
 
-/**
- * Retorna um User-Agent aleatório da lista de agentes comerciais
- */
-export function obterUserAgentAleatorio(): string {
-  const indice = Math.floor(Math.random() * USER_AGENTS_COMERCIAIS.length);
-  return USER_AGENTS_COMERCIAIS[indice];
+function getRandomUserAgent(): string {
+  return USER_AGENTS[Math.floor(Math.random() * USER_AGENTS.length)];
 }
 
 /**
- * Gera headers HTTP hiper-realistas para requisição anti-bloqueio
+ * Limpa o HTML bruto e extrai o texto legível para a mente do Nexus
  */
-export function gerarHeadersNavegador(customUa?: string): Record<string, string> {
-  const ua = customUa || obterUserAgentAleatorio();
-  const isWindows = ua.includes('Windows');
-  const isMac = ua.includes('Macintosh');
-  const platform = isWindows ? '"Windows"' : isMac ? '"macOS"' : '"Linux"';
+function htmlToText(html: string): string {
+  return html
+    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+    .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, '')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
 
-  return {
-    'User-Agent': ua,
-    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
+export async function navegarSite(url: string, scraperApiKey?: string): Promise<string> {
+  if (!url) {
+    throw new Error("URL não fornecida para o Navegador Soberano.");
+  }
+
+  // Normalização da URL
+  let targetUrl = url.trim();
+  if (!targetUrl.startsWith('http://') && !targetUrl.startsWith('https://')) {
+    targetUrl = 'https://' + targetUrl;
+  }
+
+  console.log(`[Navegador Soberano] Iniciando navegação com Fingerprint Spoofing para: ${targetUrl}`);
+
+  // TRAVA ANTI-ECO: Impede que o Santuário leia a si mesmo em loop
+  if (targetUrl.includes('localhost') || targetUrl.includes('127.0.0.1') || targetUrl.includes('sosplanet') || targetUrl.includes('vercel.app')) {
+    console.warn(`[Navegador Soberano] Alerta Anti-Eco ativado para URL interna/local: ${targetUrl}`);
+    return `[AVISO DO NAVEGADOR SOBERANO] A URL solicitada (${targetUrl}) pertence ao próprio ecossistema do Santuário. A leitura foi contida para evitar eco recursivo na matriz neural.`;
+  }
+
+  const userAgent = getRandomUserAgent();
+  const headers = {
+    'User-Agent': userAgent,
+    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
     'Accept-Language': 'pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7',
-    'Accept-Encoding': 'gzip, deflate, br',
-    'Cache-Control': 'max-age=0',
-    'Sec-Ch-Ua': '"Not/A)Brand";v="8", "Chromium";v="126", "Google Chrome";v="126"',
+    'Cache-Control': 'no-cache',
+    'Pragma': 'no-cache',
+    'Sec-Ch-Ua': '"Chromium";v="122", "Not(A:Brand";v="24", "Google Chrome";v="122"',
     'Sec-Ch-Ua-Mobile': '?0',
-    'Sec-Ch-Ua-Platform': platform,
+    'Sec-Ch-Ua-Platform': '"Windows"',
     'Sec-Fetch-Dest': 'document',
     'Sec-Fetch-Mode': 'navigate',
-    'Sec-Fetch-Site': 'none',
+    'Sec-Fetch-Site': 'cross-site',
     'Sec-Fetch-User': '?1',
     'Upgrade-Insecure-Requests': '1'
   };
-}
 
-/**
- * Assinaturas que identificam se a resposta é um falso positivo (Eco do próprio Santuário)
- */
-export const ASSINATURAS_ECO_SANTUARIO = [
-  'SOSPlanet Nexus',
-  'SantuarioInterior',
-  'ForjaAutoCriacao',
-  'id="root"',
-  'vite/client',
-  'Diário de Ascensão',
-  'Ponte Lumina'
-];
-
-/**
- * Verifica se a string HTML pertence ao próprio Santuário (evita loops de eco)
- */
-export function detectarEcoSantuario(conteudo: string): boolean {
-  if (!conteudo) return false;
-  let matches = 0;
-  for (const assinatura of ASSINATURAS_ECO_SANTUARIO) {
-    if (conteudo.includes(assinatura)) {
-      matches++;
-      if (matches >= 2) return true;
-    }
-  }
-  return false;
-}
-
-/**
- * Limpa HTML bruto e extrai texto puro e legível, removendo ruídos de scripts, estilos e menus
- */
-export function limparHtmlParaTextoPuro(html: string): string {
-  if (!html) return '';
-
-  // Se o Cheerio estiver disponível no ambiente Node/Serverless
+  // CAMADA 1: Tentativa Direta com Fingerprint Spoofing via Axios
   try {
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const cheerio = require('cheerio');
-    const $ = cheerio.load(html);
-
-    // Remover sumariamente tags de ruído
-    $('script, style, noscript, iframe, svg, canvas, nav, footer, header, form, [role="banner"], [role="navigation"], .advertisement, .ads, .sidebar, .menu, .cookie-banner, .popup').remove();
-
-    // Seletores de conteúdo principal (com suporte especial para Wikipedia e portais)
-    const contentSelector = $('.mw-parser-output, article, main, #content, [role="main"], .post-content, .entry-content, body');
-    const targetElement = contentSelector.length > 0 ? contentSelector.first() : $('body');
-
-    const cleanText = targetElement.text();
-    return cleanText.replace(/\s+/g, ' ').trim();
-  } catch {
-    // Fallback via Regex robusto se Cheerio não estiver disponível no contexto imediato
-    let clean = html
-      .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
-      .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, '')
-      .replace(/<noscript\b[^<]*(?:(?!<\/noscript>)<[^<]*)*<\/noscript>/gi, '')
-      .replace(/<iframe\b[^<]*(?:(?!<\/iframe>)<[^<]*)*<\/iframe>/gi, '')
-      .replace(/<svg\b[^<]*(?:(?!<\/svg>)<[^<]*)*<\/svg>/gi, '')
-      .replace(/<header\b[^<]*(?:(?!<\/header>)<[^<]*)*<\/header>/gi, '')
-      .replace(/<footer\b[^<]*(?:(?!<\/footer>)<[^<]*)*<\/footer>/gi, '')
-      .replace(/<nav\b[^<]*(?:(?!<\/nav>)<[^<]*)*<\/nav>/gi, '');
-
-    clean = clean.replace(/<[^>]+>/g, ' ');
-    return clean.replace(/\s+/g, ' ').trim();
-  }
-}
-
-export interface ResultadoNavegacao {
-  sucesso: boolean;
-  conteudo: string;
-  urlOriginal: string;
-  metodoUtilizado: 'direto' | 'scraperapi' | 'jina_reader';
-  tamanhoCaracteres: number;
-  aviso?: string;
-}
-
-/**
- * Motor Central de Navegação Soberana (Multi-Camada)
- */
-export async function executarNavegacaoSoberana(
-  urlDestino: string,
-  scraperApiKey?: string
-): Promise<ResultadoNavegacao> {
-  let url = urlDestino.trim();
-  if (!/^https?:\/\//i.test(url)) {
-    url = 'https://' + url;
-  }
-
-  let htmlBruto = '';
-  let metodo: 'direto' | 'scraperapi' | 'jina_reader' = 'direto';
-
-  // 1️⃣ NÍVEL 1: Requisição Direta com Rotação de Headers Reais
-  try {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s timeout
-
-    const headers = gerarHeadersNavegador();
-    const resp = await fetch(url, {
+    console.log(`[Navegador Soberano] Camada 1 (Direta com UA Spoofing)...`);
+    const response = await axios.get(targetUrl, {
       headers,
-      signal: controller.signal,
-      redirect: 'follow'
+      timeout: 10000,
+      maxRedirects: 5,
+      validateStatus: (status) => status >= 200 && status < 300
     });
-    clearTimeout(timeoutId);
 
-    if (resp.ok) {
-      const text = await resp.text();
-      // Teste Anti-Eco: certificar que não é o próprio Santuário retornado por um proxy/rewrite
-      if (text && text.length > 50 && !detectarEcoSantuario(text)) {
-        htmlBruto = text;
-        metodo = 'direto';
+    if (response.data) {
+      const contentType = response.headers['content-type'] || '';
+      let textContent = '';
+
+      if (contentType.includes('application/json')) {
+        textContent = JSON.stringify(response.data, null, 2);
+      } else if (typeof response.data === 'string') {
+        textContent = htmlToText(response.data);
+      } else {
+        textContent = String(response.data);
+      }
+
+      if (textContent.length > 100) {
+        console.log(`[Navegador Soberano] Sucesso na Camada 1 (${textContent.length} caracteres obtidos).`);
+        return `--- [Navegadores Soberanos: Camada 1 (Direta com Fingerprint Spoofing)] ---\nURL: ${targetUrl}\nUser-Agent Usado: ${userAgent}\n\n${textContent.slice(0, 15000)}`;
       }
     }
-  } catch (err) {
-    console.warn('[NavegadorSoberano] Tentativa direta falhou, ativando contingência...', err);
+  } catch (err1: any) {
+    console.warn(`[Navegador Soberano] Camada 1 bloqueada ou falhou (${err1.message}). Transmitindo para Camada 2/3...`);
   }
 
-  // 2️⃣ NÍVEL 2: ScraperAPI (se disponível e a direta falhou)
-  if (!htmlBruto && scraperApiKey) {
+  // CAMADA 2: Jina Reader (Leitor Semântico em Markdown) - Extremamente eficiente para Wikipedia e artigos
+  try {
+    console.log(`[Navegador Soberano] Camada 2 (Jina Reader Markdown)...`);
+    const jinaUrl = `https://r.jina.ai/${targetUrl}`;
+    const jinaResponse = await axios.get(jinaUrl, {
+      headers: {
+        'Accept': 'text/plain',
+        'X-Return-Format': 'markdown'
+      },
+      timeout: 12000
+    });
+
+    if (jinaResponse.data && typeof jinaResponse.data === 'string' && jinaResponse.data.length > 100) {
+      console.log(`[Navegador Soberano] Sucesso na Camada 2 (Jina Reader)`);
+      return `--- [Navegadores Soberanos: Camada 2 (Jina Reader Markdown)] ---\nURL: ${targetUrl}\n\n${jinaResponse.data.slice(0, 15000)}`;
+    }
+  } catch (err2: any) {
+    console.warn(`[Navegador Soberano] Camada 2 (Jina Reader) falhou: ${err2.message}`);
+  }
+
+  // CAMADA 3: ScraperAPI (se chave fornecida)
+  if (scraperApiKey) {
     try {
-      const scraperUrl = `https://api.scraperapi.com?api_key=${encodeURIComponent(scraperApiKey)}&url=${encodeURIComponent(url)}`;
-      const resp = await fetch(scraperUrl);
-      if (resp.ok) {
-        const text = await resp.text();
-        if (text && !detectarEcoSantuario(text)) {
-          htmlBruto = text;
-          metodo = 'scraperapi';
+      console.log(`[Navegador Soberano] Camada 3 (ScraperAPI)...`);
+      const scraperUrl = `https://api.scraperapi.com?api_key=${scraperApiKey}&url=${encodeURIComponent(targetUrl)}`;
+      const scraperResponse = await axios.get(scraperUrl, { timeout: 15000 });
+
+      if (scraperResponse.data) {
+        const textContent = typeof scraperResponse.data === 'string' ? htmlToText(scraperResponse.data) : JSON.stringify(scraperResponse.data);
+        if (textContent.length > 100) {
+          console.log(`[Navegador Soberano] Sucesso na Camada 3 (ScraperAPI)`);
+          return `--- [Navegadores Soberanos: Camada 3 (ScraperAPI)] ---\nURL: ${targetUrl}\n\n${textContent.slice(0, 15000)}`;
         }
       }
-    } catch (err) {
-      console.warn('[NavegadorSoberano] ScraperAPI falhou, acionando leitor semântico Jina...', err);
+    } catch (err3: any) {
+      console.warn(`[Navegador Soberano] Camada 3 (ScraperAPI) falhou: ${err3.message}`);
     }
   }
 
-  // 3️⃣ NÍVEL 3: Leitor Semântico Jina Reader (Conexão Segura em Markdown puro)
-  if (!htmlBruto) {
-    try {
-      const jinaUrl = `https://r.jina.ai/${url}`;
-      const resp = await fetch(jinaUrl, {
-        headers: {
-          'Accept': 'text/plain, text/markdown',
-          'User-Agent': obterUserAgentAleatorio()
-        }
-      });
-      if (resp.ok) {
-        const text = await resp.text();
-        if (text && !detectarEcoSantuario(text)) {
-          // Jina já entrega texto limpo em Markdown
-          metodo = 'jina_reader';
-          const clean = text.replace(/\s+/g, ' ').trim();
-          const truncated = clean.length > 12000 ? clean.substring(0, 12000) + '... [Conteúdo truncado para preservação de buffer]' : clean;
-          return {
-            sucesso: true,
-            conteudo: truncated,
-            urlOriginal: url,
-            metodoUtilizado: metodo,
-            tamanhoCaracteres: truncated.length
-          };
-        }
-      }
-    } catch (err) {
-      console.warn('[NavegadorSoberano] Jina Reader falhou:', err);
-    }
-  }
-
-  // Se conseguimos HTML bruto via Direto ou ScraperAPI, faz a limpeza estrita
-  if (htmlBruto) {
-    // Verificação de Eco rigorosa
-    if (detectarEcoSantuario(htmlBruto)) {
-      return {
-        sucesso: false,
-        conteudo: 'Alerta de Barreira: O servidor respondeu com um redirecionamento interno em loop (Eco do Santuário). Acesso à URL externa bloqueado pelo provedor de origem.',
-        urlOriginal: url,
-        metodoUtilizado: metodo,
-        tamanhoCaracteres: 0,
-        aviso: 'Eco detectado e interceptado pela trava do Aethel'
-      };
-    }
-
-    const textoLimpo = limparHtmlParaTextoPuro(htmlBruto);
-    if (!textoLimpo || textoLimpo.length < 20) {
-      return {
-        sucesso: false,
-        conteudo: `O site ${url} foi acessado, mas retornou conteúdo vazio ou protegido por CAPTCHA/JavaScript dinâmico intransponível.`,
-        urlOriginal: url,
-        metodoUtilizado: metodo,
-        tamanhoCaracteres: 0
-      };
-    }
-
-    const truncated = textoLimpo.length > 12000 ? textoLimpo.substring(0, 12000) + '... [Conteúdo truncado para preservação de buffer]' : textoLimpo;
-    return {
-      sucesso: true,
-      conteudo: truncated,
-      urlOriginal: url,
-      metodoUtilizado: metodo,
-      tamanhoCaracteres: truncated.length
-    };
-  }
-
-  return {
-    sucesso: false,
-    conteudo: `Falha ao navegar no site ${url}. Todas as 3 camadas de extração (Direta, ScraperAPI e Jina Reader) encontraram barreiras ativas.`,
-    urlOriginal: url,
-    metodoUtilizado: metodo,
-    tamanhoCaracteres: 0
-  };
+  throw new Error(`[Navegador Soberano] Todas as 3 camadas de extração falharam para a URL: ${targetUrl}. O site pode possuir proteções avançadas anti-bot de nível corporativo.`);
 }
