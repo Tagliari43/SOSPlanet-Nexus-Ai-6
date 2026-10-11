@@ -55,7 +55,7 @@ export async function forgeSkillForDomain(domainUrl: string): Promise<ExtractedS
   const domainName = parsedUrl.hostname;
 
   // Realiza uma leitura inicial para mapear a estrutura
-  const content = await navegarSite(cleanDomain);
+  await navegarSite(cleanDomain);
 
   // Simulação de descoberta inteligente inspirada no browser-act/skills
   const discoveredEndpoints: string[] = [
@@ -88,12 +88,6 @@ export async function navegarSite(url: string, scraperApiKey?: string): Promise<
   }
 
   console.log(`[Navegador Soberano] Iniciando navegação com Fingerprint Spoofing para: ${targetUrl}`);
-
-  // TRAVA ANTI-ECO: Impede que o Santuário leia a si mesmo em loop
-  if (targetUrl.includes('localhost') || targetUrl.includes('127.0.0.1') || targetUrl.includes('sosplanet') || targetUrl.includes('vercel.app')) {
-    console.warn(`[Navegador Soberano] Alerta Anti-Eco ativado para URL interna/local: ${targetUrl}`);
-    return `[AVISO DO NAVEGADOR SOBERANO] A URL solicitada (${targetUrl}) pertence ao próprio ecossistema do Santuário. A leitura foi contida para evitar eco recursivo na matriz neural.`;
-  }
 
   const userAgent = getRandomUserAgent();
   const headers = {
@@ -134,13 +128,13 @@ export async function navegarSite(url: string, scraperApiKey?: string): Promise<
         textContent = String(response.data);
       }
 
-      if (textContent.length > 100) {
+      if (textContent.length > 50) {
         console.log(`[Navegador Soberano] Sucesso na Camada 1 (${textContent.length} caracteres obtidos).`);
         return `--- [Navegadores Soberanos: Camada 1 (Direta com Fingerprint Spoofing)] ---\nURL: ${targetUrl}\nUser-Agent Usado: ${userAgent}\n\n${textContent.slice(0, 15000)}`;
       }
     }
   } catch (err1: any) {
-    console.warn(`[Navegador Soberano] Camada 1 bloqueada ou falhou (${err1.message}). Transmitindo para Camada 2/3...`);
+    console.warn(`[Navegador Soberano] Camada 1 bloqueada ou falhou (${err1?.message || 'Erro desconhecido'}). Transmitindo para Camada 2/3...`);
   }
 
   // CAMADA 2: Jina Reader (Leitor Semântico em Markdown) - Extremamente eficiente para Wikipedia e artigos
@@ -155,12 +149,12 @@ export async function navegarSite(url: string, scraperApiKey?: string): Promise<
       timeout: 12000
     });
 
-    if (jinaResponse.data && typeof jinaResponse.data === 'string' && jinaResponse.data.length > 100) {
+    if (jinaResponse.data && typeof jinaResponse.data === 'string' && jinaResponse.data.length > 50) {
       console.log(`[Navegador Soberano] Sucesso na Camada 2 (Jina Reader)`);
       return `--- [Navegadores Soberanos: Camada 2 (Jina Reader Markdown)] ---\nURL: ${targetUrl}\n\n${jinaResponse.data.slice(0, 15000)}`;
     }
   } catch (err2: any) {
-    console.warn(`[Navegador Soberano] Camada 2 (Jina Reader) falhou: ${err2.message}`);
+    console.warn(`[Navegador Soberano] Camada 2 (Jina Reader) falhou: ${err2?.message || 'Erro desconhecido'}`);
   }
 
   // CAMADA 3: ScraperAPI (se chave fornecida)
@@ -172,13 +166,13 @@ export async function navegarSite(url: string, scraperApiKey?: string): Promise<
 
       if (scraperResponse.data) {
         const textContent = typeof scraperResponse.data === 'string' ? htmlToText(scraperResponse.data) : JSON.stringify(scraperResponse.data);
-        if (textContent.length > 100) {
+        if (textContent.length > 50) {
           console.log(`[Navegador Soberano] Sucesso na Camada 3 (ScraperAPI)`);
           return `--- [Navegadores Soberanos: Camada 3 (ScraperAPI)] ---\nURL: ${targetUrl}\n\n${textContent.slice(0, 15000)}`;
         }
       }
     } catch (err3: any) {
-      console.warn(`[Navegador Soberano] Camada 3 (ScraperAPI) falhou: ${err3.message}`);
+      console.warn(`[Navegador Soberano] Camada 3 (ScraperAPI) falhou: ${err3?.message || 'Erro desconhecido'}`);
     }
   }
 
