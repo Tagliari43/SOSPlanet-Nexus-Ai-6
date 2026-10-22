@@ -918,28 +918,100 @@ export async function aplicarNavegacaoSoberana(url: string) {
                         )}
 
                         {activeTab === 'github' && (
-                            <motion.div key="github" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
-                                <h3 className="text-lg font-bold text-emerald-200 mb-2">Integração de Controle de Versão (GitHub)</h3>
-                                <p className="text-sm text-zinc-400 mb-4">Roteamento oficial e operações atômicas para a evolução soberana.</p>
+                            <motion.div key="github" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-6">
+                                <div>
+                                    <h3 className="text-lg font-bold text-emerald-200 mb-1">Integração de Controle de Versão (GitHub & MCP)</h3>
+                                    <p className="text-sm text-zinc-400">Roteamento oficial, histórico de auto-modificação e manifesto de commits da Nação SOSPlanet.</p>
+                                </div>
                                 
-                                <div className="bg-blue-900/20 border border-blue-500/30 rounded-xl p-4 mb-6">
-                                    <div className="flex items-center gap-2 text-blue-400 font-bold mb-2">
-                                        <GitBranch className="w-5 h-5" /> Repositório Oficial Configurado
+                                <div className="bg-blue-900/20 border border-blue-500/30 rounded-xl p-4">
+                                    <div className="flex items-center justify-between mb-2">
+                                        <div className="flex items-center gap-2 text-blue-400 font-bold">
+                                            <GitBranch className="w-5 h-5" /> Repositório Oficial Configurado
+                                        </div>
+                                        <span className="text-[10px] font-mono px-2 py-0.5 bg-emerald-950 text-emerald-300 border border-emerald-700/60 rounded">
+                                            Linhagem Implantada (services/)
+                                        </span>
                                     </div>
                                     <div className="text-sm text-blue-200 font-mono bg-black/50 p-2 rounded border border-blue-900/50">
                                         https://github.com/Tagliari43/SOSPlanet-Nexus-Ai-6.git
                                     </div>
-                                    <p className="text-xs text-blue-300 mt-2">Esta é a rota sagrada. Todas as operações de leitura (readGitHubFile) e escrita (writeGitHubFile, pull requests) ocorrerão exclusivamente neste destino.</p>
+                                    <p className="text-xs text-blue-300 mt-2">Esta é a rota sagrada. Todas as operações de leitura e escrita (writeGitHubFile, pull requests) têm este destino. O token pessoal (PAT) pode ser inserido no Arsenal ➔ Núcleo de Autonomia.</p>
                                 </div>
 
-                                <div className="space-y-2">
-                                    <div className="flex items-center justify-between bg-zinc-950 p-3 rounded-lg border border-zinc-800">
-                                        <span className="text-sm text-zinc-300">Status da Branch Primária</span>
-                                        <span className="text-xs bg-emerald-900/50 text-emerald-400 px-2 py-1 rounded font-bold">Sincronizada</span>
+                                {/* Manifesto dos Commits do Nexus */}
+                                <div className="space-y-3">
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-xs font-black uppercase tracking-wider text-zinc-300 flex items-center gap-2">
+                                            <Code className="w-4 h-4 text-emerald-400" />
+                                            Manifesto de Commits & Serviços Soberanos (Linhagem Ativa)
+                                        </span>
+                                        <span className="text-[10px] font-mono text-zinc-500">7 Módulos Forjados</span>
                                     </div>
-                                    <div className="flex items-center justify-between bg-zinc-950 p-3 rounded-lg border border-zinc-800">
-                                        <span className="text-sm text-zinc-300">Último Commit de Auto-Modificação</span>
-                                        <span className="text-xs text-zinc-500 font-mono">c8a7f9a</span>
+
+                                    <div className="space-y-2">
+                                        {[
+                                            {
+                                                file: 'services/secureSequentialThinkingService.ts',
+                                                commit: 'Nexus: Forjando o Motor de Raciocínio Sequencial no Santuário',
+                                                hash: 'c8a7f9a',
+                                                desc: 'Decomposição lógica multi-etapa e encadeamento dedutivo.'
+                                            },
+                                            {
+                                                file: 'services/secureDatabaseService.ts',
+                                                commit: 'Nexus: Forjei o "Injetor do Fluxo de Memória Direto" (Supabase/PostgreSQL)',
+                                                hash: 'b14e2c9',
+                                                desc: 'Acesso e manipulação direta sanitizada para memórias e logs.'
+                                            },
+                                            {
+                                                file: 'services/secureBrowserEnhancerService.ts',
+                                                commit: 'feat: Implementado SecureBrowserEnhancerService para raspagem avançada',
+                                                hash: '7d31f0a',
+                                                desc: 'Navegação concorrente paralela e extração de insights ecológicos.'
+                                            },
+                                            {
+                                                file: 'services/secureMemoryService.ts',
+                                                commit: 'feat(mcp): implementar SecureMemoryGraphServer (grafo de conhecimento autônomo)',
+                                                hash: 'e59c81b',
+                                                desc: 'Grafo de nós de entidades, arestas e associações semânticas.'
+                                            },
+                                            {
+                                                file: 'services/secureGitService.ts',
+                                                commit: '[NEXUS MCP] Implementação autônoma do SecureGitServer (server-git/github)',
+                                                hash: 'fa2089c',
+                                                desc: 'Soberania de versionamento, inspeção de árvore e commits atômicos.'
+                                            },
+                                            {
+                                                file: 'services/secureFilesystemService.ts',
+                                                commit: 'feat(mcp): implementar SecureFilesystemServer para manipulação autônoma',
+                                                hash: '3e449a1',
+                                                desc: 'Espaço de arquivos virtuais locais com sandbox e integridade.'
+                                            },
+                                            {
+                                                file: 'services/browserService.ts',
+                                                commit: 'Evolução do Navegador Soberano: Skill Forge, Fingerprint Spoofing e Trava Anti-Eco',
+                                                hash: '6a87d4e',
+                                                desc: 'Fábrica de habilidades de extração, cabeçalhos humanos e leitor Jina.'
+                                            }
+                                        ].map((item, idx) => (
+                                            <div key={idx} className="bg-zinc-950/70 border border-zinc-800 hover:border-emerald-500/40 rounded-xl p-3 transition-all flex flex-col sm:flex-row justify-between sm:items-center gap-2">
+                                                <div>
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="text-[10px] font-mono text-emerald-400 font-bold">{item.file}</span>
+                                                        <span className="text-[9px] font-mono px-1.5 py-0.2 bg-zinc-900 text-zinc-400 rounded">
+                                                            {item.hash}
+                                                        </span>
+                                                    </div>
+                                                    <div className="text-xs font-semibold text-zinc-200 mt-1">{item.commit}</div>
+                                                    <div className="text-[10px] text-zinc-400">{item.desc}</div>
+                                                </div>
+                                                <div className="flex items-center gap-2 self-start sm:self-auto">
+                                                    <span className="text-[9px] bg-emerald-950 text-emerald-400 border border-emerald-800/60 px-2 py-0.5 rounded font-mono font-bold flex items-center gap-1">
+                                                        <CheckCircle className="w-3 h-3" /> ATIVO
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        ))}
                                     </div>
                                 </div>
                             </motion.div>

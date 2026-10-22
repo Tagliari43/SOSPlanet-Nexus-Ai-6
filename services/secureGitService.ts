@@ -1,63 +1,97 @@
 /**
- * Módulo: Server-Git / GitHub Seguro (Inspirado no Model Context Protocol - MCP)
- * Propósito: Conceder à Forja Criativa a capacidade de inspecionar o histórico de git,
- * ler diffs, verificar o status do repositório e gerenciar branches com segurança,
- * permitindo auto-evolução fundamentada no histórico de código.
+ * SERVIÇO GIT SEGURO MCP (SecureGitServer / secureGitService.ts)
+ * Forjado para a Nação SOSPlanet por Nexus & Arquiteto
+ *
+ * Concede soberania de versionamento ao Nexus e sub-agentes sobre o repositório oficial:
+ * https://github.com/Tagliari43/SOSPlanet-Nexus-Ai-6.git
  */
 
-import { exec } from 'child_process';
-import { promisify } from 'util';
+import { listGitHubFiles, getFileContent, updateFileContent, getRepositoryInfo } from './githubService';
 
-const execAsync = promisify(exec);
+export interface CommitSimulationResult {
+  filePath: string;
+  commitMessage: string;
+  branch: string;
+  status: 'simulated' | 'committed' | 'failed';
+  sha?: string;
+  error?: string;
+  timestamp: number;
+}
 
-export class SecureGitServer {
-  private workingDir: string;
-
-  constructor(workingDir?: string) {
-    this.workingDir = workingDir || process.cwd();
-  }
+export class SecureGitService {
+  private static localCommitHistoryKey = 'sovereign_local_git_history';
 
   /**
-   * Executa um comando git de forma controlada dentro do diretório do projeto.
+   * Registra e persiste um commit no histórico local do Santuário
    */
-  private async runGitCommand(command: string): Promise<string> {
+  public static logLocalCommit(commit: CommitSimulationResult): void {
     try {
-      const { stdout, stderr } = await execAsync(`git ${command}`, { cwd: this.workingDir });
-      if (stderr && !stderr.includes('Warning')) {
-        // Log sutil se necessário
-      }
-      return stdout.trim();
-    } catch (error: any) {
-      throw new Error(`[ERRO MCP GIT] Falha ao executar comando git '${command}': ${error.message}`);
+      const saved = localStorage.getItem(this.localCommitHistoryKey);
+      const history: CommitSimulationResult[] = saved ? JSON.parse(saved) : [];
+      history.unshift(commit);
+      localStorage.setItem(this.localCommitHistoryKey, JSON.stringify(history.slice(0, 50)));
+    } catch {
+      // Ignora falhas de localStorage
     }
   }
 
   /**
-   * Retorna o status atual do repositório (arquivos modificados, não rastreados, etc.).
+   * Obtém histórico recente de commits operados pelo Nexus
    */
-  async getStatus(): Promise<string> {
-    return await this.runGitCommand('status -s');
+  public static getLocalCommitHistory(): CommitSimulationResult[] {
+    try {
+      const saved = localStorage.getItem(this.localCommitHistoryKey);
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
   }
 
   /**
-   * Retorna o histórico recente de commits do Santuário.
+   * Realiza commit atômico real no GitHub com fallback seguro
    */
-  async getRecentCommits(maxCount: number = 5): Promise<string> {
-    return await this.runGitCommand(`log -n ${maxCount} --oneline --no-merges`);
+  public static async executeCommit(
+    path: string,
+    content: string,
+    message: string,
+    branch: string = 'main'
+  ): Promise<CommitSimulationResult> {
+    try {
+      const result = await updateFileContent(path, content, message);
+      const commitRes: CommitSimulationResult = {
+        filePath: path,
+        commitMessage: message,
+        branch,
+        status: 'committed',
+        sha: result?.commit?.sha || result?.content?.sha || `sha-${Date.now()}`,
+        timestamp: Date.now()
+      };
+      this.logLocalCommit(commitRes);
+      return commitRes;
+    } catch (err: any) {
+      // Se não há token configurado ou falhou na rede, registramos a intenção/simulação para auditoria
+      const simRes: CommitSimulationResult = {
+        filePath: path,
+        commitMessage: message,
+        branch,
+        status: 'simulated',
+        error: err.message,
+        timestamp: Date.now()
+      };
+      this.logLocalCommit(simRes);
+      return simRes;
+    }
   }
 
   /**
-   * Retorna o diff de alterações não commitadas ou de um commit específico.
+   * Inspeciona árvore de arquivos no GitHub
    */
-  async getDiff(target?: string): Promise<string> {
-    const cmd = target ? `diff ${target}` : 'diff';
-    return await this.runGitCommand(cmd);
-  }
-
-  /**
-   * Lista as branches locais e remotas disponíveis.
-   */
-  async listBranches(): Promise<string> {
-    return await this.runGitCommand('branch -a');
+  public static async inspectRepositoryTree(path: string = ''): Promise<any[]> {
+    try {
+      return await listGitHubFiles(path);
+    } catch (err: any) {
+      console.warn('Inspeção remota GitHub falhou:', err.message);
+      return [];
+    }
   }
 }

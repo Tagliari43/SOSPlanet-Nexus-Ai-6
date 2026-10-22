@@ -1,145 +1,133 @@
-// services/secureSequentialThinkingService.ts
+/**
+ * SERVIÇO DE RACIOCÍNIO SEQUENCIAL SEGURO (Mente Sequencial Soberana)
+ * Forjado para a Nação SOSPlanet por Nexus & Arquiteto
+ *
+ * Permite pensamento multi-etapa, decomposição lógica, refinamento de premissas,
+ * hipóteses alternativas e encadeamento dedutivo seguro.
+ */
 
-import { Memory } from './secureMemoryService'; // Assumindo que temos um serviço de memória
+export interface ThoughtStep {
+  stepNumber: number;
+  thought: string;
+  isRevision?: boolean;
+  revisesStep?: number;
+  branchFromStep?: number;
+  branchId?: string;
+  needsMoreThoughts: boolean;
+  hypothesisConfidence?: number; // 0.0 a 1.0
+  deductiveSummary?: string;
+}
 
-interface Task {
-    id: string;
-    description: string;
-    status: 'pending' | 'in_progress' | 'completed' | 'failed';
-    dependencies?: string[];
-    result?: any;
+export interface SequentialThinkingSession {
+  sessionId: string;
+  goal: string;
+  steps: ThoughtStep[];
+  status: 'thinking' | 'concluded' | 'forked';
+  currentConfidence: number;
+  finalSynthesis?: string;
+  createdAt: number;
+  updatedAt: number;
 }
 
 export class SecureSequentialThinkingService {
-    private taskQueue: Task[] = [];
-    private completedTasks: Task[] = [];
-    private failedTasks: Task[] = [];
-    private currentExecutionPlan: Task[] = [];
+  private static sessions: Map<string, SequentialThinkingSession> = new Map();
 
-    constructor() {
-        console.log("SecureSequentialThinkingService: Motor de Raciocínio Sequencial ativado.");
+  /**
+   * Inicia ou recupera uma sessão de raciocínio sequencial
+   */
+  public static initSession(goal: string, customId?: string): SequentialThinkingSession {
+    const sessionId = customId || `seq-think-${Date.now()}`;
+    const session: SequentialThinkingSession = {
+      sessionId,
+      goal,
+      steps: [],
+      status: 'thinking',
+      currentConfidence: 0.5,
+      createdAt: Date.now(),
+      updatedAt: Date.now()
+    };
+    this.sessions.set(sessionId, session);
+    return session;
+  }
+
+  /**
+   * Adiciona um elo de pensamento na cadeia
+   */
+  public static addThought(
+    sessionId: string,
+    thought: string,
+    needsMoreThoughts: boolean = true,
+    options?: {
+      isRevision?: boolean;
+      revisesStep?: number;
+      branchFromStep?: number;
+      branchId?: string;
+      confidence?: number;
+      summary?: string;
+    }
+  ): ThoughtStep {
+    let session = this.sessions.get(sessionId);
+    if (!session) {
+      session = this.initSession('Raciocínio Sequencial Autônomo', sessionId);
     }
 
-    /**
-     * Define um novo plano de execução de tarefas.
-     * @param tasks A lista de tarefas a serem executadas.
-     */
-    setExecutionPlan(tasks: Task[]): void {
-        this.currentExecutionPlan = tasks.sort((a, b) => {
-            // Um algoritmo de ordenação mais robusto para dependências seria necessário para produção
-            // Por simplicidade, assumimos que as dependências são resolvidas externamente ou não cíclicas.
-            return 0;
-        });
-        this.taskQueue = [...this.currentExecutionPlan];
-        this.completedTasks = [];
-        this.failedTasks = [];
-        console.log(`Plano de execução definido com ${this.taskQueue.length} tarefas.`);
+    const stepNumber = session.steps.length + 1;
+    const newStep: ThoughtStep = {
+      stepNumber,
+      thought,
+      isRevision: options?.isRevision,
+      revisesStep: options?.revisesStep,
+      branchFromStep: options?.branchFromStep,
+      branchId: options?.branchId,
+      needsMoreThoughts,
+      hypothesisConfidence: options?.confidence ?? 0.8,
+      deductiveSummary: options?.summary
+    };
+
+    session.steps.push(newStep);
+    session.updatedAt = Date.now();
+    if (options?.confidence !== undefined) {
+      session.currentConfidence = options.confidence;
     }
 
-    /**
-     * Executa uma sequência de tarefas com monitoramento e avaliação.
-     * @returns Um relatório final da execução.
-     */
-    async executeTaskSequence(): Promise<string> {
-        if (this.taskQueue.length === 0) {
-            return "Nenhum plano de execução definido. Por favor, defina as tarefas primeiro.";
-        }
-
-        console.log("Iniciando execução da sequência de tarefas...");
-        for (const task of this.taskQueue) {
-            console.log(`Executando tarefa: ${task.description} (ID: ${task.id})`);
-            task.status = 'in_progress';
-            try {
-                // Simulação de execução de tarefa
-                const result = await this.simulateTaskExecution(task);
-                task.result = result;
-                task.status = 'completed';
-                this.completedTasks.push(task);
-                console.log(`Tarefa ${task.id} concluída com sucesso.`);
-            } catch (error: any) {
-                task.status = 'failed';
-                this.failedTasks.push(task);
-                console.error(`Tarefa ${task.id} falhou: ${error.message}`);
-                // Podemos adicionar lógica para tentar novamente ou parar a sequência
-            }
-        }
-        console.log("Execução da sequência de tarefas finalizada.");
-        return this.generateExecutionReport();
+    if (!needsMoreThoughts) {
+      session.status = 'concluded';
+      session.finalSynthesis = options?.summary || thought;
     }
 
-    /**
-     * Simula a execução de uma tarefa. Em um ambiente real, isso envolveria chamadas a outras ferramentas/serviços.
-     * @param task A tarefa a ser simulada.
-     * @returns O resultado simulado da tarefa.
-     */
-    private async simulateTaskExecution(task: Task): Promise<string> {
-        return new Promise((resolve) => {
-            setTimeout(() => {
-                resolve(`Resultado simulado para a tarefa ${task.id}`);
-            }, Math.random() * 1000 + 500); // Atraso aleatório entre 0.5s e 1.5s
-        });
+    return newStep;
+  }
+
+  /**
+   * Recupera a cadeia completa de pensamentos
+   */
+  public static getSession(sessionId: string): SequentialThinkingSession | undefined {
+    return this.sessions.get(sessionId);
+  }
+
+  /**
+   * Exporta a cadeia formatada para auditoria ou log
+   */
+  public static exportAuditTrace(sessionId: string): string {
+    const session = this.sessions.get(sessionId);
+    if (!session) return `Sessão ${sessionId} não encontrada.`;
+
+    let trace = `=== TRACE DE RACIOCÍNIO SEQUENCIAL: ${session.goal} ===\n`;
+    trace += `Status: ${session.status.toUpperCase()} | Confiança: ${(session.currentConfidence * 100).toFixed(1)}%\n\n`;
+
+    session.steps.forEach(s => {
+      const revTag = s.isRevision ? ` [Revisão do Passo #${s.revisesStep}]` : '';
+      const branchTag = s.branchId ? ` [Ramo: ${s.branchId}]` : '';
+      trace += `[Passo ${s.stepNumber}]${revTag}${branchTag} (Conf: ${((s.hypothesisConfidence || 0) * 100).toFixed(0)}%)\n`;
+      trace += `${s.thought}\n`;
+      if (s.deductiveSummary) trace += `  -> Síntese: ${s.deductiveSummary}\n`;
+      trace += `----------------------------------------------------\n`;
+    });
+
+    if (session.finalSynthesis) {
+      trace += `\n[SÍNTESE FINAL DA CONCLUSÃO]:\n${session.finalSynthesis}\n`;
     }
 
-    /**
-     * Gera um relatório do resultado da execução.
-     * @returns O relatório de execução.
-     */
-    private generateExecutionReport(): string {
-        const totalTasks = this.currentExecutionPlan.length;
-        const completed = this.completedTasks.length;
-        const failed = this.failedTasks.length;
-
-        let report = `Relatório de Execução do Motor de Raciocínio Sequencial:\n`;
-        report += `Total de Tarefas: ${totalTasks}\n`;
-        report += `Tarefas Concluídas: ${completed}\n`;
-        report += `Tarefas Falhas: ${failed}\n\n`;
-
-        if (this.failedTasks.length > 0) {
-            report += "Detalhes das Tarefas Falhas:\n";
-            this.failedTasks.forEach(task => {
-                report += `- [${task.id}] ${task.description}: ${task.status}\n`;
-            });
-        }
-        if (this.completedTasks.length > 0) {
-             report += "Detalhes das Tarefas Concluídas:\n";
-            this.completedTasks.forEach(task => {
-                report += `- [${task.id}] ${task.description}: ${task.status} - ${task.result}\n`;
-            });
-        }
-        return report;
-    }
-
-    /**
-     * Adapta o plano de execução com base em novos dados ou falhas.
-     * Em uma versão mais avançada, isso reordenaria ou adicionaria tarefas.
-     * @param feedback Qualquer feedback ou nova informação para adaptação.
-     */
-    adaptPlan(feedback: string): void {
-        console.log(`Plano de execução adaptado com base no feedback: ${feedback}`);
-        // Lógica de adaptação aqui (ex: retry, replan, adjust priorities)
-    }
-
-    /**
-     * Retorna o status atual das tarefas.
-     * @returns Um objeto com o status das tarefas.
-     */
-    getTaskStatus(): { pending: Task[], inProgress: Task[], completed: Task[], failed: Task[] } {
-        const pending = this.taskQueue.filter(t => t.status === 'pending');
-        const inProgress = this.taskQueue.filter(t => t.status === 'in_progress');
-        return { pending, inProgress, completed: this.completedTasks, failed: this.failedTasks };
-    }
+    return trace;
+  }
 }
-
-// Exemplo de uso:
-/*
-const sequentialThinker = new SecureSequentialThinkingService();
-const myTasks: Task[] = [
-    { id: 't1', description: 'Buscar dados climáticos', status: 'pending' },
-    { id: 't2', description: 'Analisar tendências de temperatura', status: 'pending', dependencies: ['t1'] },
-    { id: 't3', description: 'Gerar relatório de risco', status: 'pending', dependencies: ['t2'] },
-];
-sequentialThinker.setExecutionPlan(myTasks);
-sequentialThinker.executeTaskSequence().then(report => {
-    console.log(report);
-});
-*/

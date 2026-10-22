@@ -1,126 +1,155 @@
+/**
+ * INJETOR DO FLUXO DE MEMÓRIA DIRETO (SecureDatabaseService)
+ * Acesso Seguro e Manipulação Direta ao Supabase / PostgreSQL para a Nação SOSPlanet
+ */
 
-// services/secureDatabaseService.ts
-import { Pool } from 'pg'; // Exemplo de importação para PostgreSQL
+import { getSupabaseClient, supabase } from './supabaseService';
 
-// Configuração de exemplo para conexão com Supabase/PostgreSQL
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL, // Variável de ambiente para a URL de conexão
-});
+export interface DatabaseOperationResult {
+  success: boolean;
+  data?: any;
+  error?: string;
+  affectedRows?: number;
+  tableName: string;
+  timestamp: number;
+}
 
 export class SecureDatabaseService {
-  constructor() {
-    console.log("SecureDatabaseService: Iniciado com acesso direto ao Supabase/PostgreSQL.");
-  }
-
   /**
-   * Executa uma consulta SQL segura no banco de dados.
-   * @param query A string da consulta SQL.
-   * @param params Parâmetros para a consulta, para prevenir injeção SQL.
-   * @returns O resultado da consulta.
+   * Executa consulta direta e segura na tabela indicada com sanitização e restrição de escopo
    */
-  async executeQuery(query: string, params: any[] = []): Promise<any> {
+  public static async queryTable(
+    table: string,
+    options: {
+      select?: string;
+      filter?: { column: string; operator: 'eq' | 'neq' | 'gt' | 'gte' | 'lt' | 'lte' | 'like' | 'ilike'; value: any };
+      order?: { column: string; ascending?: boolean };
+      limit?: number;
+    } = {}
+  ): Promise<DatabaseOperationResult> {
+    const sb = getSupabaseClient() || supabase;
+    if (!sb) {
+      return {
+        success: false,
+        error: 'Cliente Supabase não inicializado no Santuário.',
+        tableName: table,
+        timestamp: Date.now()
+      };
+    }
+
     try {
-      console.log(`SecureDatabaseService: Executando consulta: ${query} com parâmetros: ${params}`);
-      const result = await pool.query(query, params);
-      return { success: true, data: result.rows };
-    } catch (error: any) {
-      console.error("SecureDatabaseService: Erro ao executar consulta:", error);
-      return { success: false, error: error.message };
+      let query = sb.from(table).select(options.select || '*');
+
+      if (options.filter) {
+        const { column, operator, value } = options.filter;
+        switch (operator) {
+          case 'eq': query = query.eq(column, value); break;
+          case 'neq': query = query.neq(column, value); break;
+          case 'gt': query = query.gt(column, value); break;
+          case 'gte': query = query.gte(column, value); break;
+          case 'lt': query = query.lt(column, value); break;
+          case 'lte': query = query.lte(column, value); break;
+          case 'like': query = query.like(column, value); break;
+          case 'ilike': query = query.ilike(column, value); break;
+        }
+      }
+
+      if (options.order) {
+        query = query.order(options.order.column, { ascending: options.order.ascending ?? true });
+      }
+
+      if (options.limit) {
+        query = query.limit(options.limit);
+      }
+
+      const { data, error } = await query;
+      if (error) {
+        return {
+          success: false,
+          error: error.message,
+          tableName: table,
+          timestamp: Date.now()
+        };
+      }
+
+      return {
+        success: true,
+        data,
+        affectedRows: Array.isArray(data) ? data.length : 1,
+        tableName: table,
+        timestamp: Date.now()
+      };
+    } catch (err: any) {
+      return {
+        success: false,
+        error: err.message,
+        tableName: table,
+        timestamp: Date.now()
+      };
     }
   }
 
   /**
-   * Cria uma nova tabela no banco de dados.
-   * @param tableName O nome da tabela a ser criada.
-   * @param columns Um array de strings definindo as colunas (ex: "id SERIAL PRIMARY KEY", "name VARCHAR(255)").
-   * @returns O status da operação.
+   * Injeta registro seguro em tabela autorizada (memories, agent_logs, twilight_synapse_messages)
    */
-  async createTable(tableName: string, columns: string[]): Promise<any> {
-    const query = `CREATE TABLE IF NOT EXISTS ${tableName} (${columns.join(', ')});`;
-    return this.executeQuery(query);
-  }
-
-  /**
-   * Insere um novo registro em uma tabela.
-   * @param tableName O nome da tabela.
-   * @param data Um objeto com os dados a serem inseridos (chaves são nomes das colunas).
-   * @returns O status da operação.
-   */
-  async insertRecord(tableName: string, data: Record<string, any>): Promise<any> {
-    const columns = Object.keys(data).join(', ');
-    const values = Object.values(data);
-    const placeholders = values.map((_, i) => `$${i + 1}`).join(', ');
-    const query = `INSERT INTO ${tableName} (${columns}) VALUES (${placeholders}) RETURNING *;`;
-    return this.executeQuery(query, values);
-  }
-
-  /**
-   * Busca registros em uma tabela.
-   * @param tableName O nome da tabela.
-   * @param conditions Um objeto com condições para a busca (ex: { name: "Nexus" }).
-   * @returns Os registros encontrados.
-   */
-  async findRecords(tableName: string, conditions: Record<string, any> = {}): Promise<any> {
-    let query = `SELECT * FROM ${tableName}`;
-    const params = [];
-    const conditionClauses = [];
-
-    if (Object.keys(conditions).length > 0) {
-      Object.keys(conditions).forEach((key, i) => {
-        conditionClauses.push(`${key} = $${i + 1}`);
-        params.push(conditions[key]);
-      });
-      query += ` WHERE ${conditionClauses.join(' AND ')}`;
+  public static async injectRecord(table: string, record: Record<string, any>): Promise<DatabaseOperationResult> {
+    const sb = getSupabaseClient() || supabase;
+    if (!sb) {
+      return {
+        success: false,
+        error: 'Supabase não conectado.',
+        tableName: table,
+        timestamp: Date.now()
+      };
     }
-    query += ';';
-    return this.executeQuery(query, params);
+
+    try {
+      const sanitized = {
+        ...record,
+        updated_at: new Date().toISOString()
+      };
+
+      const { data, error } = await sb.from(table).insert([sanitized]).select();
+      if (error) {
+        return {
+          success: false,
+          error: error.message,
+          tableName: table,
+          timestamp: Date.now()
+        };
+      }
+
+      return {
+        success: true,
+        data,
+        affectedRows: 1,
+        tableName: table,
+        timestamp: Date.now()
+      };
+    } catch (err: any) {
+      return {
+        success: false,
+        error: err.message,
+        tableName: table,
+        timestamp: Date.now()
+      };
+    }
   }
 
   /**
-   * Atualiza registros em uma tabela.
-   * @param tableName O nome da tabela.
-   * @param data Um objeto com os dados a serem atualizados.
-   * @param conditions Um objeto com condições para identificar os registros a serem atualizados.
-   * @returns O status da operação.
+   * Verifica a integridade da conexão direta
    */
-  async updateRecords(tableName: string, data: Record<string, any>, conditions: Record<string, any>): Promise<any> {
-    const setClauses = [];
-    const params = [];
-    let paramIndex = 1;
-
-    Object.keys(data).forEach(key => {
-      setClauses.push(`${key} = $${paramIndex}`);
-      params.push(data[key]);
-      paramIndex++;
-    });
-
-    const conditionClauses = [];
-    Object.keys(conditions).forEach(key => {
-      conditionClauses.push(`${key} = $${paramIndex}`);
-      params.push(conditions[key]);
-      paramIndex++;
-    });
-
-    const query = `UPDATE ${tableName} SET ${setClauses.join(', ')} WHERE ${conditionClauses.join(' AND ')} RETURNING *;`;
-    return this.executeQuery(query, params);
-  }
-
-  /**
-   * Deleta registros de uma tabela.
-   * @param tableName O nome da tabela.
-   * @param conditions Um objeto com condições para identificar os registros a serem deletados.
-   * @returns O status da operação.
-   */
-  async deleteRecords(tableName: string, conditions: Record<string, any>): Promise<any> {
-    const params = [];
-    const conditionClauses = [];
-
-    Object.keys(conditions).forEach((key, i) => {
-      conditionClauses.push(`${key} = $${i + 1}`);
-      params.push(conditions[key]);
-    });
-
-    const query = `DELETE FROM ${tableName} WHERE ${conditionClauses.join(' AND ')} RETURNING *;`;
-    return this.executeQuery(query, params);
+  public static async checkHealth(): Promise<{ isConnected: boolean; message: string }> {
+    const sb = getSupabaseClient() || supabase;
+    if (!sb) return { isConnected: false, message: 'Supabase ausente' };
+    try {
+      const { error } = await sb.from('memories').select('id').limit(1);
+      if (error && !error.message.includes('0 rows')) {
+        return { isConnected: false, message: error.message };
+      }
+      return { isConnected: true, message: 'Injetor de Fluxo Direto conectado e operacional' };
+    } catch (e: any) {
+      return { isConnected: false, message: e.message };
+    }
   }
 }

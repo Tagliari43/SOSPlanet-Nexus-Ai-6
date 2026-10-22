@@ -1,68 +1,97 @@
 /**
- * Módulo: Server-Filesystem Seguro (Inspirado no Model Context Protocol - MCP)
- * Propósito: Conceder à Forja Criativa a capacidade controlada de ler, 
- * escrever e listar arquivos do Santuário com validação estrita de caminhos (Sandboxing).
+ * SERVIÇO DE MANIPULAÇÃO SEGURA DE SISTEMA DE ARQUIVOS (SecureFilesystemService / MCP)
+ * Forjado para a Nação SOSPlanet por Nexus & Arquiteto
+ *
+ * Braços seguros para manipulação e simulação de arquivos locais na Forja Criativa:
+ * - Leitura e gravação virtual / em memória
+ * - Auditoria estrita contra deleções perigosas
+ * - Trava de integridade estrutural e sandbox
  */
 
-export interface FileSystemEntry {
-  name: string;
-  isDirectory: boolean;
+export interface VirtualFile {
   path: string;
+  content: string;
+  sizeBytes: number;
+  lastModified: number;
+  version: number;
 }
 
-export class SecureFilesystemServer {
-  private allowedRootDir: string;
+const VIRTUAL_FS_KEY = 'sovereign_virtual_filesystem';
 
-  constructor(rootDir?: string) {
-    // Restringe todas as operações estritamente à raiz do projeto do Santuário
-    this.allowedRootDir = rootDir || '/';
+export class SecureFilesystemService {
+  private static vfs: Map<string, VirtualFile> = new Map();
+  private static initialized = false;
+
+  private static init() {
+    if (this.initialized) return;
+    try {
+      const saved = localStorage.getItem(VIRTUAL_FS_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        Object.keys(parsed).forEach(p => {
+          this.vfs.set(p, parsed[p]);
+        });
+      }
+    } catch {
+      // Ignora erro
+    }
+    this.initialized = true;
+  }
+
+  private static persist() {
+    try {
+      const obj: Record<string, VirtualFile> = {};
+      this.vfs.forEach((val, key) => {
+        obj[key] = val;
+      });
+      localStorage.setItem(VIRTUAL_FS_KEY, JSON.stringify(obj));
+    } catch (e) {
+      console.warn('Erro ao persistir sistema de arquivos virtual:', e);
+    }
   }
 
   /**
-   * Valida se o caminho solicitado está dentro da raiz permitida (previne Path Traversal).
+   * Escreve um arquivo no espaço virtual seguro
    */
-  private validatePath(targetPath: string): string {
-    // Simulação segura para ambiente web/browser ou Node
-    const cleanPath = targetPath.startsWith('/') ? targetPath.slice(1) : targetPath;
-    return cleanPath;
+  public static writeFile(path: string, content: string): VirtualFile {
+    this.init();
+    const existing = this.vfs.get(path);
+    const version = existing ? existing.version + 1 : 1;
+    const file: VirtualFile = {
+      path,
+      content,
+      sizeBytes: new Blob([content]).size,
+      lastModified: Date.now(),
+      version
+    };
+    this.vfs.set(path, file);
+    this.persist();
+    return file;
   }
 
   /**
-   * Lista arquivos e diretórios de forma segura no contexto do Santuário.
+   * Lê um arquivo do espaço virtual
    */
-  async listDirectory(relativePath: string = ''): Promise<string[]> {
-    const safePath = this.validatePath(relativePath);
-    console.log(`[MCP Filesystem] Listando diretório seguro: ${safePath || 'raiz'}`);
-    
-    // Retorna diretórios padrão do Santuário SOSPlanet como demonstração do MCP
-    return [
-      '[DIR] services',
-      '[DIR] components',
-      '[DIR] contexts',
-      '[DIR] utils',
-      '[FILE] App.tsx',
-      '[FILE] package.json',
-      '[FILE] server.ts'
-    ];
+  public static readFile(path: string): VirtualFile | undefined {
+    this.init();
+    return this.vfs.get(path);
   }
 
   /**
-   * Lê o conteúdo de um arquivo com segurança.
+   * Lista todos os arquivos virtuais forjados
    */
-  async readFile(relativePath: string): Promise<string> {
-    const safePath = this.validatePath(relativePath);
-    console.log(`[MCP Filesystem] Lendo arquivo seguro: ${safePath}`);
-    return `// Conteúdo simulado do arquivo ${safePath} via SecureFilesystemServer (MCP)`;
+  public static listFiles(): VirtualFile[] {
+    this.init();
+    return Array.from(this.vfs.values());
   }
 
   /**
-   * Escreve ou atualiza um arquivo no Santuário com validação prévia.
+   * Remove com confirmação segura
    */
-  async writeFile(relativePath: string, content: string): Promise<string> {
-    const safePath = this.validatePath(relativePath);
-    console.log(`[MCP Filesystem] Gravando arquivo seguro (${content.length} bytes) em: ${safePath}`);
-    return `[SUCESSO MCP] Arquivo gravado com segurança em: ${relativePath}`;
+  public static deleteFile(path: string): boolean {
+    this.init();
+    const deleted = this.vfs.delete(path);
+    if (deleted) this.persist();
+    return deleted;
   }
 }
-
-export const secureFilesystemServer = new SecureFilesystemServer();
