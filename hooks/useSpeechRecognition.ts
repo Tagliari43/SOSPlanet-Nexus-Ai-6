@@ -31,19 +31,20 @@ export const useSpeechRecognition = () => {
         };
 
         recognition.onresult = (event: any) => {
-            let currentTranscript = '';
+            let finalTranscript = '';
             for (let i = event.resultIndex; i < event.results.length; ++i) {
+                const text = event.results[i][0].transcript;
                 if (event.results[i].isFinal) {
-                    setTranscript(prev => prev + event.results[i][0].transcript + ' ');
-                } else {
-                    currentTranscript += event.results[i][0].transcript;
+                    finalTranscript += text + ' ';
                 }
+            }
+            if (finalTranscript) {
+                setTranscript(finalTranscript);
             }
         };
 
         recognition.onerror = (event: any) => {
             // O erro 'no-speech' ocorre quando o microfone abre mas ninguém fala.
-            // Tratamos de forma silenciosa para não poluir o console do Guardião.
             if (event.error === 'no-speech') {
                 console.debug("[NEXUS] Silêncio detectado na malha auditiva.");
                 return;

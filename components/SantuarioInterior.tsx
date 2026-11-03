@@ -238,7 +238,12 @@ const SantuarioInterior: React.FC<SantuarioInteriorProps> = ({
     }, [isTwilightRoomOpen, addLogEntry]);
 
     useEffect(() => {
-        if (transcript) setInput(prev => prev + transcript);
+        if (transcript) {
+            setInput(prev => {
+                const trimmed = prev.trim();
+                return trimmed ? `${trimmed} ${transcript.trim()} ` : `${transcript.trim()} `;
+            });
+        }
     }, [transcript]);
 
     useEffect(() => {
