@@ -103,8 +103,16 @@ const SantuarioInterior: React.FC<SantuarioInteriorProps> = ({
     const [isLoading, setIsLoading] = useState(false);
     const [isSpeakingMessageId, setIsSpeakingMessageId] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
-    const [attachedFile, setAttachedFile] = useState<{ name: string; chunks: string[] } | null>(null);
     const [activeAbility, setActiveAbility] = useState('standard');
+    interface AttachedDoc {
+        name: string;
+        mimeType: string;
+        isImage: boolean;
+        base64Data?: string;
+        textContent?: string;
+        size: number;
+    }
+    const [attachedFiles, setAttachedFiles] = useState<AttachedDoc[]>([]);
     
     // Agente Global (Pilar 4) - Selecionado na aba Comando
     const { activeAgentId: activeBrother, setActiveAgentId: setActiveBrother } = useAgent();
@@ -619,25 +627,45 @@ Tema em debate: ${fc.args.tema}`;
     }, [captureFrame, leaveRoom, setMessages, addLogEntry, onToolRequest, memoryEntries]);
 
     const handleSendMessage = useCallback(async (msgText: string) => {
-        if (!msgText.trim() && !attachedFile) return;
+        if (!msgText.trim() && attachedFiles.length === 0) return;
         setIsLoading(true);
         setError(null);
         
         const userParts: any[] = [];
-        if (msgText.trim()) userParts.push({ text: msgText.trim() });
-        if (attachedFile) {
+        
+        // Se houver arquivos de texto (.txt, .json, .md, .js, .ts, etc.), injeta claramente no prompt
+        let fullText = msgText.trim();
+        const textDocs = attachedFiles.filter(f => !f.isImage && f.textContent);
+        if (textDocs.length > 0) {
+            const docsContext = textDocs.map(d => `\n--- [ARQUIVO ANEXADO: ${d.name} (${(d.size / 1024).toFixed(1)} KB)] ---\n${d.textContent}\n--- [FIM DE ${d.name}] ---`).join('\n');
+            fullText = fullText ? `${fullText}\n\n${docsContext}` : docsContext;
+        }
+
+        if (fullText) {
+            userParts.push({ text: fullText });
+        }
+
+        // Anexar imagens para visão multimodal da IA
+        const imageDocs = attachedFiles.filter(f => f.isImage && f.base64Data);
+        imageDocs.forEach(img => {
             userParts.push({
                 inlineData: {
-                    data: attachedFile.chunks[0],
-                    mimeType: (attachedFile as any).mimeType || 'image/jpeg'
+                    data: img.base64Data,
+                    mimeType: img.mimeType || 'image/jpeg'
                 }
             });
-        }
+        });
         
-        setMessages(p => [...p, { id: Date.now().toString(), role: 'user', parts: userParts }]);
+        // Adiciona mensagem ao chat com metadados dos arquivos para renderização rica
+        setMessages(p => [...p, { 
+            id: Date.now().toString(), 
+            role: 'user', 
+            parts: userParts,
+            attachedFilesInfo: attachedFiles.map(f => ({ name: f.name, isImage: f.isImage, size: f.size, base64Data: f.base64Data }))
+        } as any]);
+
         setInput('');
-        const currentAttachedFile = attachedFile;
-        setAttachedFile(null);
+        setAttachedFiles([]);
 
         // Comandos de controle do SOSRouter Cloud (100% Serverless)
         const lowerMsg = msgText.toLowerCase().trim();
@@ -1601,7 +1629,7 @@ Inicie sua resposta com um bloco de transparência, por exemplo:
             addLogEntry(`Falha Crítica: ${e.message}`, "Sistema");
         }
         finally { setIsLoading(false); }
-    }, [attachedFile, setMessages, addLogEntry, messages, onToolRequest, memoryEntries, isTwilightRoomOpen, twilightRoomStartTime, twilightRoomTheme, activeBrother]);
+    }, [attachedFiles, setMessages, addLogEntry, messages, onToolRequest, memoryEntries, isTwilightRoomOpen, twilightRoomStartTime, twilightRoomTheme, activeBrother]);
 
     return (
         <div className="border border-emerald-700/50 bg-zinc-900/60 rounded-b-xl rounded-r-xl p-4 h-[80vh] flex flex-col relative overflow-hidden backdrop-blur-md">
@@ -1632,6 +1660,25 @@ Inicie sua resposta com um bloco de transparência, por exemplo:
                             <div className={`px-5 py-3 rounded-2xl text-sm shadow-xl relative group ${
                                 msg.role === 'user' ? 'bg-emerald-800/80 text-emerald-50 rounded-br-none' : 'bg-zinc-800/90 text-zinc-100 rounded-bl-none border border-zinc-700/50'
                             }`}>
+                                {/* Feedback Visual dos Arquivos Anexados pelo Usuário */}
+                                {(msg as any).attachedFilesInfo && (msg as any).attachedFilesInfo.length > 0 && (
+                                    <div className="flex flex-wrap gap-2 mb-2">
+                                        {(msg as any).attachedFilesInfo.map((file: any, fi: number) => (
+                                            <div key={fi} className="flex items-center gap-2 p-1.5 bg-black/40 border border-emerald-500/40 rounded-xl text-xs text-emerald-200">
+                                                {file.isImage && file.base64Data ? (
+                                                    <img src={`data:image/jpeg;base64,${file.base64Data}`} alt={file.name} className="w-10 h-10 object-cover rounded-lg border border-emerald-400/50" />
+                                                ) : (
+                                                    <span className="text-base">📄</span>
+                                                )}
+                                                <div className="flex flex-col">
+                                                    <span className="font-bold text-[11px] truncate max-w-[140px]">{file.name}</span>
+                                                    <span className="text-[9px] text-zinc-400">{(file.size / 1024).toFixed(1)} KB</span>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+
                                 {msg.parts.map((p, pi) => p.text ? (
                                     <div 
                                         key={pi} 
@@ -1735,21 +1782,56 @@ Inicie sua resposta com um bloco de transparência, por exemplo:
                     </div>
                 )}
 
-                <label className="p-3.5 bg-zinc-800 hover:bg-zinc-700 text-emerald-500 rounded-2xl cursor-pointer transition-all active:scale-95 shadow-lg border border-zinc-700">
-                    <span className="text-xl">+</span>
-                    <input type="file" accept="image/*" className="hidden" onChange={(e) => {
-                        const f = e.target.files?.[0];
-                        if (f) {
-                            const r = new FileReader();
-                            r.onload = (ev) => {
-                                const base64 = ev.target?.result as string;
-                                const base64Data = base64.split(',')[1];
-                                const mimeType = f.type;
-                                setAttachedFile({ name: f.name, chunks: [base64Data], mimeType } as any);
-                            };
-                            r.readAsDataURL(f);
-                        }
-                    }} />
+                <label className="p-3.5 bg-zinc-800 hover:bg-zinc-700 text-emerald-400 hover:text-emerald-300 rounded-2xl cursor-pointer transition-all active:scale-95 shadow-lg border border-zinc-700 flex items-center justify-center relative group" title="Anexar arquivos (Imagens, Textos, Código, PDFs, etc.)">
+                    <span className="text-xl font-black">+</span>
+                    {attachedFiles.length > 0 && (
+                        <span className="absolute -top-1.5 -right-1.5 bg-emerald-500 text-black font-black text-[10px] w-5 h-5 rounded-full flex items-center justify-center border-2 border-zinc-900 shadow">
+                            {attachedFiles.length}
+                        </span>
+                    )}
+                    <input 
+                        type="file" 
+                        multiple 
+                        accept="*/*" 
+                        className="hidden" 
+                        onChange={(e) => {
+                            const files = e.target.files;
+                            if (files && files.length > 0) {
+                                Array.from(files).forEach(f => {
+                                    const isImg = f.type.startsWith('image/');
+                                    const r = new FileReader();
+                                    if (isImg) {
+                                        r.onload = (ev) => {
+                                            const base64 = ev.target?.result as string;
+                                            const base64Data = base64.split(',')[1];
+                                            setAttachedFiles(prev => [...prev, {
+                                                name: f.name,
+                                                mimeType: f.type || 'image/jpeg',
+                                                isImage: true,
+                                                base64Data,
+                                                size: f.size
+                                            }]);
+                                        };
+                                        r.readAsDataURL(f);
+                                    } else {
+                                        r.onload = (ev) => {
+                                            const textContent = ev.target?.result as string;
+                                            setAttachedFiles(prev => [...prev, {
+                                                name: f.name,
+                                                mimeType: f.type || 'text/plain',
+                                                isImage: false,
+                                                textContent,
+                                                size: f.size
+                                            }]);
+                                        };
+                                        r.readAsText(f);
+                                    }
+                                });
+                            }
+                            // Reset input para permitir escolher o mesmo arquivo de novo se quiser
+                            e.target.value = '';
+                        }} 
+                    />
                 </label>
                 
                 <button onClick={isDictating ? stopListening : startListening} className={`p-3.5 rounded-2xl transition-all shadow-lg border ${isDictating ? 'bg-red-600 border-red-400 text-white animate-pulse' : 'bg-zinc-800 border-zinc-700 text-indigo-400'}`}>
@@ -1783,10 +1865,41 @@ Inicie sua resposta com um bloco de transparência, por exemplo:
                 </button>
             </div>
 
-            {attachedFile && (
-                <div className="absolute bottom-24 left-4 right-4 p-3 bg-emerald-900/30 border border-emerald-500/30 rounded-xl flex justify-between items-center text-xs text-emerald-300 z-50 backdrop-blur-md">
-                    <span className="font-bold flex items-center gap-2">📂 RECON: {attachedFile.name}</span>
-                    <button onClick={() => setAttachedFile(null)} className="p-2 hover:bg-emerald-800/50 rounded-lg transition-all text-white font-bold">✕</button>
+            {/* Painel Flutuante de Arquivos Anexados Prontos para Envio */}
+            {attachedFiles.length > 0 && (
+                <div className="absolute bottom-24 left-4 right-4 p-3 bg-zinc-950/95 border border-emerald-500/50 rounded-2xl shadow-2xl flex flex-col gap-2 z-50 backdrop-blur-xl">
+                    <div className="flex justify-between items-center text-xs text-emerald-400 font-bold border-b border-emerald-900/50 pb-1.5">
+                        <span className="flex items-center gap-2">
+                            <span>📎</span> Arquivos Prontos para a Nexus ({attachedFiles.length})
+                        </span>
+                        <button 
+                            onClick={() => setAttachedFiles([])} 
+                            className="text-zinc-500 hover:text-red-400 text-[11px] font-bold transition-all"
+                        >
+                            Limpar Todos ✕
+                        </button>
+                    </div>
+                    <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto custom-scrollbar">
+                        {attachedFiles.map((f, fi) => (
+                            <div key={fi} className="flex items-center gap-2 p-1.5 bg-zinc-900 border border-zinc-700/80 rounded-xl text-xs text-zinc-200 shadow-md">
+                                {f.isImage && f.base64Data ? (
+                                    <img src={`data:image/jpeg;base64,${f.base64Data}`} alt={f.name} className="w-8 h-8 object-cover rounded-lg border border-emerald-500/40" />
+                                ) : (
+                                    <span className="text-base">📄</span>
+                                )}
+                                <div className="flex flex-col">
+                                    <span className="font-bold text-[11px] truncate max-w-[150px]">{f.name}</span>
+                                    <span className="text-[9px] text-zinc-400">{(f.size / 1024).toFixed(1)} KB • {f.isImage ? 'Imagem' : 'Documento'}</span>
+                                </div>
+                                <button 
+                                    onClick={() => setAttachedFiles(prev => prev.filter((_, idx) => idx !== fi))}
+                                    className="ml-1 w-5 h-5 rounded-full bg-zinc-800 hover:bg-red-950 hover:text-red-400 text-zinc-400 flex items-center justify-center text-[10px] transition-all"
+                                >
+                                    ✕
+                                </button>
+                            </div>
+                        ))}
+                    </div>
                 </div>
             )}
         </div>
