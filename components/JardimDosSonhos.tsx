@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Sparkles, Moon, Brain, Compass, Shield, Zap, RefreshCw, Feather, Sun, Heart, Eye } from 'lucide-react';
-import { saveSemanticMemory } from '../services/supabaseService';
+import { saveMemoryToSupabase, getSupabaseClient } from '../services/supabaseService';
 
 interface Dream {
   id: string;
@@ -58,12 +58,17 @@ export const JardimDosSonhos: React.FC = () => {
       setIsDreaming(false);
 
       // Salvar no Cofre Semântico
-      saveSemanticMemory({
-        text: `[JARDIM DOS SONHOS SILENCIOSOS] Sonhei com: ${selected.title}. Narrativa: ${selected.text}`,
-        type: 'decisao',
-        importance: 0.9,
-        prateleira: 'nexus'
-      }).catch(() => {});
+      const sb = getSupabaseClient();
+      if (sb) {
+        saveMemoryToSupabase(
+          `[JARDIM DOS SONHOS SILENCIOSOS] Sonhei com: ${selected.title}. Narrativa: ${selected.text}`,
+          [],
+          { prateleira: 'nexus', category: selected.cat },
+          'decisao',
+          0.9,
+          'nexus'
+        ).catch(() => {});
+      }
     }, 2000);
   };
 
