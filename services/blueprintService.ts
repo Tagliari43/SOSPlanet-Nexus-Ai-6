@@ -77,6 +77,25 @@ const SYSTEM_FILES = [
 ];
 
 export async function generateSanctuaryBlueprint(): Promise<void> {
+    try {
+        // Tenta baixar o ZIP completo e real de todo o Santuário gerado pelo backend
+        const res = await fetch('/api/backup/zip');
+        if (res.ok) {
+            const blob = await res.blob();
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.href = url;
+            link.download = `Santuario_SOSPlanet_Salto_Total_${Date.now()}.zip`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+            return;
+        }
+    } catch (apiErr) {
+        console.warn("Falha ao gerar ZIP pelo backend, acionando fallback JSZip client-side:", apiErr);
+    }
+
     if (typeof window.JSZip === 'undefined') {
         throw new Error("A Matriz de Compressão (JSZip) não está carregada.");
     }
