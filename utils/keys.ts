@@ -45,38 +45,47 @@ export function loadApiKeys(): ApiKeys {
 
     // 1. Coleta todas as chaves Gemini cadastradas no Arsenal (localStorage) e .env
     const userGeminiKey1 = userKeys.find(k => 
-        k.service.toLowerCase() === 'gemini_api_key_1' ||
-        k.service.toLowerCase() === 'google gemini' || 
-        k.service.toLowerCase() === 'gemini api' ||
+        k.service?.toLowerCase() === 'gemini_api_key_1' ||
+        k.id === 'gemini_api_key_1' ||
+        k.id === 'gemini-key-1' ||
+        (k.name && k.name.toUpperCase().includes('GEMINI_API_KEY_1')) ||
+        k.service?.toLowerCase() === 'google gemini' || 
+        k.service?.toLowerCase() === 'gemini api' ||
         k.id === 'google-default' ||
         k.id === 'gemini-key'
     )?.key?.trim();
 
     const userGeminiKey2 = userKeys.find(k => 
-        k.service.toLowerCase() === 'gemini_api_key_2' || 
-        k.service.toLowerCase() === 'gemini 2' ||
-        k.id === 'gemini-key-2'
+        k.service?.toLowerCase() === 'gemini_api_key_2' || 
+        k.id === 'gemini_api_key_2' ||
+        k.id === 'gemini-key-2' ||
+        (k.name && k.name.toUpperCase().includes('GEMINI_API_KEY_2')) ||
+        k.service?.toLowerCase() === 'gemini 2'
     )?.key?.trim();
 
     const userGeminiKey3 = userKeys.find(k => 
-        k.service.toLowerCase() === 'gemini_api_key_3' || 
-        k.service.toLowerCase() === 'gemini 3'
+        k.service?.toLowerCase() === 'gemini_api_key_3' || 
+        k.id === 'gemini_api_key_3' ||
+        k.id === 'gemini-key-3' ||
+        (k.name && k.name.toUpperCase().includes('GEMINI_API_KEY_3')) ||
+        k.service?.toLowerCase() === 'gemini 3'
     )?.key?.trim();
 
     const userGeminiKey4 = userKeys.find(k => 
-        k.service.toLowerCase() === 'gemini_api_key_4' || 
-        k.service.toLowerCase() === 'gemini 4'
+        k.service?.toLowerCase() === 'gemini_api_key_4' || 
+        k.id === 'gemini_api_key_4' ||
+        k.id === 'gemini-key-4' ||
+        k.service?.toLowerCase() === 'gemini 4'
     )?.key?.trim();
 
     const userGeminiKey5 = userKeys.find(k => 
-        k.service.toLowerCase() === 'gemini_api_key_5' || 
-        k.service.toLowerCase() === 'gemini 5'
+        k.service?.toLowerCase() === 'gemini_api_key_5' || 
+        k.id === 'gemini_api_key_5' ||
+        k.id === 'gemini-key-5' ||
+        k.service?.toLowerCase() === 'gemini 5'
     )?.key?.trim();
 
-    // Chave histórica clássica (antiga chave 2 que é a primária de confiança de Eder)
-    const historicalClassicKey = 'AIzaSyCHsqXSX1-jSseLcIhydG2JEAy8yGQJ3fk';
-
-    const envGoogle1 = process.env.GEMINI_API_KEY || process.env.API_KEY || sovereignKeys.google;
+    const envGoogle1 = process.env.GEMINI_API_KEY_1 || process.env.GEMINI_API_KEY || process.env.API_KEY || sovereignKeys.google;
     const envGoogle2 = process.env.GEMINI_API_KEY_2 || process.env.GEMINI_API_KEY_SOSPLANET;
     const envGoogle3 = process.env.GEMINI_API_KEY_3;
     const envGoogle4 = process.env.GEMINI_API_KEY_4;
@@ -85,18 +94,18 @@ export function loadApiKeys(): ApiKeys {
     // Coleta todas as chaves Gemini extras cadastradas
     const extraUserGoogleKeys = userKeys
         .filter(k => 
-            k.service.toLowerCase().includes('google') || 
-            k.service.toLowerCase().includes('gemini') ||
-            k.id.toLowerCase().includes('gemini') ||
+            k.service?.toLowerCase().includes('google') || 
+            k.service?.toLowerCase().includes('gemini') ||
+            k.id?.toLowerCase().includes('gemini') ||
             (typeof k.key === 'string' && (k.key.startsWith('AIza') || k.key.startsWith('AQ.')))
         )
         .map(k => k.key ? k.key.trim() : '')
         .filter(Boolean);
 
-    // Lista ordenada com prioridade na chave primária clássica / key_2, seguida pelas demais chaves vivas
+    // Lista ordenada estritamente: 1º GEMINI_API_KEY_1, 2º GEMINI_API_KEY_2, 3º GEMINI_API_KEY_3
     const orderedCandidateKeys = [
-        userGeminiKey2 || envGoogle2 || historicalClassicKey,
         userGeminiKey1 || envGoogle1,
+        userGeminiKey2 || envGoogle2,
         userGeminiKey3 || envGoogle3,
         userGeminiKey4 || envGoogle4,
         userGeminiKey5 || envGoogle5,
