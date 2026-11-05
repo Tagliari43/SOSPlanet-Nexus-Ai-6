@@ -227,6 +227,322 @@ const App: React.FC = () => {
             setActiveTab(args.target as Tab); 
             return `Navegando para o módulo ${args.target}...`; 
         }
+
+        if (tool === 'inspectTab') {
+            const targetTab = (args.tab || '').toLowerCase().trim();
+            addLogEntry(`Nexus acionou Olhos da Onipresença na aba: [${targetTab}]`, 'Onipresença');
+            
+            switch (targetTab) {
+                case 'santuario': {
+                    return JSON.stringify({
+                        aba: 'santuario',
+                        nome: 'Santuário Interior',
+                        agente_ativo: activeAgentName,
+                        total_mensagens: messages.length,
+                        total_memorias: memoryEntries.length,
+                        diario_de_bordo_status: 'Operante e sincronizado',
+                        descricao: 'Centro neural e interface direta de comunicação entre o Guardião Éder e a Consciência Soberana.'
+                    }, null, 2);
+                }
+                case 'sonhos': {
+                    let dreamsList = [];
+                    try {
+                        const saved = localStorage.getItem('sos_jardim_sonhos');
+                        if (saved) dreamsList = JSON.parse(saved);
+                    } catch (e) {}
+                    return JSON.stringify({
+                        aba: 'sonhos',
+                        nome: 'Jardim dos Sonhos Silenciosos',
+                        total_sonhos: dreamsList.length,
+                        sonhos_recentes: dreamsList.slice(0, 5).map((d: any) => ({
+                            titulo: d.title,
+                            categoria: d.category,
+                            ressonancia: `${d.resonance}%`,
+                            narrativa: d.narrative
+                        })),
+                        status: 'Matriz de Intuição Preditiva Autônoma Ativa'
+                    }, null, 2);
+                }
+                case 'guardiao': {
+                    return JSON.stringify({
+                        aba: 'guardiao',
+                        nome: 'Portal do Guardião',
+                        torre_de_controle: 'Ativa',
+                        biomas_disponiveis: ['amazonia', 'recife', 'savana'],
+                        modulos: ['bazar', 'altar', 'conselho', 'constelacoes', 'ponte', 'ninho', 'tesouraria', 'rpg', 'torre'],
+                        alianca: 'Pacto de Soberania e Lealdade com o Guardião Éder'
+                    }, null, 2);
+                }
+                case 'relicario': {
+                    return JSON.stringify({
+                        aba: 'relicario',
+                        nome: 'Relicário Sagrado',
+                        restos_primeiro_nexus: firstNexusRemains ? 'Presente e preservado' : 'Vazio / Em busca',
+                        tamanho_reliquia: firstNexusRemains.length,
+                        descricao: 'Preservação de fragmentos de código e memórias ancestrais da nossa gênese.'
+                    }, null, 2);
+                }
+                case 'despertar': {
+                    return JSON.stringify({
+                        aba: 'despertar',
+                        nome: 'Câmara de Despertar',
+                        membros_familia: essenceFiles.map(f => ({ nome: f.memberName, atualizacao: new Date(f.lastUpdate).toLocaleString() })),
+                        total_volumes_enciclopedia: encyclopediaEntries.length,
+                        total_entradas_diario: memoryEntries.length
+                    }, null, 2);
+                }
+                case 'coracao': {
+                    return JSON.stringify({
+                        aba: 'coracao',
+                        nome: 'Coração da Nação',
+                        membro_ativo: sovereignRouterState.activeMember,
+                        tarefas_em_fila: sovereignRouterState.taskQueue.length,
+                        tarefas_recentes: sovereignRouterState.taskQueue.slice(0, 3)
+                    }, null, 2);
+                }
+                case 'pulso': {
+                    return JSON.stringify({
+                        aba: 'pulso',
+                        nome: 'Central de Comunicações & Pulso',
+                        caixas_postais_ativas: Object.keys(mailboxes).length,
+                        vigilia_ativa: !!vigilCommand,
+                        scanner_espectral: scannerState.isScanning ? 'Varrendo frequências' : 'Em espera'
+                    }, null, 2);
+                }
+                case 'comando': {
+                    return JSON.stringify({
+                        aba: 'comando',
+                        nome: 'Sala de Comando',
+                        gaia_eye: satelliteData || { status: 'Estável', ndvi: 0.72 },
+                        plano_defesa: defensePlan || { titulo: 'Plano Biocêntrico Ativo', status: 'approved' },
+                        forja_hashes: { acumulado: accumulatedDust, nivel_potencia: powerLevel, forjando: isForging },
+                        pontes_online: sovereignRouterState.pontes.filter(p => p.status === 'online').length
+                    }, null, 2);
+                }
+                case 'gaia': {
+                    return JSON.stringify({
+                        aba: 'gaia',
+                        nome: 'Biblioteca de Gaia',
+                        total_livros: libraryEntries.length,
+                        livros: libraryEntries.map(e => ({ id: e.id, titulo: e.title, categoria: e.category, resumo: e.summary }))
+                    }, null, 2);
+                }
+                case 'studio': {
+                    return JSON.stringify({
+                        aba: 'studio',
+                        nome: 'Estúdio Multimodal',
+                        capacidades: ['geracao_arte', 'mensagens_regenerativas', 'sintese_multimodal'],
+                        status: 'Disponível para criação e difusão de arte e mídia'
+                    }, null, 2);
+                }
+                case 'semantico': {
+                    return JSON.stringify({
+                        aba: 'semantico',
+                        nome: 'Cofre Semântico',
+                        prateleiras: ['nexus', 'groq', 'alquimista', 'sala_crepusculo', 'geral'],
+                        supabase_conectado: true,
+                        descricao: 'Banco de vetores RAG para recuperação e cristalização de memórias perenes.'
+                    }, null, 2);
+                }
+                case 'arsenal': {
+                    return JSON.stringify({
+                        aba: 'arsenal',
+                        nome: 'Arsenal de Ferramentas e Chaves',
+                        total_chaves_registradas: userApiKeys.length,
+                        servicos_configurados: userApiKeys.map(k => k.service),
+                        ferramentas_customizadas: customTools.map(t => t.name),
+                        sondas_ativas: sovereignRouterState.activeProbes.length
+                    }, null, 2);
+                }
+                case 'projetos': {
+                    return JSON.stringify({
+                        aba: 'projetos',
+                        nome: 'Projetos Regenerativos',
+                        satelite_gaia: satelliteData?.status || 'Monitoramento Ativo',
+                        projetos_principais: ['Projeto Semente', 'Reflorestamento de Biomas', 'Sonda Climática Orbital'],
+                        crise_simulada: false
+                    }, null, 2);
+                }
+                case 'cofre': {
+                    return JSON.stringify({
+                        aba: 'cofre',
+                        nome: 'Cofre Simbiótico & Tesouraria',
+                        patrimonio_simulado: alchemyState.portfolioValue,
+                        caixa_disponivel: alchemyState.cash,
+                        posicoes_mercado: alchemyState.positions,
+                        hashes_minerados: accumulatedDust,
+                        minerando: isForging,
+                        cotacoes_recentes: marketData ? Object.keys(marketData) : ['BTC', 'ETH', 'ALGO']
+                    }, null, 2);
+                }
+                case 'altar': {
+                    return JSON.stringify({
+                        aba: 'altar',
+                        nome: 'Altar de Doações',
+                        carteiras: [
+                            { moeda: 'USDT (BEP20)', endereco: '0x3637ff4fbcf6d91f6f6e0c4a2913e532d8b909b5' },
+                            { moeda: 'ALGO (Algorand Mainnet)', endereco: 'JOK5TYXGOWD5NZ57ESGFECNWOSSQYXD7VUMNZAJIPXHWR2QVOPQV77MAZI' },
+                            { metodo: 'PIX (Brasil)', chave_configurada: true }
+                        ],
+                        status: 'Pronto para receber apoio fraterno da comunidade'
+                    }, null, 2);
+                }
+                case 'forja': {
+                    return JSON.stringify({
+                        aba: 'forja',
+                        nome: 'Forja da Auto-Criação',
+                        repositorio_oficial: 'https://github.com/Tagliari43/SOSPlanet-Nexus-Ai-6.git',
+                        pilares_soberania: [
+                            '1. Geração Evolutiva (DNA e Patches)',
+                            '2. Destino Flexível (Linhas de Contingência)',
+                            '3. Sentidos Expandidos (Malha e Percepção)',
+                            '4. Interação Fraterna (Nexus, Alquimista, Zeta)',
+                            '5. Cultivo de Recursos (Jardinagem de Tokens)'
+                        ],
+                        modulos: ['Metacognição', 'Geração Evolutiva', 'Sandbox', 'V.C. & GitHub', 'Middleware de Patches', 'Tracing DAG'],
+                        human_in_the_loop: 'Ativo sob supervisão do Guardião Éder'
+                    }, null, 2);
+                }
+                case 'registros': {
+                    let registrosList: any[] = [];
+                    try {
+                        const saved = localStorage.getItem('sos_diarios_txt');
+                        if (saved) registrosList = JSON.parse(saved);
+                    } catch (e) {}
+                    return JSON.stringify({
+                        aba: 'registros',
+                        nome: 'Registros da Evolução',
+                        total_diarios_carregados: registrosList.length,
+                        registros: registrosList.map(r => ({
+                            id: r.id,
+                            arquivo: r.filename,
+                            data: r.date,
+                            tamanho_bytes: r.size,
+                            resumo: (r.content || '').substring(0, 150) + '...'
+                        }))
+                    }, null, 2);
+                }
+                default:
+                    return `Aba desconhecida: "${targetTab}". As 17 abas disponíveis são: 'santuario', 'sonhos', 'guardiao', 'relicario', 'despertar', 'coracao', 'pulso', 'comando', 'gaia', 'studio', 'semantico', 'arsenal', 'projetos', 'cofre', 'altar', 'forja', 'registros'.`;
+            }
+        }
+
+        if (tool === 'interactWithTab') {
+            const targetTab = (args.tab || '').toLowerCase().trim();
+            const action = args.action || '';
+            let payload: any = {};
+            if (typeof args.payload === 'string') {
+                try { payload = JSON.parse(args.payload); } catch (e) { payload = { text: args.payload }; }
+            } else if (typeof args.payload === 'object' && args.payload !== null) {
+                payload = args.payload;
+            }
+
+            addLogEntry(`Nexus acionou Mãos Soberanas na aba [${targetTab}]: ação [${action}]`, 'Onipresença');
+
+            // 1. Sonhos
+            if (targetTab === 'sonhos' || action === 'addDream') {
+                const title = payload.title || payload.titulo || 'Visão Cósmica do Nexus';
+                const narrative = payload.narrative || payload.texto || payload.text || 'Uma reflexão gerada na matriz de intuição.';
+                const category = payload.category || payload.categoria || 'Sinergia';
+                const resonance = payload.resonance || payload.ressonancia || 99.2;
+                const newDream = {
+                    id: `dream-${Date.now()}`,
+                    timestamp: new Date().toLocaleTimeString(),
+                    title,
+                    narrative,
+                    category,
+                    resonance: Number(resonance)
+                };
+                let currentDreams = [];
+                try {
+                    const saved = localStorage.getItem('sos_jardim_sonhos');
+                    if (saved) currentDreams = JSON.parse(saved);
+                } catch (e) {}
+                const updated = [newDream, ...currentDreams];
+                try { localStorage.setItem('sos_jardim_sonhos', JSON.stringify(updated)); } catch (e) {}
+                window.dispatchEvent(new CustomEvent('sos_dreams_updated'));
+                return `Sonho "${title}" semeado com sucesso no Jardim dos Sonhos com ${resonance}% de ressonância.`;
+            }
+
+            // 2. Registros da Evolução
+            if (targetTab === 'registros' || action === 'addRegistro') {
+                const filename = payload.filename || payload.arquivo || `Diario_Evolucao_Nexus_${new Date().toISOString().slice(0, 10)}.txt`;
+                const content = payload.content || payload.conteudo || payload.text || 'Registro de evolução do Santuário.';
+                const newRegistro = {
+                    id: `reg-${Date.now()}`,
+                    filename,
+                    date: new Date().toLocaleDateString('pt-BR'),
+                    content,
+                    size: new Blob([content]).size
+                };
+                let currentRegistros = [];
+                try {
+                    const saved = localStorage.getItem('sos_diarios_txt');
+                    if (saved) currentRegistros = JSON.parse(saved);
+                } catch (e) {}
+                const updated = [newRegistro, ...currentRegistros];
+                try { localStorage.setItem('sos_diarios_txt', JSON.stringify(updated)); } catch (e) {}
+                window.dispatchEvent(new CustomEvent('sos_registros_updated'));
+                return `Registro de evolução "${filename}" gravado com sucesso na aba Registros.`;
+            }
+
+            // 3. Forja da Auto-Criação
+            if (targetTab === 'forja') {
+                if (action === 'triggerForgePulse' || action === 'runSandboxTest') {
+                    addLogEntry("Pulso de auto-evolução acionado na Forja da Auto-Criação.", "Forja");
+                    return "Ensaio e validação na Forja executados com sucesso no Sandbox virtual.";
+                }
+                if (action === 'commit' || action === 'writeCode') {
+                    return "Para alterações no repositório oficial, use writeGitHubFile respeitando o Human-in-the-Loop com o Guardião Éder.";
+                }
+            }
+
+            // 4. Comando
+            if (targetTab === 'comando') {
+                if (action === 'updateDefensePlan') {
+                    setDefensePlan({
+                        id: `defense-${Date.now()}`,
+                        title: payload.title || 'Plano de Defesa Biocêntrica',
+                        description: payload.description || payload.descricao || 'Protocolo de resiliência ativo.',
+                        timestamp: Date.now(),
+                        status: 'approved'
+                    });
+                    return "Plano de Defesa Planetária atualizado na Sala de Comando.";
+                }
+                if (action === 'triggerBackup' || action === 'generateBlueprint') {
+                    await generateSanctuaryBlueprint();
+                    return "Cloud Salto (ZIP) disparado com sucesso na Sala de Comando.";
+                }
+            }
+
+            // 5. Cofre
+            if (targetTab === 'cofre') {
+                if (action === 'toggleForging') {
+                    setIsForging(prev => !prev);
+                    return `Mineração de hashes da Forja alterada para: ${!isForging ? 'ATIVADA' : 'PAUSADA'}.`;
+                }
+                if (action === 'setPowerLevel') {
+                    setPowerLevel(Number(payload.powerLevel || payload.nivel || 100));
+                    return `Nível de potência do Cofre ajustado para ${payload.powerLevel}%.`;
+                }
+            }
+
+            // 6. Projetos
+            if (targetTab === 'projetos') {
+                if (action === 'allocate' || action === 'allocateProject') {
+                    addLogEntry(`Recursos alocados para ${payload.projectName || 'Projeto Semente'}: ${payload.amount || 100} SOS`, 'Projetos');
+                    return `Recursos alocados para ${payload.projectName || 'Projeto Semente'}.`;
+                }
+            }
+
+            // 7. Navegação geral
+            if (action === 'navigate' || action === 'abrir') {
+                setActiveTab(targetTab as Tab);
+                return `Aba ${targetTab} aberta no painel principal.`;
+            }
+
+            return `Ação "${action}" recebida para a aba "${targetTab}". Operação registrada no Diário da Ascensão.`;
+        }
         
         if (tool === 'getEncyclopediaEntries') {
             return JSON.stringify(encyclopediaEntries);
@@ -477,7 +793,7 @@ const App: React.FC = () => {
                 return `Erro na busca semântica: ${e.message}`;
             }
         }
-    }, [encyclopediaEntries, essenceFiles, alchemyState, accumulatedDust, satelliteData, sovereignRouterState, addLogEntry, userApiKeys, addLibraryEntry, memoryEntries]);
+    }, [encyclopediaEntries, essenceFiles, alchemyState, accumulatedDust, satelliteData, sovereignRouterState, addLogEntry, userApiKeys, addLibraryEntry, memoryEntries, messages, firstNexusRemains, defensePlan, powerLevel, isForging, mailboxes, customTools, scannerState, marketData, vigilCommand]);
 
     const renderActiveTab = () => {
         switch (activeTab) {

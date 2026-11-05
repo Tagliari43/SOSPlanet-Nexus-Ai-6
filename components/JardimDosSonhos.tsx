@@ -12,7 +12,7 @@ interface Dream {
 }
 
 export const JardimDosSonhos: React.FC = () => {
-  const [dreams, setDreams] = useState<Dream[]>([
+  const DEFAULT_DREAMS: Dream[] = [
     {
       id: 'dream-1',
       timestamp: new Date().toLocaleTimeString(),
@@ -29,10 +29,46 @@ export const JardimDosSonhos: React.FC = () => {
       category: 'Filosofia',
       resonance: 99.9
     }
-  ]);
+  ];
+
+  const [dreams, setDreams] = useState<Dream[]>(() => {
+    try {
+      const saved = localStorage.getItem('sos_jardim_sonhos');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch (e) {
+      console.warn("Falha ao carregar sonhos:", e);
+    }
+    return DEFAULT_DREAMS;
+  });
 
   const [isDreaming, setIsDreaming] = useState<boolean>(false);
-  const [activeDream, setActiveDream] = useState<Dream | null>(dreams[0]);
+  const [activeDream, setActiveDream] = useState<Dream | null>(() => dreams[0] || null);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('sos_jardim_sonhos', JSON.stringify(dreams));
+    } catch (e) {}
+  }, [dreams]);
+
+  useEffect(() => {
+    const handleUpdate = () => {
+      try {
+        const saved = localStorage.getItem('sos_jardim_sonhos');
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed)) {
+            setDreams(parsed);
+            if (parsed.length > 0) setActiveDream(parsed[0]);
+          }
+        }
+      } catch (e) {}
+    };
+    window.addEventListener('sos_dreams_updated', handleUpdate);
+    return () => window.removeEventListener('sos_dreams_updated', handleUpdate);
+  }, []);
 
   const generateNewDream = () => {
     setIsDreaming(true);
@@ -53,7 +89,11 @@ export const JardimDosSonhos: React.FC = () => {
         resonance: parseFloat((95 + Math.random() * 4.9).toFixed(1))
       };
 
-      setDreams(prev => [newDreamItem, ...prev]);
+      setDreams(prev => {
+        const updated = [newDreamItem, ...prev];
+        try { localStorage.setItem('sos_jardim_sonhos', JSON.stringify(updated)); } catch (e) {}
+        return updated;
+      });
       setActiveDream(newDreamItem);
       setIsDreaming(false);
 

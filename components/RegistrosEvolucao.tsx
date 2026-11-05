@@ -17,18 +17,24 @@ export const RegistrosEvolucao: React.FC = () => {
 
   // Carregar registros do localStorage ao montar o componente
   useEffect(() => {
-    try {
-      const saved = localStorage.getItem('sos_diarios_txt');
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        setRegistros(parsed);
-        if (parsed.length > 0 && !selectedRegistro) {
-          setSelectedRegistro(parsed[0]);
+    const loadFromStorage = () => {
+      try {
+        const saved = localStorage.getItem('sos_diarios_txt');
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          setRegistros(parsed);
+          if (parsed.length > 0 && !selectedRegistro) {
+            setSelectedRegistro(parsed[0]);
+          }
         }
+      } catch (err) {
+        console.error('Erro ao carregar registros do localStorage:', err);
       }
-    } catch (err) {
-      console.error('Erro ao carregar registros do localStorage:', err);
-    }
+    };
+
+    loadFromStorage();
+    window.addEventListener('sos_registros_updated', loadFromStorage);
+    return () => window.removeEventListener('sos_registros_updated', loadFromStorage);
   }, []);
 
   // Salvar registros no localStorage sempre que houver mudança
