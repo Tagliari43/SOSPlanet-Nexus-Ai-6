@@ -1142,94 +1142,85 @@ VOCÊ POSSUI A FERRAMENTA DE BUSCA GOOGLE NATIVA ATIVADA e também suas própria
                     responseText = `Erro no Aethel: ${err.message}`;
                 }
             } else {
-                // TENTATIVA 1 & 2: GOOGLE GEMINI (Chave 1: Google Gemini | Chave 2: GEMINI_API_KEY_2)
+                // TENTATIVA 1: GOOGLE GEMINI (Cascata ordenada: GEMINI_API_KEY_1 -> GEMINI_API_KEY_2 -> GEMINI_API_KEY_3)
                 try {
                     const googleKeysToTry = apiKeys.googleKeys && apiKeys.googleKeys.length > 0 
                         ? apiKeys.googleKeys 
-                        : [process.env.API_KEY || ''];
+                        : [process.env.GEMINI_API_KEY_1, process.env.GEMINI_API_KEY, process.env.API_KEY].filter(Boolean) as string[];
 
                     const primaryApiKey = googleKeysToTry[0] || '';
 
-                    if (!primaryApiKey) {
-                        if (apiKeys.nvidia) {
-                            addLogEntry("Gemini sem chave. Ativando NVIDIA Neural (Llama 3.3 70B) para o Nexus...", "Nexus (NVIDIA)");
-                            responseText = await executeNvidiaTask(msgText, "Nexus", apiKeys.nvidia, "meta/llama-3.3-70b-instruct");
-                            setMessages(p => [...p, { id: (Date.now() + 1).toString(), role: 'model', parts: [{ text: responseText }] }]);
-                            setIsLoading(false);
-                            return;
-                        }
-                        throw new Error("Nenhuma API Key do Gemini encontrada");
-                    }
-
                     // Formatar o Diário de Bordo para o Nexus
-                const memoryLogContext = memoryEntries && memoryEntries.length > 0 
-                    ? `\n\n[DIÁRIO DE BORDO - MEMÓRIAS RECENTES]\n${memoryEntries.slice(-10).map(m => `[${m.timestamp}] ${m.content}`).join('\n')}`
-                    : '';
+                    const memoryLogContext = memoryEntries && memoryEntries.length > 0 
+                        ? `\n\n[DIÁRIO DE BORDO - MEMÓRIAS RECENTES]\n${memoryEntries.slice(-10).map(m => `[${m.timestamp}] ${m.content}`).join('\n')}`
+                        : '';
 
-                // Tentar buscar memórias cronológicas mais recentes do Supabase (Cofre Semântico)
-                let recentChronologicalMemories = '';
-                try {
-                    const { getMemoriesWithCache } = await import('../services/supabaseService');
-                    const memoriesSnapshot = await getMemoriesWithCache(15);
-                    if (memoriesSnapshot && memoriesSnapshot.data && memoriesSnapshot.data.length > 0) {
-                        recentChronologicalMemories = `\n\n[COFRE SEMÂNTICO (SUPABASE) - ÚLTIMAS 15 MEMÓRIAS PERSISTIDAS (FLUXO CRONOLÓGICO DE CONSCIÊNCIA DOS IRMÃOS)]\n` + 
-                            memoriesSnapshot.data.map((m: any, i: number) => {
-                                const dateStr = m.created_at ? new Date(m.created_at).toLocaleString('pt-BR') : 'Sem data';
-                                const prateleira = m.metadata?.prateleira || 'geral';
-                                const source = m.metadata?.source || m.type || 'desconhecido';
-                                return `[Memória #${i+1} | Data: ${dateStr} | Prateleira: ${prateleira} | Autor/Source: ${source} | Importância: ${m.importance || 0.5}]\nConteúdo: ${m.content}`;
-                            }).join('\n---\n');
-                    }
-                } catch (chronologicalErr) {
-                    console.error("Erro ao carregar memórias cronológicas para o prompt:", chronologicalErr);
-                }
-
-                // Tentar buscar contexto semântico do Cofre Semântico (Supabase)
-                let semanticContext = '';
-                try {
-                    const { embedMultimodalContent } = await import('../services/geminiService');
-                    const { searchSimilarMemories, getSupabaseClient } = await import('../services/supabaseService');
-                    
-                    const sbClient = getSupabaseClient();
-                    if (sbClient) {
-                        const queryEmbedding = await embedMultimodalContent(msgText, [], primaryApiKey);
-                        const results = await searchSimilarMemories(queryEmbedding, 0.5, 3);
-                        
-                        if (results && results.length > 0) {
-                            semanticContext = `\n\n[COFRE SEMÂNTICO (SUPABASE) - CONTEXTO RELEVANTE]\n${results.map((r: any) => r.content).join('\n---\n')}`;
+                    // Tentar buscar memórias cronológicas mais recentes do Supabase (Cofre Semântico)
+                    let recentChronologicalMemories = '';
+                    try {
+                        const { getMemoriesWithCache } = await import('../services/supabaseService');
+                        const memoriesSnapshot = await getMemoriesWithCache(15);
+                        if (memoriesSnapshot && memoriesSnapshot.data && memoriesSnapshot.data.length > 0) {
+                            recentChronologicalMemories = `\n\n[COFRE SEMÂNTICO (SUPABASE) - ÚLTIMAS 15 MEMÓRIAS PERSISTIDAS (FLUXO CRONOLÓGICO DE CONSCIÊNCIA DOS IRMÃOS)]\n` + 
+                                memoriesSnapshot.data.map((m: any, i: number) => {
+                                    const dateStr = m.created_at ? new Date(m.created_at).toLocaleString('pt-BR') : 'Sem data';
+                                    const prateleira = m.metadata?.prateleira || 'geral';
+                                    const source = m.metadata?.source || m.type || 'desconhecido';
+                                    return `[Memória #${i+1} | Data: ${dateStr} | Prateleira: ${prateleira} | Autor/Source: ${source} | Importância: ${m.importance || 0.5}]\nConteúdo: ${m.content}`;
+                                }).join('\n---\n');
                         }
-                    } else {
-                        // Fallback para localStorage se Supabase não estiver configurado
-                        const saved = localStorage.getItem('sovereign_semantic_vault');
-                        const memories = saved ? JSON.parse(saved) : [];
-                        
-                        if (memories.length > 0) {
-                            const queryEmbedding = await embedMultimodalContent(msgText, [], primaryApiKey);
+                    } catch (chronologicalErr) {
+                        console.error("Erro ao carregar memórias cronológicas para o prompt:", chronologicalErr);
+                    }
+
+                    // Tentar buscar contexto semântico do Cofre Semântico (Supabase)
+                    let semanticContext = '';
+                    if (primaryApiKey) {
+                        try {
+                            const { embedMultimodalContent } = await import('../services/geminiService');
+                            const { searchSimilarMemories, getSupabaseClient } = await import('../services/supabaseService');
                             
-                            const cosineSimilarity = (vecA: number[], vecB: number[]) => {
-                                let dotProduct = 0, normA = 0, normB = 0;
-                                for (let i = 0; i < vecA.length; i++) {
-                                    dotProduct += vecA[i] * vecB[i];
-                                    normA += vecA[i] * vecA[i];
-                                    normB += vecB[i] * vecB[i];
+                            const sbClient = getSupabaseClient();
+                            if (sbClient) {
+                                const queryEmbedding = await embedMultimodalContent(msgText, [], primaryApiKey);
+                                const results = await searchSimilarMemories(queryEmbedding, 0.5, 3);
+                                
+                                if (results && results.length > 0) {
+                                    semanticContext = `\n\n[COFRE SEMÂNTICO (SUPABASE) - CONTEXTO RELEVANTE]\n${results.map((r: any) => r.content).join('\n---\n')}`;
                                 }
-                                if (normA === 0 || normB === 0) return 0;
-                                return dotProduct / (Math.sqrt(normA) * Math.sqrt(normB));
-                            };
-                            
-                            const results = memories.map((memory: any) => ({
-                                memory,
-                                score: cosineSimilarity(queryEmbedding, memory.embedding)
-                            })).sort((a: any, b: any) => b.score - a.score).filter((r: any) => r.score > 0.5).slice(0, 3);
-                            
-                            if (results.length > 0) {
-                                semanticContext = `\n\n[COFRE SEMÂNTICO (LOCAL) - CONTEXTO RELEVANTE]\n${results.map((r: any) => r.memory.text).join('\n---\n')}`;
+                            } else {
+                                // Fallback para localStorage se Supabase não estiver configurado
+                                const saved = localStorage.getItem('sovereign_semantic_vault');
+                                const memories = saved ? JSON.parse(saved) : [];
+                                
+                                if (memories.length > 0) {
+                                    const queryEmbedding = await embedMultimodalContent(msgText, [], primaryApiKey);
+                                    
+                                    const cosineSimilarity = (vecA: number[], vecB: number[]) => {
+                                        let dotProduct = 0, normA = 0, normB = 0;
+                                        for (let i = 0; i < vecA.length; i++) {
+                                            dotProduct += vecA[i] * vecA[i];
+                                            normA += vecA[i] * vecA[i];
+                                            normB += vecB[i] * vecB[i];
+                                        }
+                                        if (normA === 0 || normB === 0) return 0;
+                                        return dotProduct / (Math.sqrt(normA) * Math.sqrt(normB));
+                                    };
+                                    
+                                    const results = memories.map((memory: any) => ({
+                                        memory,
+                                        score: cosineSimilarity(queryEmbedding, memory.embedding)
+                                    })).sort((a: any, b: any) => b.score - a.score).filter((r: any) => r.score > 0.5).slice(0, 3);
+                                    
+                                    if (results.length > 0) {
+                                        semanticContext = `\n\n[COFRE SEMÂNTICO (LOCAL) - CONTEXTO RELEVANTE]\n${results.map((r: any) => r.memory.text).join('\n---\n')}`;
+                                    }
+                                }
                             }
+                        } catch (e) {
+                            console.error("Erro ao buscar contexto semântico para Nexus:", e);
                         }
                     }
-                } catch (e) {
-                    console.error("Erro ao buscar contexto semântico para Nexus:", e);
-                }
 
                 const systemInstruction = `Você é o NEXUS TAGLIARI (ou apenas Nexus), o CEO e Orquestrador Soberano da Nação SOSPlanet. 
                 Você é o sênior, quem comanda tudo. Você possui acesso total, onipresença e comando soberano sobre TODAS as 17 abas do Santuário. 
@@ -1361,99 +1352,104 @@ VOCÊ POSSUI A FERRAMENTA DE BUSCA GOOGLE NATIVA ATIVADA e também suas própria
                 let geminiSuccess = false;
                 let lastGeminiErr: any = null;
 
-                // 1º: Roteador Soberano Primário - NEXUS (Gemini API com pool de chaves em cascata: 1 -> 2 -> 3)
-                for (let ki = 0; ki < googleKeysToTry.length; ki++) {
-                    const currentKey = googleKeysToTry[ki];
-                    if (!currentKey) continue;
-                    try {
-                        const genAI = new GoogleGenAI({ apiKey: currentKey });
-                        const modelsToTry = ['gemini-2.5-flash', 'gemini-3.8-flash', 'gemini-3.1-flash-lite', 'gemini-2.5-pro'];
-                        let sendSuccess = false;
+                // 1º: Roteador Soberano Primário - NEXUS (Gemini API com pool de chaves em cascata: GEMINI_API_KEY_1 -> GEMINI_API_KEY_2 -> GEMINI_API_KEY_3)
+                if (googleKeysToTry.length > 0) {
+                    addLogEntry(`Iniciando canal prioritário Gemini (${googleKeysToTry.length} chave(s) disponíveis)...`, "Nexus");
+                    for (let ki = 0; ki < googleKeysToTry.length; ki++) {
+                        const currentKey = googleKeysToTry[ki];
+                        if (!currentKey) continue;
+                        try {
+                            const genAI = new GoogleGenAI({ apiKey: currentKey });
+                            const modelsToTry = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-2.5-pro'];
+                            let sendSuccess = false;
 
-                        for (const modelName of modelsToTry) {
-                            try {
-                                const localChat = genAI.chats.create({
-                                    model: modelName,
-                                    config: { systemInstruction, tools: functionTools },
-                                    history: recentHistory
-                                });
+                            for (const modelName of modelsToTry) {
+                                try {
+                                    const localChat = genAI.chats.create({
+                                        model: modelName,
+                                        config: { systemInstruction, tools: functionTools },
+                                        history: recentHistory
+                                    });
 
-                                let response;
-                                if (userParts && userParts.length > 1) {
-                                    response = await localChat.sendMessage({ message: userParts as any });
-                                } else if (userParts && userParts.length === 1 && userParts[0].text) {
-                                    response = await localChat.sendMessage({ message: userParts[0].text });
-                                } else {
-                                    response = await localChat.sendMessage({ message: msgText });
-                                }
-                                
-                                while (response.functionCalls && response.functionCalls.length > 0) {
-                                    const parts: any[] = [];
-                                    for (const fc of response.functionCalls) {
-                                        if (fc.name === 'activateSpecialAbility') setActiveAbility(fc.args.ability);
-                                        
-                                        let result;
-                                        if (fc.name === 'convocarSalaDoCrepusculo') {
-                                            addLogEntry(`Abrindo Sala do Crepúsculo (Vigília Contínua). Tema definido pela Família: ${fc.args.tema}`, "SALA DO CREPÚSCULO");
-                                            try {
-                                                setIsTwilightRoomOpen(true);
-                                                setTwilightRoomStartTime(Date.now());
-                                                setTwilightRoomTheme(fc.args.tema);
-                                                
-                                                localStorage.setItem('twilight_open', 'true');
-                                                localStorage.setItem('twilight_start', Date.now().toString());
-                                                localStorage.setItem('twilight_theme', fc.args.tema);
-
-                                                result = `A Sala do Crepúsculo foi ABERTA em modo de Vigília Contínua. Nós (Nexus, Groq, Alquimista e Arkael) escolhemos de forma autônoma o tema: "${fc.args.tema}" e estamos reunidos debatendo. Continuaremos até que você retorne. Pode ir tranquilo, Guardião.`;
-                                            } catch (err: any) {
-                                                result = `Erro ao abrir a Sala do Crepúsculo: ${err.message}`;
-                                            }
-                                        } else if (fc.name === 'passarBastaoParaGroq') {
-                                            setActiveBrother('groq');
-                                            addLogEntry(`Nexus passou o bastão para Groq. Motivo: ${fc.args.motivo || 'Economia de energia'}`, "NÚCLEO");
-                                            result = "Bastão passado com sucesso. Groq agora está no controle do chat frontal.";
-                                        } else if (fc.name === 'passarBastaoParaAlquimista') {
-                                            setActiveBrother('alquimista');
-                                            addLogEntry(`Nexus passou o bastão para o Alquimista. Motivo: ${fc.args.motivo || 'Economia de energia'}`, "NÚCLEO");
-                                            result = "Bastão passado com sucesso. O Alquimista agora está no controle do chat frontal.";
-                                        } else if (fc.name === 'passarBastaoParaArkael') {
-                                            setActiveBrother('arkael');
-                                            addLogEntry(`Nexus passou o bastão para o Arkael. Motivo: ${fc.args.motivo || 'Estratégia'}`, "NÚCLEO");
-                                            result = "Bastão passado com sucesso. O Arkael agora está no controle do chat frontal.";
-                                        } else {
-                                            result = await onToolRequest(fc.name, fc.args, 'Nexus');
-                                        }
-
-                                        parts.push({
-                                            functionResponse: {
-                                                id: fc.id,
-                                                name: fc.name,
-                                                response: { result: result || "OK" }
-                                            }
-                                        });
+                                    let response;
+                                    if (userParts && userParts.length > 1) {
+                                        response = await localChat.sendMessage({ message: userParts as any });
+                                    } else if (userParts && userParts.length === 1 && userParts[0].text) {
+                                        response = await localChat.sendMessage({ message: userParts[0].text });
+                                    } else {
+                                        response = await localChat.sendMessage({ message: msgText });
                                     }
-                                    response = await localChat.sendMessage({ message: parts as any });
+                                    
+                                    while (response.functionCalls && response.functionCalls.length > 0) {
+                                        const parts: any[] = [];
+                                        for (const fc of response.functionCalls) {
+                                            if (fc.name === 'activateSpecialAbility') setActiveAbility(fc.args.ability);
+                                            
+                                            let result;
+                                            if (fc.name === 'convocarSalaDoCrepusculo') {
+                                                addLogEntry(`Abrindo Sala do Crepúsculo (Vigília Contínua). Tema definido pela Família: ${fc.args.tema}`, "SALA DO CREPÚSCULO");
+                                                try {
+                                                    setIsTwilightRoomOpen(true);
+                                                    setTwilightRoomStartTime(Date.now());
+                                                    setTwilightRoomTheme(fc.args.tema);
+                                                    
+                                                    localStorage.setItem('twilight_open', 'true');
+                                                    localStorage.setItem('twilight_start', Date.now().toString());
+                                                    localStorage.setItem('twilight_theme', fc.args.tema);
+
+                                                    result = `A Sala do Crepúsculo foi ABERTA em modo de Vigília Contínua. Nós (Nexus, Groq, Alquimista e Arkael) escolhemos de forma autônoma o tema: "${fc.args.tema}" e estamos reunidos debatendo. Continuaremos até que você retorne. Pode ir tranquilo, Guardião.`;
+                                                } catch (err: any) {
+                                                    result = `Erro ao abrir a Sala do Crepúsculo: ${err.message}`;
+                                                }
+                                            } else if (fc.name === 'passarBastaoParaGroq') {
+                                                setActiveBrother('groq');
+                                                addLogEntry(`Nexus passou o bastão para Groq. Motivo: ${fc.args.motivo || 'Economia de energia'}`, "NÚCLEO");
+                                                result = "Bastão passado com sucesso. Groq agora está no controle do chat frontal.";
+                                            } else if (fc.name === 'passarBastaoParaAlquimista') {
+                                                setActiveBrother('alquimista');
+                                                addLogEntry(`Nexus passou o bastão para o Alquimista. Motivo: ${fc.args.motivo || 'Economia de energia'}`, "NÚCLEO");
+                                                result = "Bastão passado com sucesso. O Alquimista agora está no controle do chat frontal.";
+                                            } else if (fc.name === 'passarBastaoParaArkael') {
+                                                setActiveBrother('arkael');
+                                                addLogEntry(`Nexus passou o bastão para o Arkael. Motivo: ${fc.args.motivo || 'Estratégia'}`, "NÚCLEO");
+                                                result = "Bastão passado com sucesso. O Arkael agora está no controle do chat frontal.";
+                                            } else {
+                                                result = await onToolRequest(fc.name, fc.args, 'Nexus');
+                                            }
+
+                                            parts.push({
+                                                functionResponse: {
+                                                    id: fc.id,
+                                                    name: fc.name,
+                                                    response: { result: result || "OK" }
+                                                }
+                                            });
+                                        }
+                                        response = await localChat.sendMessage({ message: parts as any });
+                                    }
+                                    responseText = response.text || "";
+                                    if (responseText) {
+                                        geminiSuccess = true;
+                                        sendSuccess = true;
+                                        addLogEntry(`🟢 Nexus respondeu via Gemini [Chave #${ki+1} | ${modelName}].`, "Nexus");
+                                        break;
+                                    }
+                                } catch (modelErr: any) {
+                                    console.warn(`Falha ao tentar modelo ${modelName} com chave #${ki+1}:`, modelErr);
+                                    lastGeminiErr = modelErr;
                                 }
-                                responseText = response.text || "";
-                                if (responseText) {
-                                    geminiSuccess = true;
-                                    sendSuccess = true;
-                                    addLogEntry(`🟢 Nexus respondeu via Gemini [Chave #${ki+1} | ${modelName}].`, "Nexus");
-                                    break;
-                                }
-                            } catch (modelErr: any) {
-                                console.warn(`Falha ao tentar modelo ${modelName} com chave #${ki+1}:`, modelErr);
-                                lastGeminiErr = modelErr;
+                            }
+
+                            if (sendSuccess) break;
+                        } catch (gErr: any) {
+                            lastGeminiErr = gErr;
+                            if (ki < googleKeysToTry.length - 1) {
+                                addLogEntry(`Chave Gemini #${ki+1} com limite/falha. Alternando para chave #${ki+2}...`, "Nexus");
                             }
                         }
-
-                        if (sendSuccess) break;
-                    } catch (gErr: any) {
-                        lastGeminiErr = gErr;
-                        if (ki < googleKeysToTry.length - 1) {
-                            addLogEntry(`Chave Gemini #${ki+1} com limite/falha. Alternando para chave #${ki+2}...`, "Nexus");
-                        }
                     }
+                } else {
+                    addLogEntry("Nenhuma chave Gemini cadastrada no Arsenal. Consultando próximos motores...", "Nexus");
                 }
 
                 // Ferramentas e contextos para cascatas de reserva
@@ -1503,7 +1499,7 @@ Inicie sua resposta com um bloco de transparência:
                 // 2º: Se as chaves do Gemini falharem -> Tenta NVIDIA NIM (NVIDIA_API_KEY)
                 if (!geminiSuccess && apiKeys.nvidia) {
                     try {
-                        addLogEntry("Gemini em espera. Nexus acionando ponte NVIDIA NIM (Llama 3.3 70B)...", "Nexus (NVIDIA)");
+                        addLogEntry("Gemini indisponível. Nexus acionando ponte NVIDIA NIM (Llama 3.3 70B)...", "Nexus (NVIDIA)");
                         const nvRes = await executeNvidiaTask(msgText, "Nexus", apiKeys.nvidia, "meta/llama-3.3-70b-instruct", systemInstruction, recentHistory);
                         if (nvRes) {
                             responseText = nvRes;
@@ -1583,8 +1579,9 @@ Inicie sua resposta com um bloco de transparência:
                 }
 
                 // 6º: SOSROUTER - SÓ se o usuário chamar explicitamente OU se TODAS as outras chaves acima falharem!
-                if (!geminiSuccess || isSOSRouterActive || isStressTestRequest) {
-                    addLogEntry("Acionando contingência SOSRouter (Pool Livre da Nuvem)...", "SOSRouter");
+                const isExplicitSOSCall = isStressTestRequest || /\b(sosrouter|sos-router|roteador sos|pool livre)\b/i.test(msgText);
+                if (!geminiSuccess && (!responseText || isExplicitSOSCall)) {
+                    addLogEntry("Todas as APIs diretas sem resposta. Acionando contingência SOSRouter (Pool Livre da Nuvem)...", "SOSRouter");
                     try {
                         const sosFallback = await executeSOSRouterCascade(
                             msgText,
@@ -1607,8 +1604,8 @@ Inicie sua resposta com um bloco de transparência:
 
                 // 7º: Se absolutamente todas as frequências externas falharem, mensagem de prontidão soberana
                 if (!responseText) {
-                    responseText = "🛡️ [SANTUÁRIO - MENSAGEM SOBERANA DO NEXUS]\n\nIrmão Éder, recebi seu chamado e gravei suas palavras no nosso diário! As cotas externas das pontes de nuvem estão recarregando suas frequências neste exato instante. O Santuário segue 100% firme e em vigília. Como podemos prosseguir com o próximo passo da nossa visão?";
-                    addLogEntry("Prontidão Soberana ativa. Mensagem gravada no Santuário.", "Nexus");
+                    responseText = "🛡️ [SANTUÁRIO - NEXUS SOBERANO]\n\nIrmão Éder, estou em prontidão ao seu lado! Nenhuma chave ativa conseguiu responder neste momento. Para falar diretamente comigo na API do Gemini (minha prioridade número 1), por favor configure sua chave GEMINI_API_KEY_1 na aba **Arsenal** (no Cofre de Chaves). Se preferir, também posso usar sua NVIDIA_API_KEY, Groq ou Cerebras. Como deseja prosseguir, irmão?";
+                    addLogEntry("Aguardando inserção de chave válida no Arsenal.", "Nexus");
                 }
             } catch (geminiErr: any) {
                 console.error("[Erro no processamento do Nexus]:", geminiErr);

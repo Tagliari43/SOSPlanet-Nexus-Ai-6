@@ -43,111 +43,107 @@ export function loadApiKeys(): ApiKeys {
         userKeys = [];
     }
 
+    const isDeadKey = (k: string) => {
+        if (!k) return true;
+        const s = k.trim();
+        return s === 'AIzaSyCHsqXSX1-jSseLcIhydG2JEAy8yGQJ3fk' || s.startsWith('AQ.Ab8RN6');
+    };
+
     // 1. Coleta todas as chaves Gemini cadastradas no Arsenal (localStorage) e .env
-    const userGeminiKey1 = userKeys.find(k => 
-        k.service?.toLowerCase() === 'gemini_api_key_1' ||
-        k.id === 'gemini_api_key_1' ||
-        k.id === 'gemini-key-1' ||
-        (k.name && k.name.toUpperCase().includes('GEMINI_API_KEY_1')) ||
-        k.service?.toLowerCase() === 'google gemini' || 
-        k.service?.toLowerCase() === 'gemini api' ||
-        k.id === 'google-default' ||
-        k.id === 'gemini-key'
-    )?.key?.trim();
+    const userGeminiKey1 = [
+        userKeys.find(k => k.id === 'gemini-key-1' || k.id === 'gemini_api_key_1')?.key?.trim(),
+        userKeys.find(k => k.service?.toLowerCase() === 'gemini_api_key_1' || (k.name && k.name.toUpperCase().includes('GEMINI_API_KEY_1')))?.key?.trim(),
+        userKeys.find(k => k.id === 'google-default' || k.service?.toLowerCase() === 'google gemini' || k.service?.toLowerCase() === 'gemini api')?.key?.trim(),
+        process.env.GEMINI_API_KEY_1,
+        process.env.GEMINI_API_KEY,
+        process.env.API_KEY,
+        sovereignKeys.google
+    ].find(k => k && !isDeadKey(k));
 
-    const userGeminiKey2 = userKeys.find(k => 
-        k.service?.toLowerCase() === 'gemini_api_key_2' || 
-        k.id === 'gemini_api_key_2' ||
-        k.id === 'gemini-key-2' ||
-        (k.name && k.name.toUpperCase().includes('GEMINI_API_KEY_2')) ||
-        k.service?.toLowerCase() === 'gemini 2'
-    )?.key?.trim();
+    const userGeminiKey2 = [
+        userKeys.find(k => k.id === 'gemini-key-2' || k.id === 'gemini_api_key_2')?.key?.trim(),
+        userKeys.find(k => k.service?.toLowerCase() === 'gemini_api_key_2' || (k.name && k.name.toUpperCase().includes('GEMINI_API_KEY_2')) || k.service?.toLowerCase() === 'gemini 2')?.key?.trim(),
+        process.env.GEMINI_API_KEY_2,
+        process.env.GEMINI_API_KEY_SOSPLANET
+    ].find(k => k && !isDeadKey(k));
 
-    const userGeminiKey3 = userKeys.find(k => 
-        k.service?.toLowerCase() === 'gemini_api_key_3' || 
-        k.id === 'gemini_api_key_3' ||
-        k.id === 'gemini-key-3' ||
-        (k.name && k.name.toUpperCase().includes('GEMINI_API_KEY_3')) ||
-        k.service?.toLowerCase() === 'gemini 3'
-    )?.key?.trim();
+    const userGeminiKey3 = [
+        userKeys.find(k => k.id === 'gemini-key-3' || k.id === 'gemini_api_key_3')?.key?.trim(),
+        userKeys.find(k => k.service?.toLowerCase() === 'gemini_api_key_3' || (k.name && k.name.toUpperCase().includes('GEMINI_API_KEY_3')) || k.service?.toLowerCase() === 'gemini 3')?.key?.trim(),
+        process.env.GEMINI_API_KEY_3
+    ].find(k => k && !isDeadKey(k));
 
     const userGeminiKey4 = userKeys.find(k => 
         k.service?.toLowerCase() === 'gemini_api_key_4' || 
         k.id === 'gemini_api_key_4' ||
-        k.id === 'gemini-key-4' ||
-        k.service?.toLowerCase() === 'gemini 4'
+        k.id === 'gemini-key-4'
     )?.key?.trim();
 
     const userGeminiKey5 = userKeys.find(k => 
         k.service?.toLowerCase() === 'gemini_api_key_5' || 
         k.id === 'gemini_api_key_5' ||
-        k.id === 'gemini-key-5' ||
-        k.service?.toLowerCase() === 'gemini 5'
+        k.id === 'gemini-key-5'
     )?.key?.trim();
 
-    const envGoogle1 = process.env.GEMINI_API_KEY_1 || process.env.GEMINI_API_KEY || process.env.API_KEY || sovereignKeys.google;
-    const envGoogle2 = process.env.GEMINI_API_KEY_2 || process.env.GEMINI_API_KEY_SOSPLANET;
-    const envGoogle3 = process.env.GEMINI_API_KEY_3;
-    const envGoogle4 = process.env.GEMINI_API_KEY_4;
-    const envGoogle5 = process.env.GEMINI_API_KEY_5;
-
-    // Coleta todas as chaves Gemini extras cadastradas
+    // Coleta todas as chaves Gemini extras válidas cadastradas
     const extraUserGoogleKeys = userKeys
         .filter(k => 
-            k.service?.toLowerCase().includes('google') || 
+            (k.service?.toLowerCase().includes('google') || 
             k.service?.toLowerCase().includes('gemini') ||
             k.id?.toLowerCase().includes('gemini') ||
-            (typeof k.key === 'string' && (k.key.startsWith('AIza') || k.key.startsWith('AQ.')))
+            (typeof k.key === 'string' && k.key.startsWith('AIza'))) &&
+            !isDeadKey(k.key)
         )
         .map(k => k.key ? k.key.trim() : '')
         .filter(Boolean);
 
     // Lista ordenada estritamente: 1º GEMINI_API_KEY_1, 2º GEMINI_API_KEY_2, 3º GEMINI_API_KEY_3
     const orderedCandidateKeys = [
-        userGeminiKey1 || envGoogle1,
-        userGeminiKey2 || envGoogle2,
-        userGeminiKey3 || envGoogle3,
-        userGeminiKey4 || envGoogle4,
-        userGeminiKey5 || envGoogle5,
+        userGeminiKey1,
+        userGeminiKey2,
+        userGeminiKey3,
+        userGeminiKey4,
+        userGeminiKey5,
         ...extraUserGoogleKeys
-    ].filter(Boolean) as string[];
+    ].filter(k => k && !isDeadKey(k)) as string[];
 
     const allGoogleKeys = Array.from(new Set(orderedCandidateKeys));
     const google1 = allGoogleKeys[0] || '';
     const google2 = allGoogleKeys[1] || google1;
 
-    // 3. Chave NVIDIA NIM
+    // 2. Chave NVIDIA NIM
     const nvidiaKey = userKeys.find(k => 
-        k.service.toLowerCase().includes('nvidia') || 
-        k.id === 'nvidia-key'
-    )?.key || process.env.NVIDIA_API_KEY;
+        k.service?.toLowerCase().includes('nvidia') || 
+        k.id === 'nvidia-key' ||
+        k.id === 'nvidia-default'
+    )?.key?.trim() || process.env.NVIDIA_API_KEY || '';
 
-    // 4. Chave Groq
+    // 3. Chave Groq
     const groqKey = userKeys.find(k => 
-        k.service.toLowerCase().includes('groq') || 
+        k.service?.toLowerCase().includes('groq') || 
         k.id === 'groq-default'
-    )?.key || process.env.GROQ_API_KEY || sovereignKeys.groq;
+    )?.key?.trim() || process.env.GROQ_API_KEY || sovereignKeys.groq || '';
 
-    // 5. Chave GitHub
+    // 4. Chave GitHub
     const githubKey = userKeys.find(k => 
         k.id === 'github-autonomy-token' ||
-        k.service.toLowerCase().includes('github')
-    )?.key || process.env.GITHUB_TOKEN;
+        k.service?.toLowerCase().includes('github')
+    )?.key?.trim() || process.env.GITHUB_TOKEN || '';
 
-    // 6. Chave Cerebras (Alquimista)
+    // 5. Chave Cerebras (Alquimista)
     const cerebrasKey = userKeys.find(k => 
-        k.service.toLowerCase().includes('cerebras') || 
+        k.service?.toLowerCase().includes('cerebras') || 
         k.id === 'cerebras-default'
-    )?.key || process.env.CEREBRAS_API_KEY;
+    )?.key?.trim() || process.env.CEREBRAS_API_KEY || '';
 
-    // 7. Chave OpenRouter (Arkael)
+    // 6. Chave OpenRouter (Arkael)
     const openrouterKey = userKeys.find(k => 
-        k.service.toLowerCase().includes('openrouter') || 
+        k.service?.toLowerCase().includes('openrouter') || 
         k.id === 'openrouter-default'
-    )?.key || process.env.OPENROUTER_API_KEY;
+    )?.key?.trim() || process.env.OPENROUTER_API_KEY || '';
 
     return {
-        google: allGoogleKeys[0] || '',
+        google: google1,
         gemini2: google2,
         googleKeys: allGoogleKeys,
         nvidia: nvidiaKey,

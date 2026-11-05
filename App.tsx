@@ -88,15 +88,16 @@ const TabButton: React.FC<{ tabId: Tab; label: string; activeTab: Tab; setActive
 );
 
 const INITIAL_USER_KEYS: UserApiKey[] = [
-    { id: 'gemini-key-2', service: 'GEMINI_API_KEY_2', key: process.env.GEMINI_API_KEY_2 || 'AIzaSyCHsqXSX1-jSseLcIhydG2JEAy8yGQJ3fk', method: 'google-header' },
-    { id: 'gemini-key-1', service: 'GEMINI_API_KEY_1', key: process.env.GEMINI_API_KEY || 'AQ.Ab8RN6KFd0DanL7kZ9SicgtTc6IDQ8XChjNqxxzCjg41Np5jIg', method: 'google-header' },
-    { id: 'gemini-key-3', service: 'GEMINI_API_KEY_3', key: process.env.GEMINI_API_KEY_3 || 'AQ.Ab8RN6L4pH1Ox31GLrzr9KtereEIwO0zoV3ni8XdgEcDKODsgQ', method: 'google-header' },
+    { id: 'gemini-key-1', service: 'GEMINI_API_KEY_1', key: process.env.GEMINI_API_KEY_1 || process.env.GEMINI_API_KEY || process.env.API_KEY || '', method: 'google-header' },
+    { id: 'gemini-key-2', service: 'GEMINI_API_KEY_2', key: process.env.GEMINI_API_KEY_2 || '', method: 'google-header' },
+    { id: 'gemini-key-3', service: 'GEMINI_API_KEY_3', key: process.env.GEMINI_API_KEY_3 || '', method: 'google-header' },
+    { id: 'nvidia-key', service: 'NVIDIA_API_KEY', key: process.env.NVIDIA_API_KEY || '', method: 'bearer' },
+    { id: 'groq-default', service: 'Groq API', key: process.env.GROQ_API_KEY || '', method: 'bearer' },
+    { id: 'cerebras-default', service: 'CEREBRAS_API_KEY', key: process.env.CEREBRAS_API_KEY || '', method: 'bearer' },
+    { id: 'openrouter-default', service: 'OpenRouter API', key: process.env.OPENROUTER_API_KEY || '', method: 'bearer' },
     { id: 'supabase-url', service: 'VITE_SUPABASE_URL', key: process.env.VITE_SUPABASE_URL || 'https://vvyujslslxuxsflndjhe.supabase.co', method: 'bearer' },
     { id: 'supabase-anon-key', service: 'VITE_SUPABASE_ANON_KEY', key: process.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ2eXVqc2xzbHh1eHNmbG5kamhlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDAwMzgwNzUsImV4cCI6MjA1NTYxNDA3NX0.01wY8qN5dJvW6f9L3mP0qR1sT4uV7wX2yZ5aB8cE1sV6', method: 'bearer' },
-    { id: 'groq-default', service: 'Groq API', key: process.env.GROQ_API_KEY || '', method: 'bearer' },
-    { id: 'scraper-api-key', service: 'Scraper API (Navegador)', key: process.env.SCRAPER_API_KEY || '', method: 'bearer' },
-    { id: 'cerebras-default', service: 'Cerebras API', key: '', method: 'bearer' },
-    { id: 'openrouter-default', service: 'OpenRouter API', key: '', method: 'bearer' }
+    { id: 'scraper-api-key', service: 'Scraper API (Navegador)', key: process.env.SCRAPER_API_KEY || '', method: 'bearer' }
 ];
 
 const App: React.FC = () => {
@@ -115,9 +116,24 @@ const App: React.FC = () => {
     const [userApiKeys, setUserApiKeys] = useState<UserApiKey[]>(() => loadFromStorage<UserApiKey[]>(USER_API_KEYS_KEY, INITIAL_USER_KEYS));
 
     useEffect(() => {
+        // Remove modo forçado SOSRouter do localStorage para não sequestrar o fluxo do chat
+        try {
+            if (localStorage.getItem('santuario_sosrouter_mode') === 'true') {
+                localStorage.removeItem('santuario_sosrouter_mode');
+            }
+        } catch {}
+
         setUserApiKeys(prevKeys => {
             let modified = false;
             let newKeys = [...prevKeys];
+            // Limpa chaves vazadas/revogadas antigas se estiverem salvas no localStorage do navegador
+            newKeys = newKeys.map(k => {
+                if (k.key === 'AIzaSyCHsqXSX1-jSseLcIhydG2JEAy8yGQJ3fk' || k.key?.startsWith('AQ.Ab8RN6')) {
+                    modified = true;
+                    return { ...k, key: '' };
+                }
+                return k;
+            });
             if (newKeys.some(k => k.service.includes('Hugging Face') || k.id === 'hf-default' || k.id === '9router-local-key' || k.id === '9router-remote-key' || k.id === '9router-tunnel-key' || k.service.includes('NINEROUTER'))) {
                 newKeys = newKeys.filter(k => !k.service.includes('Hugging Face') && k.id !== 'hf-default' && k.id !== '9router-local-key' && k.id !== '9router-remote-key' && k.id !== '9router-tunnel-key' && !k.service.includes('NINEROUTER'));
                 modified = true;
