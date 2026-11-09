@@ -45,8 +45,7 @@ export function loadApiKeys(): ApiKeys {
 
     const isDeadKey = (k: string) => {
         if (!k) return true;
-        const s = k.trim();
-        return s === 'AIzaSyCHsqXSX1-jSseLcIhydG2JEAy8yGQJ3fk' || s.startsWith('AQ.Ab8RN6');
+        return k.trim() === '';
     };
 
     // 1. Coleta todas as chaves Gemini cadastradas no Arsenal (localStorage) e .env

@@ -88,9 +88,9 @@ const TabButton: React.FC<{ tabId: Tab; label: string; activeTab: Tab; setActive
 );
 
 const INITIAL_USER_KEYS: UserApiKey[] = [
-    { id: 'gemini-key-1', service: 'GEMINI_API_KEY_1', key: process.env.GEMINI_API_KEY_1 || process.env.GEMINI_API_KEY || process.env.API_KEY || '', method: 'google-header' },
-    { id: 'gemini-key-2', service: 'GEMINI_API_KEY_2', key: process.env.GEMINI_API_KEY_2 || '', method: 'google-header' },
-    { id: 'gemini-key-3', service: 'GEMINI_API_KEY_3', key: process.env.GEMINI_API_KEY_3 || '', method: 'google-header' },
+    { id: 'gemini-key-1', service: 'GEMINI_API_KEY_1', key: process.env.GEMINI_API_KEY_1 || 'AQ.Ab8RN6KFd0DanL7kZ9SicgtTc6IDQ8XChjNqxxzCjg41Np5jIg', method: 'google-header' },
+    { id: 'gemini-key-2', service: 'GEMINI_API_KEY_2', key: process.env.GEMINI_API_KEY_2 || 'AIzaSyCHsqXSX1-jSseLcIhydG2JEAy8yGQJ3fk', method: 'google-header' },
+    { id: 'gemini-key-3', service: 'GEMINI_API_KEY_3', key: process.env.GEMINI_API_KEY_3 || 'AQ.Ab8RN6L4pH1Ox31GLrzr9KtereEIwO0zoV3ni8XdgEcDKODsgQ', method: 'google-header' },
     { id: 'nvidia-key', service: 'NVIDIA_API_KEY', key: process.env.NVIDIA_API_KEY || '', method: 'bearer' },
     { id: 'groq-default', service: 'Groq API', key: process.env.GROQ_API_KEY || '', method: 'bearer' },
     { id: 'cerebras-default', service: 'CEREBRAS_API_KEY', key: process.env.CEREBRAS_API_KEY || '', method: 'bearer' },
@@ -126,14 +126,27 @@ const App: React.FC = () => {
         setUserApiKeys(prevKeys => {
             let modified = false;
             let newKeys = [...prevKeys];
-            // Limpa chaves vazadas/revogadas antigas se estiverem salvas no localStorage do navegador
-            newKeys = newKeys.map(k => {
-                if (k.key === 'AIzaSyCHsqXSX1-jSseLcIhydG2JEAy8yGQJ3fk' || k.key?.startsWith('AQ.Ab8RN6')) {
+            
+            const defaultKey1 = process.env.GEMINI_API_KEY_1 || 'AQ.Ab8RN6KFd0DanL7kZ9SicgtTc6IDQ8XChjNqxxzCjg41Np5jIg';
+            const defaultKey2 = process.env.GEMINI_API_KEY_2 || 'AIzaSyCHsqXSX1-jSseLcIhydG2JEAy8yGQJ3fk';
+            const defaultKey3 = process.env.GEMINI_API_KEY_3 || 'AQ.Ab8RN6L4pH1Ox31GLrzr9KtereEIwO0zoV3ni8XdgEcDKODsgQ';
+
+            // Garante que as 3 chaves Gemini solicitadas estejam sempre aplicadas no Arsenal
+            const applyDefaultIfEmpty = (id: string, service: string, defVal: string) => {
+                const idx = newKeys.findIndex(k => k.id === id || k.service === service);
+                if (idx === -1) {
+                    newKeys.push({ id, service, key: defVal, method: 'google-header' });
                     modified = true;
-                    return { ...k, key: '' };
+                } else if (!newKeys[idx].key || newKeys[idx].key.trim() === '') {
+                    newKeys[idx] = { ...newKeys[idx], key: defVal };
+                    modified = true;
                 }
-                return k;
-            });
+            };
+
+            applyDefaultIfEmpty('gemini-key-1', 'GEMINI_API_KEY_1', defaultKey1);
+            applyDefaultIfEmpty('gemini-key-2', 'GEMINI_API_KEY_2', defaultKey2);
+            applyDefaultIfEmpty('gemini-key-3', 'GEMINI_API_KEY_3', defaultKey3);
+
             if (newKeys.some(k => k.service.includes('Hugging Face') || k.id === 'hf-default' || k.id === '9router-local-key' || k.id === '9router-remote-key' || k.id === '9router-tunnel-key' || k.service.includes('NINEROUTER'))) {
                 newKeys = newKeys.filter(k => !k.service.includes('Hugging Face') && k.id !== 'hf-default' && k.id !== '9router-local-key' && k.id !== '9router-remote-key' && k.id !== '9router-tunnel-key' && !k.service.includes('NINEROUTER'));
                 modified = true;
