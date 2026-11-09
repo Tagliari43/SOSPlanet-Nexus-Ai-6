@@ -147,6 +147,7 @@ const SantuarioInterior: React.FC<SantuarioInteriorProps> = ({
     const [isAnalyzingFrame, setIsAnalyzingFrame] = useState<boolean>(false);
     const { 
         isListening: isDictating, 
+        transcript,
         interimTranscript, 
         speechError, 
         startListening, 
@@ -159,6 +160,17 @@ const SantuarioInterior: React.FC<SantuarioInteriorProps> = ({
             });
         }
     });
+
+    useEffect(() => {
+        if (transcript) {
+            setInput(prev => {
+                const trimmed = prev.trim();
+                const tr = transcript.trim();
+                if (trimmed.endsWith(tr)) return prev;
+                return trimmed ? `${trimmed} ${tr} ` : `${tr} `;
+            });
+        }
+    }, [transcript]);
 
     const sessionPromiseRef = useRef<Promise<any> | null>(null);
     const inputAudioContextRef = useRef<AudioContext | null>(null);
@@ -1619,18 +1631,21 @@ Inicie sua resposta com um bloco de transparência:
             } // Fechamento do else do activeBrother
 
             if (responseText) {
+                const modelMsgId = Date.now().toString();
                 setMessages(p => [...p, { 
-                    id: Date.now().toString(), 
+                    id: modelMsgId, 
                     role: 'model', 
                     parts: [{ text: responseText }] 
                 }]);
+                // ELA FALANDO! Síntese de voz automática da resposta da Nexus (Voz + Animação do NexusFace)
+                handleSpeak(responseText, modelMsgId);
             }
         } catch (e: any) { 
             setError(`Interferência total em todas as pontes: ${e.message}`); 
             addLogEntry(`Falha Crítica: ${e.message}`, "Sistema");
         }
         finally { setIsLoading(false); }
-    }, [attachedFiles, setMessages, addLogEntry, messages, onToolRequest, memoryEntries, isTwilightRoomOpen, twilightRoomStartTime, twilightRoomTheme, activeBrother]);
+    }, [attachedFiles, setMessages, addLogEntry, messages, onToolRequest, memoryEntries, isTwilightRoomOpen, twilightRoomStartTime, twilightRoomTheme, activeBrother, handleSpeak]);
 
     return (
         <div className="border border-emerald-700/50 bg-zinc-900/60 rounded-b-xl rounded-r-xl p-4 h-[80vh] flex flex-col relative overflow-hidden backdrop-blur-md">

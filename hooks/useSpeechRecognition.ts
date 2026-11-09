@@ -9,167 +9,122 @@ export const useSpeechRecognition = (options?: UseSpeechRecognitionOptions) => {
     const [transcript, setTranscript] = useState('');
     const [interimTranscript, setInterimTranscript] = useState('');
     const [speechError, setSpeechError] = useState<string | null>(null);
-    const [hasSupport, setHasSupport] = useState(true);
 
     const recognitionRef = useRef<any>(null);
     const isActuallyRunningRef = useRef(false);
-    const shouldBeListeningRef = useRef(false);
-    const lastProcessedIndexRef = useRef(-1);
     const optionsRef = useRef(options);
     optionsRef.current = options;
 
     useEffect(() => {
-        const SpeechRec = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-        if (!SpeechRec) {
-            setHasSupport(false);
+        const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+        if (!SpeechRecognition) {
             console.warn("Navegador não possui suporte nativo à Web Speech API.");
-        } else {
-            setHasSupport(true);
+            return;
         }
 
+        const recognition = new SpeechRecognition();
+        recognition.continuous = true;
+        recognition.interimResults = true;
+        recognition.lang = 'pt-BR';
+
+        recognition.onstart = () => {
+            setIsListening(true);
+            isActuallyRunningRef.current = true;
+            setSpeechError(null);
+        };
+
+        recognition.onend = () => {
+            setIsListening(false);
+            isActuallyRunningRef.current = false;
+        };
+
+        recognition.onresult = (event: any) => {
+            let currentInterim = '';
+            for (let i = event.resultIndex; i < event.results.length; ++i) {
+                const res = event.results[i];
+                const text = res[0].transcript;
+                if (res.isFinal) {
+                    const trimmed = text.trim();
+                    if (trimmed) {
+                        setTranscript(prev => (prev ? `${prev} ${trimmed}` : trimmed));
+                        if (optionsRef.current?.onFinalResult) {
+                            optionsRef.current.onFinalResult(trimmed);
+                        }
+                    }
+                } else {
+                    currentInterim += text;
+                }
+            }
+            setInterimTranscript(currentInterim.trim());
+        };
+
+        recognition.onerror = (event: any) => {
+            if (event.error === 'no-speech') {
+                return;
+            }
+            if (event.error === 'aborted') {
+                return;
+            }
+            console.warn("[NEXUS Speech Error]:", event.error);
+            if (event.error === 'not-allowed') {
+                setSpeechError("Permissão de microfone bloqueada pelo navegador.");
+            } else {
+                setSpeechError(`Erro no microfone: ${event.error}`);
+            }
+            setIsListening(false);
+            isActuallyRunningRef.current = false;
+        };
+
+        recognitionRef.current = recognition;
+
         return () => {
-            shouldBeListeningRef.current = false;
             if (recognitionRef.current) {
                 try {
-                    recognitionRef.current.abort();
+                    recognitionRef.current.stop();
                 } catch (_) {}
             }
         };
     }, []);
 
-    const stopListening = useCallback(() => {
-        shouldBeListeningRef.current = false;
-        setIsListening(false);
-        isActuallyRunningRef.current = false;
+    const startListening = useCallback(() => {
+        if (!recognitionRef.current) {
+            setSpeechError("Reconhecimento de fala não suportado neste navegador.");
+            return;
+        }
+
+        if (isActuallyRunningRef.current) {
+            return;
+        }
+
+        setSpeechError(null);
+        setTranscript('');
         setInterimTranscript('');
 
-        if (recognitionRef.current) {
-            try {
-                recognitionRef.current.stop();
-            } catch (_) {
-                try {
-                    recognitionRef.current.abort();
-                } catch (__) {}
+        try {
+            recognitionRef.current.start();
+            setIsListening(true);
+            isActuallyRunningRef.current = true;
+        } catch (e: any) {
+            if (e.name === 'InvalidStateError' || e.message?.includes('already started')) {
+                setIsListening(true);
+                isActuallyRunningRef.current = true;
+            } else {
+                console.error("Falha ao iniciar microfone:", e);
+                setSpeechError(`Falha ao iniciar microfone: ${e.message || e}`);
             }
         }
     }, []);
 
-    const startListening = useCallback(async () => {
-        setSpeechError(null);
+    const stopListening = useCallback(() => {
+        setIsListening(false);
+        isActuallyRunningRef.current = false;
         setInterimTranscript('');
-        lastProcessedIndexRef.current = -1;
-
-        const SpeechRec = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-        if (!SpeechRec) {
-            setSpeechError("Navegador não suporta transcrição nativa. Recomendamos Chrome, Edge ou Brave.");
-            return;
-        }
-
-        // 1. Tenta validar permissão no navegador sem travar dispositivo de áudio
-        if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+        if (recognitionRef.current) {
             try {
-                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                // Libera a stream em background para não reter o dispositivo
-                setTimeout(() => {
-                    stream.getTracks().forEach(t => t.stop());
-                }, 300);
-            } catch (permErr: any) {
-                console.warn("[SpeechRecognition] Aviso no getUserMedia (prosseguindo para SpeechRec):", permErr);
+                recognitionRef.current.stop();
+            } catch (_) {
+                try { recognitionRef.current.abort(); } catch (__) {}
             }
-        }
-
-        // 2. Cria instância limpa de reconhecimento
-        try {
-            if (recognitionRef.current) {
-                try { recognitionRef.current.abort(); } catch (_) {}
-                recognitionRef.current = null;
-            }
-
-            const recognition = new SpeechRec();
-            recognition.continuous = true;
-            recognition.interimResults = true;
-            recognition.lang = 'pt-BR';
-            recognition.maxAlternatives = 1;
-
-            shouldBeListeningRef.current = true;
-
-            recognition.onstart = () => {
-                setIsListening(true);
-                isActuallyRunningRef.current = true;
-                setSpeechError(null);
-            };
-
-            recognition.onresult = (event: any) => {
-                let currentInterim = '';
-
-                for (let i = event.resultIndex; i < event.results.length; i++) {
-                    const res = event.results[i];
-                    const text = res[0].transcript;
-
-                    if (res.isFinal) {
-                        if (i > lastProcessedIndexRef.current) {
-                            lastProcessedIndexRef.current = i;
-                            const trimmedText = text.trim();
-                            if (trimmedText) {
-                                setTranscript(prev => (prev ? `${prev} ${trimmedText}` : trimmedText));
-                                if (optionsRef.current?.onFinalResult) {
-                                    optionsRef.current.onFinalResult(trimmedText);
-                                }
-                            }
-                        }
-                    } else {
-                        currentInterim += text;
-                    }
-                }
-
-                setInterimTranscript(currentInterim.trim());
-            };
-
-            recognition.onerror = (event: any) => {
-                if (event.error === 'no-speech') {
-                    // Pausa normal da fala do usuário, sem erro
-                    return;
-                }
-                if (event.error === 'aborted') {
-                    return;
-                }
-
-                console.warn("[SpeechRecognition Error]:", event.error);
-                if (event.error === 'not-allowed') {
-                    setSpeechError("Permissão de microfone bloqueada pelo navegador.");
-                } else if (event.error === 'audio-capture') {
-                    setSpeechError("Nenhum microfone ativo detectado.");
-                } else if (event.error === 'network') {
-                    setSpeechError("Erro de rede temporário na transcrição.");
-                } else {
-                    setSpeechError(`Erro no microfone: ${event.error}`);
-                }
-
-                isActuallyRunningRef.current = false;
-            };
-
-            recognition.onend = () => {
-                isActuallyRunningRef.current = false;
-                // Se o usuário ainda deseja ouvir e não cancelou, religa suavemente
-                if (shouldBeListeningRef.current) {
-                    try {
-                        recognition.start();
-                    } catch (_) {
-                        setIsListening(false);
-                    }
-                } else {
-                    setIsListening(false);
-                }
-            };
-
-            recognitionRef.current = recognition;
-            recognition.start();
-            setIsListening(true);
-        } catch (err: any) {
-            console.error("[SpeechRecognition] Falha ao iniciar:", err);
-            setSpeechError(`Falha ao iniciar transcrição: ${err.message || err}`);
-            setIsListening(false);
-            shouldBeListeningRef.current = false;
         }
     }, []);
 
@@ -186,6 +141,6 @@ export const useSpeechRecognition = (options?: UseSpeechRecognitionOptions) => {
         startListening,
         stopListening,
         clearTranscript,
-        hasSupport
+        hasSupport: !!recognitionRef.current
     };
 };

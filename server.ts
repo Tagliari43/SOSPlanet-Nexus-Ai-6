@@ -355,6 +355,24 @@ with zipfile.ZipFile(target_zip, 'w', zipfile.ZIP_DEFLATED) as z:
     }
   });
 
+  // Proxy for NVIDIA NIM API (Elimina bloqueios de CORS / Failed to fetch no browser)
+  app.post('/api/nvidia/chat', async (req, res) => {
+    try {
+      const response = await fetch('https://integrate.api.nvidia.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': req.headers.authorization || '',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(req.body)
+      });
+      const data = await response.text();
+      res.status(response.status).send(data);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   // Proxy for Ollama Cloud API (Fenix - MiniMax)
   app.post('/api/ollama/chat', async (req, res) => {
     try {
