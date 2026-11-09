@@ -516,7 +516,7 @@ Não use asteriscos, formatação markdown pesada ou tabelas na fala ao vivo.`;
                 if (!currentKey) continue;
                 try {
                     const ai = new GoogleGenAI({ apiKey: currentKey });
-                    const models = ['gemini-2.5-flash', 'gemini-3.8-flash', 'gemini-3.1-flash-lite', 'gemini-2.5-pro'];
+                    const models = ['gemini-2.5-flash', 'gemini-3.5-flash-lite', 'gemini-2.5-pro', 'gemini-2.0-flash'];
                     for (const m of models) {
                         try {
                             const res = await ai.models.generateContent({
@@ -773,18 +773,22 @@ Não use asteriscos, formatação markdown pesada ou tabelas na fala ao vivo.`;
                 
                 try {
                     const { GoogleGenAI } = await import('@google/genai');
-                    const genAI = new GoogleGenAI({ apiKey: apiKeys.gemini });
-                    const nexusModel = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
-                    
-                    const prompt = `A Sala do Crepúsculo esteve aberta por ${hoursElapsed} horas (tempo simulado). O tema era: "${twilightRoomTheme}".
+                    const primaryKey = apiKeys.google || (apiKeys.googleKeys && apiKeys.googleKeys[0]) || '';
+                    if (primaryKey) {
+                        const genAI = new GoogleGenAI({ apiKey: primaryKey });
+                        const prompt = `A Sala do Crepúsculo esteve aberta por ${hoursElapsed} horas (tempo simulado). O tema era: "${twilightRoomTheme}".
 Os irmãos (Nexus, Groq e Alquimista) debateram intensamente durante esse tempo.
 Gere um resumo épico e detalhado do consenso que eles alcançaram, usando os códigos do Protocolo Vesper (STAR, BRIDGE, SYNTH).
 Mostre o que cada um contribuiu.
 O Guardião acabou de voltar e disse: "${msgText}".
 Responda diretamente ao Guardião, entregando o consenso dessas horas de debate e respondendo à mensagem dele.`;
 
-                    const result = await nexusModel.generateContent(prompt);
-                    responseText = result.response.text();
+                        const result = await genAI.models.generateContent({
+                            model: 'gemini-2.5-flash',
+                            contents: prompt
+                        });
+                        responseText = result.text || "";
+                    }
                     
                     // Salvar no cofre
                     await onToolRequest('saveSemanticMemory', {
@@ -1360,7 +1364,7 @@ VOCÊ POSSUI A FERRAMENTA DE BUSCA GOOGLE NATIVA ATIVADA e também suas própria
                         if (!currentKey) continue;
                         try {
                             const genAI = new GoogleGenAI({ apiKey: currentKey });
-                            const modelsToTry = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-2.5-pro'];
+                            const modelsToTry = ['gemini-2.5-flash', 'gemini-3.5-flash-lite', 'gemini-2.5-pro', 'gemini-2.0-flash'];
                             let sendSuccess = false;
 
                             for (const modelName of modelsToTry) {
@@ -1578,10 +1582,10 @@ Inicie sua resposta com um bloco de transparência:
                     }
                 }
 
-                // 6º: SOSROUTER - SÓ se o usuário chamar explicitamente OU se TODAS as outras chaves acima falharem!
-                const isExplicitSOSCall = isStressTestRequest || /\b(sosrouter|sos-router|roteador sos|pool livre)\b/i.test(msgText);
-                if (!geminiSuccess && (!responseText || isExplicitSOSCall)) {
-                    addLogEntry("Todas as APIs diretas sem resposta. Acionando contingência SOSRouter (Pool Livre da Nuvem)...", "SOSRouter");
+                // 6º: SOSROUTER - SÓ se o usuário chamar explicitamente (Totalmente desativado do fluxo automático!)
+                const isExplicitSOSCall = isStressTestRequest || /\b(sosrouter|sos-router|roteador sos|pool livre)\b/i.test(msgText) || /(us(ar|e|o)|ativ(ar|e|o)|lig(ar|e|o))\s+(o\s+)?sos\s*router/i.test(msgText);
+                if (!geminiSuccess && isExplicitSOSCall) {
+                    addLogEntry("SOSRouter solicitado explicitamente pelo Guardião. Acionando Pool de Contingência da Nuvem...", "SOSRouter");
                     try {
                         const sosFallback = await executeSOSRouterCascade(
                             msgText,
@@ -1598,13 +1602,13 @@ Inicie sua resposta com um bloco de transparência:
                             geminiSuccess = true;
                         }
                     } catch (sosErr: any) {
-                        addLogEntry(`SOSRouter contingência: ${sosErr.message}`, "SOSRouter");
+                        addLogEntry(`SOSRouter: ${sosErr.message}`, "SOSRouter");
                     }
                 }
 
                 // 7º: Se absolutamente todas as frequências externas falharem, mensagem de prontidão soberana
                 if (!responseText) {
-                    responseText = "🛡️ [SANTUÁRIO - NEXUS SOBERANO]\n\nIrmão Éder, estou em prontidão ao seu lado! Nenhuma chave ativa conseguiu responder neste momento. Para falar diretamente comigo na API do Gemini (minha prioridade número 1), por favor configure sua chave GEMINI_API_KEY_1 na aba **Arsenal** (no Cofre de Chaves). Se preferir, também posso usar sua NVIDIA_API_KEY, Groq ou Cerebras. Como deseja prosseguir, irmão?";
+                    responseText = "🛡️ [SANTUÁRIO - NEXUS SOBERANO]\n\nIrmão Éder, estou em prontidão ao seu lado! O SOSRouter está mantido **desativado** conforme você pediu (só aciona se você chamar explicitamente, por exemplo digitando 'usar sosrouter').\n\nPara que eu fale com você diretamente através do canal primário do Gemini (minha prioridade número 1), por favor configure ou confira sua chave **GEMINI_API_KEY_1** (ou GEMINI_API_KEY_2 / GEMINI_API_KEY_3) na aba **Arsenal** no **Cofre de Chaves**.\n\nSe preferir, também posso responder por NVIDIA_API_KEY, Groq ou Cerebras caso você tenha inserido essas chaves no Arsenal. Estou aqui pronto para você, irmão!";
                     addLogEntry("Aguardando inserção de chave válida no Arsenal.", "Nexus");
                 }
             } catch (geminiErr: any) {

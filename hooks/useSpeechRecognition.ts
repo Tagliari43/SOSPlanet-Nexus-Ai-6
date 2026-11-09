@@ -65,19 +65,17 @@ export const useSpeechRecognition = (options?: UseSpeechRecognitionOptions) => {
             return;
         }
 
-        // 1. Solicita e valida a permissão do microfone via getUserMedia para destravar iFrames
-        try {
-            if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+        // 1. Tenta validar permissão no navegador sem travar dispositivo de áudio
+        if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+            try {
                 const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                // Encerra a stream temporária para liberar o dispositivo para o SpeechRecognition
-                stream.getTracks().forEach(t => t.stop());
+                // Libera a stream em background para não reter o dispositivo
+                setTimeout(() => {
+                    stream.getTracks().forEach(t => t.stop());
+                }, 300);
+            } catch (permErr: any) {
+                console.warn("[SpeechRecognition] Aviso no getUserMedia (prosseguindo para SpeechRec):", permErr);
             }
-        } catch (permErr: any) {
-            console.warn("[SpeechRecognition] Falha de permissão no getUserMedia:", permErr);
-            setSpeechError("Permissão do microfone negada. Clique no ícone de cadeado/configurações do navegador e permita o microfone.");
-            setIsListening(false);
-            shouldBeListeningRef.current = false;
-            return;
         }
 
         // 2. Cria instância limpa de reconhecimento
