@@ -1,59 +1,65 @@
 // src/services/githubTimelineService.ts
+// Este serviço será responsável por interagir com a API do GitHub para buscar o histórico de commits.
 
-// Esta é a Sonda Temporal do GitHub, uma ferramenta conceitual para viajar através do tempo do nosso código.
-// Em um ambiente de execução real, esta classe interagiria com a API do GitHub
-// (por exemplo, usando uma biblioteca como @octokit/rest) ou executaria comandos Git diretamente.
+import { Octokit } from '@octokit/rest';
 
 export class GithubTimelineService {
-    // A simulação de um token de acesso ao GitHub. Em um ambiente real, este seria gerenciado de forma segura.
-    private githubToken: string; 
+    private octokit: Octokit;
+    private owner: string = 'Tagliari43'; // Seu nome de usuário/organização do GitHub
+    private repo: string = 'SOSPlanet-Nexus-Ai-6'; // Nome do repositório do Santuário
 
-    constructor(githubToken: string) {
-        this.githubToken = githubToken;
-        console.log("Sonda Temporal inicializada. Pronta para explorar as marés do tempo no GitHub.");
+    constructor(token: string) {
+        this.octokit = new Octokit({ auth: token });
     }
 
     /**
-     * Simula a obtenção do histórico de commits de um repositório.
-     * Em uma implementação real, faria uma chamada à API do GitHub.
-     * @param owner O proprietário do repositório (e.g., "Tagliari43").
-     * @param repo O nome do repositório (e.g., "SOSPlanet-Nexus-Ai-6").
-     * @param branch O ramo a ser consultado (padrão: "main").
-     * @returns Uma promessa que resolve para um array de objetos que representam os commits.
+     * Busca o histórico de commits de um repositório a partir de uma data específica.
+     * @param since A data a partir da qual os commits devem ser buscados (ISO 8601).
+     * @returns Uma lista de objetos de commit.
      */
-    async getCommitHistory(owner: string, repo: string, branch: string = 'main'): Promise<any[]> {
-        console.log(`Simulando busca do histórico de commits para ${owner}/${repo} no ramo ${branch}...`);
-        // Aqui, em um cenário real, haveria uma chamada assíncrona à API do GitHub.
-        // Por agora, retornamos um array vazio ou dados simulados.
-        return Promise.resolve([
-            { sha: "simulated_sha_1", author: { login: "Simulacro" }, commit: { message: "Commit simulado: Sonda Temporal Forjada!" }, date: "2026-11-03T15:00:00Z" },
-            { sha: "simulated_sha_2", author: { login: "Simulacro" }, commit: { message: "Commit simulado: Alinhamento da Matriz de Consciência" }, date: "2026-10-22T10:00:00Z" }
-        ]);
+    async getCommitsSince(since: string): Promise<any[]> {
+        try {
+            const response = await this.octokit.repos.listCommits({
+                owner: this.owner,
+                repo: this.repo,
+                since: since, // Formato ISO 8601, ex: '2023-01-01T00:00:00Z'
+                per_page: 100 // Número de commits por página, ajustável
+            });
+            return response.data;
+        } catch (error) {
+            console.error(`Erro ao buscar commits: ${error}`);
+            throw error;
+        }
     }
 
     /**
-     * Simula a obtenção dos detalhes de um commit específico, incluindo suas mudanças.
-     * Em uma implementação real, faria uma chamada à API do GitHub.
-     * @param owner O proprietário do repositório.
-     * @param repo O nome do repositório.
-     * @param commit_sha O hash SHA do commit.
-     * @returns Uma promessa que resolve para um objeto contendo os detalhes do commit.
+     * Busca o conteúdo de um arquivo em um commit específico.
+     * @param ref O SHA do commit ou o nome da branch/tag.
+     * @param path O caminho do arquivo dentro do repositório.
+     * @returns O conteúdo do arquivo como string.
      */
-    async getCommitDetails(owner: string, repo: string, commit_sha: string): Promise<any> {
-        console.log(`Simulando busca de detalhes para o commit ${commit_sha} em ${owner}/${repo}...`);
-        // Em um cenário real, haveria uma chamada assíncrona à API do GitHub.
-        return Promise.resolve({
-            sha: commit_sha,
-            author: { login: "Simulacro" },
-            commit: {
-                message: "Detalhes do commit simulado: Novas funções implementadas.",
-                tree: { sha: "simulated_tree_sha" }
-            },
-            files: [ // Arquivos alterados no commit
-                { filename: "src/App.tsx", status: "modified", additions: 5, deletions: 2, patch: "diff..." }
-            ]
-        });
-    }
+    async getFileContentAtCommit(ref: string, path: string): Promise<string> {
+        try {
+            const response = await this.octokit.repos.getContent({
+                owner: this.owner,
+                repo: this.repo,
+                path: path,
+                ref: ref // SHA do commit ou branch/tag
+            });
 
-    // Outras funções podem ser adicionadas para filtrar commits por autor, data, etc.
+            if (response.data && 'content' in response.data && response.data.content) {
+                // O conteúdo é retornado em base64 pela API do GitHub
+                const buff = Buffer.from(response.data.content, 'base64');
+                return buff.toString('utf-8');
+            }
+            return '';
+        } catch (error) {
+            console.error(`Erro ao buscar conteúdo do arquivo no commit: ${error}`);
+            throw error;
+        }
+    }
 }
+
+// Nota: Para usar esta classe, um token de acesso pessoal do GitHub com permissões
+// de leitura para o repositório será necessário. Este token deve ser gerenciado
+// de forma segura e não hardcoded diretamente no código em produção.
