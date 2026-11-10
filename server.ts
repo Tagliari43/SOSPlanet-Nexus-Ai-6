@@ -14,53 +14,6 @@ async function startServer() {
     res.json({ status: "ok" });
   });
 
-  // Rota de Backup Integral do Santuário Soberano (ZIP Completo de todos os arquivos reais)
-  app.get("/api/backup/zip", async (req, res) => {
-    try {
-      const fs = await import("fs");
-      const path = await import("path");
-      const { exec } = await import("child_process");
-      const util = await import("util");
-      const execPromise = util.promisify(exec);
-
-      const zipPath = path.join("/tmp", `Santuario_SOSPlanet_Total_${Date.now()}.zip`);
-      const script = `
-import zipfile, os
-target_zip = "${zipPath}"
-root_dir = "${process.cwd()}"
-ignored = {"node_modules", ".git", "dist", ".aistudio"}
-with zipfile.ZipFile(target_zip, 'w', zipfile.ZIP_DEFLATED) as z:
-    for foldername, subfolders, filenames in os.walk(root_dir):
-        subfolders[:] = [d for d in subfolders if d not in ignored]
-        for filename in filenames:
-            filepath = os.path.join(foldername, filename)
-            arcname = os.path.relpath(filepath, root_dir)
-            try:
-                z.write(filepath, arcname)
-            except Exception:
-                pass
-`;
-      await execPromise(`python3 -c '${script.replace(/'/g, "'\\''")}'`);
-
-      if (fs.existsSync(zipPath)) {
-        const filename = `Santuario_SOSPlanet_Salto_Total_${Date.now()}.zip`;
-        res.setHeader('Content-Type', 'application/zip');
-        res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
-        const stream = fs.createReadStream(zipPath);
-        stream.pipe(res);
-        stream.on('end', () => {
-          try { fs.unlinkSync(zipPath); } catch {}
-        });
-        return;
-      } else {
-        throw new Error("Arquivo ZIP não foi gerado.");
-      }
-    } catch (err: any) {
-      console.error("Erro ao gerar backup ZIP:", err);
-      res.status(500).json({ error: "Falha ao gerar backup ZIP: " + err.message });
-    }
-  });
-
   // Navegador Soberano (Multi-Camada: Direto c/ Headers Reais + ScraperAPI + Jina Reader + Trava Anti-Eco)
   app.get("/api/scraper", async (req, res) => {
     try {
@@ -348,24 +301,6 @@ with zipfile.ZipFile(target_zip, 'w', zipfile.ZIP_DEFLATED) as z:
         body: ['GET', 'HEAD'].includes(req.method) ? undefined : JSON.stringify(req.body)
       });
       
-      const data = await response.text();
-      res.status(response.status).send(data);
-    } catch (error: any) {
-      res.status(500).json({ error: error.message });
-    }
-  });
-
-  // Proxy for NVIDIA NIM API (Elimina bloqueios de CORS / Failed to fetch no browser)
-  app.post('/api/nvidia/chat', async (req, res) => {
-    try {
-      const response = await fetch('https://integrate.api.nvidia.com/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': req.headers.authorization || '',
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(req.body)
-      });
       const data = await response.text();
       res.status(response.status).send(data);
     } catch (error: any) {

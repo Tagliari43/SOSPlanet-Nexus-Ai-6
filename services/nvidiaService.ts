@@ -47,35 +47,19 @@ export async function executeNvidiaTask(
             content: prompt
         });
 
-        const reqBody = {
-            model: model,
-            messages: formattedMessages,
-            temperature: 0.6,
-            max_tokens: 2048
-        };
-
-        let response: Response;
-        // 1ª Tentativa: rota de proxy local /api/nvidia/chat (livre de CORS)
-        try {
-            response = await fetch("/api/nvidia/chat", {
-                method: "POST",
-                headers: {
-                    "Authorization": `Bearer ${apiKey.trim()}`,
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify(reqBody)
-            });
-        } catch (localProxyErr) {
-            // 2ª Tentativa: chamada direta externa caso o servidor proxy não responda
-            response = await fetch("https://integrate.api.nvidia.com/v1/chat/completions", {
-                method: "POST",
-                headers: {
-                    "Authorization": `Bearer ${apiKey.trim()}`,
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify(reqBody)
-            });
-        }
+        const response = await fetch("https://integrate.api.nvidia.com/v1/chat/completions", {
+            method: "POST",
+            headers: {
+                "Authorization": `Bearer ${apiKey.trim()}`,
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                model: model,
+                messages: formattedMessages,
+                temperature: 0.6,
+                max_tokens: 2048
+            })
+        });
 
         if (!response.ok) {
             const errData = await response.json().catch(() => ({}));
@@ -91,7 +75,7 @@ export async function executeNvidiaTask(
 
         return content;
     } catch (error: any) {
-        console.warn("[NVIDIA SERVICE]:", error.message || error);
+        console.error("[NVIDIA SERVICE ERROR]:", error);
         throw error;
     }
 }

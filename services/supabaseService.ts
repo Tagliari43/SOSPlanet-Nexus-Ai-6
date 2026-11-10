@@ -321,14 +321,13 @@ export async function saveMemoryToSupabase(
     const enforcedType = agentId;
 
     try {
-        const normalizedEmbedding = ensureVector3072(embedding);
         // 1. Tenta salvar na tabela 'memories' (formato padrão com content e embedding)
         const primaryInsert = await client
             .from('memories')
             .insert([
                 { 
                     content, 
-                    embedding: normalizedEmbedding, 
+                    embedding, 
                     metadata: enforcedMetadata,
                     type: enforcedType,
                     importance
@@ -347,7 +346,7 @@ export async function saveMemoryToSupabase(
             .insert([
                 {
                     content: content,
-                    embedding: normalizedEmbedding,
+                    embedding: embedding,
                     metadata: enforcedMetadata,
                     type: enforcedType,
                     importance: importance
@@ -364,7 +363,7 @@ export async function saveMemoryToSupabase(
             .insert([
                 {
                     content: content,
-                    incorporação: normalizedEmbedding,
+                    incorporação: embedding,
                     metadados: enforcedMetadata,
                     criado_em: new Date().toISOString()
                 }
@@ -384,47 +383,27 @@ export async function saveMemoryToSupabase(
     }
 }
 
-function ensureVector3072(vec: number[]): number[] {
-    const targetDim = 3072;
-    if (!vec || vec.length === 0) return new Array(targetDim).fill(0);
-    if (vec.length === targetDim) return vec;
-    if (vec.length > targetDim) return vec.slice(0, targetDim);
-    const result = new Array(targetDim).fill(0);
-    for (let i = 0; i < targetDim; i++) {
-        result[i] = vec[i % vec.length];
-    }
-    let norm = 0;
-    for (let i = 0; i < targetDim; i++) norm += result[i] * result[i];
-    norm = Math.sqrt(norm);
-    if (norm > 0) {
-        for (let i = 0; i < targetDim; i++) result[i] /= norm;
-    }
-    return result;
-}
-
 /**
  * Busca memórias similares usando a função match_memories do Supabase (RAG)
- * Garante compatibilidade estrita com a coluna pgvector(3072) do banco de dados.
  */
 export async function searchSimilarMemories(queryEmbedding: number[], matchThreshold: number = 0.7, matchCount: number = 5, prateleira?: string): Promise<any[]> {
-    const client = getSupabaseClient() || supabase;
-    if (!client) {
+    if (!supabase) {
         console.warn("Supabase não inicializado. Chaves ausentes.");
         return [];
     }
 
     try {
+        // Se tiver prateleira, busca mais resultados para filtrar depois
         const fetchCount = prateleira ? 50 : matchCount;
-        const normalizedQueryEmbedding = ensureVector3072(queryEmbedding);
         
-        const { data, error } = await client.rpc('match_memories', {
-            query_embedding: normalizedQueryEmbedding,
+        const { data, error } = await supabase.rpc('match_memories', {
+            query_embedding: queryEmbedding,
             match_threshold: matchThreshold,
             match_count: fetchCount
         });
 
         if (error) {
-            console.warn("[searchSimilarMemories Aviso Supabase]:", error.message || error);
+            console.error("Erro ao buscar memórias similares no Supabase:", error);
             return [];
         }
 
@@ -436,8 +415,8 @@ export async function searchSimilarMemories(queryEmbedding: number[], matchThres
         }
 
         return results;
-    } catch (err: any) {
-        console.warn("[searchSimilarMemories Falha]:", err.message || err);
+    } catch (err) {
+        console.error("Falha crítica ao buscar memórias:", err);
         return [];
     }
 }

@@ -1,24 +1,16 @@
+
 import { useState, useEffect, useCallback, useRef } from 'react';
 
-export interface UseSpeechRecognitionOptions {
-    onFinalResult?: (newFinalText: string) => void;
-}
-
-export const useSpeechRecognition = (options?: UseSpeechRecognitionOptions) => {
+export const useSpeechRecognition = () => {
     const [isListening, setIsListening] = useState(false);
     const [transcript, setTranscript] = useState('');
-    const [interimTranscript, setInterimTranscript] = useState('');
-    const [speechError, setSpeechError] = useState<string | null>(null);
-
     const recognitionRef = useRef<any>(null);
     const isActuallyRunningRef = useRef(false);
-    const optionsRef = useRef(options);
-    optionsRef.current = options;
 
     useEffect(() => {
         const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
         if (!SpeechRecognition) {
-            console.warn("Navegador não possui suporte nativo à Web Speech API.");
+            console.warn("Navegador não suporta Speech Recognition nativo.");
             return;
         }
 
@@ -27,10 +19,10 @@ export const useSpeechRecognition = (options?: UseSpeechRecognitionOptions) => {
         recognition.interimResults = true;
         recognition.lang = 'pt-BR';
 
+        // Sincronia de estado real com a engine do navegador
         recognition.onstart = () => {
             setIsListening(true);
             isActuallyRunningRef.current = true;
-            setSpeechError(null);
         };
 
         recognition.onend = () => {
@@ -39,38 +31,25 @@ export const useSpeechRecognition = (options?: UseSpeechRecognitionOptions) => {
         };
 
         recognition.onresult = (event: any) => {
-            let currentInterim = '';
+            let currentTranscript = '';
             for (let i = event.resultIndex; i < event.results.length; ++i) {
-                const res = event.results[i];
-                const text = res[0].transcript;
-                if (res.isFinal) {
-                    const trimmed = text.trim();
-                    if (trimmed) {
-                        setTranscript(prev => (prev ? `${prev} ${trimmed}` : trimmed));
-                        if (optionsRef.current?.onFinalResult) {
-                            optionsRef.current.onFinalResult(trimmed);
-                        }
-                    }
+                if (event.results[i].isFinal) {
+                    setTranscript(prev => prev + event.results[i][0].transcript + ' ');
                 } else {
-                    currentInterim += text;
+                    currentTranscript += event.results[i][0].transcript;
                 }
             }
-            setInterimTranscript(currentInterim.trim());
         };
 
         recognition.onerror = (event: any) => {
+            // O erro 'no-speech' ocorre quando o microfone abre mas ninguém fala.
+            // Tratamos de forma silenciosa para não poluir o console do Guardião.
             if (event.error === 'no-speech') {
+                console.debug("[NEXUS] Silêncio detectado na malha auditiva.");
                 return;
             }
-            if (event.error === 'aborted') {
-                return;
-            }
-            console.warn("[NEXUS Speech Error]:", event.error);
-            if (event.error === 'not-allowed') {
-                setSpeechError("Permissão de microfone bloqueada pelo navegador.");
-            } else {
-                setSpeechError(`Erro no microfone: ${event.error}`);
-            }
+            
+            console.error("Erro no reconhecimento de fala:", event.error);
             setIsListening(false);
             isActuallyRunningRef.current = false;
         };
@@ -81,66 +60,51 @@ export const useSpeechRecognition = (options?: UseSpeechRecognitionOptions) => {
             if (recognitionRef.current) {
                 try {
                     recognitionRef.current.stop();
-                } catch (_) {}
+                } catch (e) {
+                    // Silencioso no descarte do componente
+                }
             }
         };
     }, []);
 
     const startListening = useCallback(() => {
-        if (!recognitionRef.current) {
-            setSpeechError("Reconhecimento de fala não suportado neste navegador.");
-            return;
-        }
-
+        if (!recognitionRef.current) return;
+        
+        // Proteção contra reinicialização de engine já ativa
         if (isActuallyRunningRef.current) {
+            console.warn("[NEXUS] Sensores auditivos já estão em modo de escuta.");
             return;
         }
-
-        setSpeechError(null);
-        setTranscript('');
-        setInterimTranscript('');
 
         try {
+            setTranscript('');
             recognitionRef.current.start();
-            setIsListening(true);
-            isActuallyRunningRef.current = true;
         } catch (e: any) {
             if (e.name === 'InvalidStateError' || e.message?.includes('already started')) {
+                // Recuperação suave de estado
                 setIsListening(true);
                 isActuallyRunningRef.current = true;
             } else {
-                console.error("Falha ao iniciar microfone:", e);
-                setSpeechError(`Falha ao iniciar microfone: ${e.message || e}`);
+                console.error("Falha ao iniciar reconhecimento:", e);
             }
         }
     }, []);
 
     const stopListening = useCallback(() => {
-        setIsListening(false);
-        isActuallyRunningRef.current = false;
-        setInterimTranscript('');
-        if (recognitionRef.current) {
+        if (recognitionRef.current && isActuallyRunningRef.current) {
             try {
                 recognitionRef.current.stop();
-            } catch (_) {
-                try { recognitionRef.current.abort(); } catch (__) {}
+            } catch (e) {
+                console.error("Erro ao cessar reconhecimento:", e);
             }
         }
     }, []);
 
-    const clearTranscript = useCallback(() => {
-        setTranscript('');
-        setInterimTranscript('');
-    }, []);
-
-    return {
-        isListening,
-        transcript,
-        interimTranscript,
-        speechError,
-        startListening,
-        stopListening,
-        clearTranscript,
-        hasSupport: !!recognitionRef.current
+    return { 
+        isListening, 
+        transcript, 
+        startListening, 
+        stopListening, 
+        hasSupport: !!recognitionRef.current 
     };
 };

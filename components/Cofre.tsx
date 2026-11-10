@@ -23,6 +23,13 @@ interface Wallet {
     icon: string;
 }
 
+const initialWallets: Wallet[] = [
+    { id: 'bnb', name: 'BNB Smart Chain', symbol: 'BNB', address: '0x3637f4fbc6d9f1f6e0c4a2913e532d8b909b5', network: 'BSC (BEP20)', icon: '🔶' },
+    { id: 'xmr', name: 'Monero (SOS Nation)', symbol: 'XMR', address: '44L9...RECURSOS_AUTO_Suficientes', network: 'Monero Network', icon: '🐺' },
+    { id: 'btc', name: 'Bitcoin', symbol: 'BTC', address: '0x3637f4fbc6d9f1f6e0c4a2913e532d8b909b5', network: 'BSC (BEP20)', icon: '₿' },
+    { id: 'algo', name: 'Algorand (Coin)', symbol: 'ALGO', address: 'JOK5TYXGOWD5N257ESGFECNWOSSOYXD7VUMNZAJIPXHWWR2QVOPOY77MAZI', network: 'Algorand Network', icon: 'Ⱥ' }
+];
+
 const peraWallet = new PeraWalletConnect();
 const algodClient = new algosdk.Algodv2('', 'https://testnet-api.algonode.cloud', '');
 // ID real do SOS Token na Algorand TestNet
@@ -80,10 +87,6 @@ const Cofre: React.FC<CofreProps> = ({
     const [isTransacting, setIsTransacting] = useState(false);
     const [transactionStatus, setTransactionStatus] = useState<string | null>(null);
 
-    // Estado do Modal de QR Code / WalletConnect Universal
-    const [showQrModal, setShowQrModal] = useState(false);
-    const [qrCodeUrl, setQrCodeUrl] = useState<string | null>(null);
-
     const { mintFromForge } = useSosToken();
     const [miningStats, setMiningStats] = useState<MiningStats>({
         hashRate: 0,
@@ -113,6 +116,7 @@ const Cofre: React.FC<CofreProps> = ({
         }
     }, [powerLevel, isForging]);
 
+    // Efeito para reconectar a carteira Pera automaticamente
     useEffect(() => {
         peraWallet.reconnectSession().then((accounts) => {
             peraWallet.connector?.on('disconnect', handleDisconnectWallet);
@@ -130,19 +134,13 @@ const Cofre: React.FC<CofreProps> = ({
     const handleConnectWallet = async () => {
         setIsConnectingWallet(true);
         setWalletError(null);
-        setShowQrModal(true);
         try {
-            // Simulando o URI do WalletConnect / Pera para exibição instantânea do QR Code
-            setQrCodeUrl(`https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=wc:sosplanet-session-${Date.now()}@2?bridge=https%3A%2F%2Fbridge.walletconnect.org&key=soberano`);
-            
             const newAccounts = await peraWallet.connect();
             peraWallet.connector?.on('disconnect', handleDisconnectWallet);
             setAccountAddress(newAccounts[0]);
             fetchBalances(newAccounts[0]);
-            setShowQrModal(false);
-            if (addLogEntry) addLogEntry('Carteira Algorand conectada via QR Code com sucesso.', 'Cofre Real');
+            if (addLogEntry) addLogEntry('Carteira Algorand conectada com sucesso.', 'Cofre Real');
         } catch (error: any) {
-            setShowQrModal(false);
             if (error?.data?.type !== 'CONNECT_MODAL_CLOSED') {
                 setWalletError(error.message || 'Erro ao conectar carteira.');
             }
@@ -166,10 +164,11 @@ const Cofre: React.FC<CofreProps> = ({
         try {
             const suggestedParams = await algodClient.getTransactionParams().do();
             
+            // Transferência de teste de 0.1 ALGO para a própria carteira
             const txn = algosdk.makePaymentTxnWithSuggestedParamsFromObject({
                 sender: accountAddress,
                 receiver: accountAddress, 
-                amount: 100000, 
+                amount: 100000, // 0.1 ALGO
                 suggestedParams,
                 note: new Uint8Array(Buffer.from("Alocação de Recursos SOSPlanet"))
             });
@@ -201,11 +200,12 @@ const Cofre: React.FC<CofreProps> = ({
     const fetchBalances = async (address: string) => {
         try {
             const accountInfo = await algodClient.accountInformation(address).do();
-            setAlgoBalance(Number(accountInfo.amount) / 1000000); 
+            setAlgoBalance(Number(accountInfo.amount) / 1000000); // ALGO tem 6 casas decimais
             
             if (SOS_ASSET_ID !== 0) {
                 const asset = accountInfo.assets?.find((a: any) => a['asset-id'] === SOS_ASSET_ID);
                 if (asset) {
+                    // Ajuste as casas decimais do SOS Token (2 casas)
                     setSosBalance(Number(asset.amount) / 100); 
                 } else {
                     setSosBalance(0);
@@ -251,31 +251,7 @@ const Cofre: React.FC<CofreProps> = ({
     };
 
     return (
-        <div className="border border-emerald-700/50 bg-zinc-800/20 rounded-b-xl rounded-r-xl p-4 sm:p-6 h-full overflow-y-auto flex flex-col gap-6 relative">
-            {/* MODAL DE QR CODE / WALLETCONNECT */}
-            {showQrModal && (
-                <div className="absolute inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
-                    <div className="bg-zinc-900 border border-emerald-500/50 rounded-2xl p-6 max-w-sm w-full shadow-2xl flex flex-col items-center text-center relative">
-                        <button onClick={() => { setShowQrModal(false); setIsConnectingWallet(false); }} className="absolute top-4 right-4 text-zinc-400 hover:text-white text-lg">✕</button>
-                        <span className="text-3xl mb-2">📱</span>
-                        <h3 className="text-lg font-bold text-emerald-400 mb-1">Escanear com o Celular</h3>
-                        <p className="text-xs text-zinc-400 mb-4">Abra sua Pera Wallet ou App compatível no celular e escaneie o código abaixo para conectar instantaneamente:</p>
-                        
-                        <div className="bg-white p-3 rounded-xl shadow-inner mb-4 flex items-center justify-center">
-                            {qrCodeUrl ? (
-                                <img src={qrCodeUrl} alt="QR Code WalletConnect" className="w-48 h-48 object-contain" />
-                            ) : (
-                                <div className="w-48 h-48 flex items-center justify-center text-zinc-400 text-xs">Gerando QR Code...</div>
-                            )}
-                        </div>
-
-                        <div className="flex items-center gap-2 text-[10px] text-emerald-400 bg-emerald-950/40 border border-emerald-800/60 px-3 py-2 rounded-lg w-full justify-center">
-                            <span className="animate-pulse">●</span> Aguardando pareamento seguro...
-                        </div>
-                    </div>
-                </div>
-            )}
-
+        <div className="border border-emerald-700/50 bg-zinc-800/20 rounded-b-xl rounded-r-xl p-4 sm:p-6 h-full overflow-y-auto flex flex-col gap-6">
             <header className="text-center mb-4">
                 <h2 className="text-3xl font-bold text-emerald-400 tracking-wider uppercase">Tesouraria & Forja Soberana 💎</h2>
                 <div className="flex justify-center mt-4 gap-2 flex-wrap">
@@ -327,7 +303,7 @@ const Cofre: React.FC<CofreProps> = ({
                                                     <br/><br/>
                                                     <span>A Binance é uma <b>Corretora Centralizada (um Banco)</b>. Bancos não têm esse botão mágico de Web3. O dinheiro lá não está na sua carteira, está no cofre deles. O único jeito de um sistema externo (nós) ver o saldo de um banco corporativo é usando Chaves de API (um código de acesso).</span>
                                                     <br/><br/>
-                                                    <span className="text-emerald-400 font-bold block border-l-2 border-emerald-500 pl-2">Por isso a família foca na Algorand: Apenas lá (no nosso Cofre Real) temos a telinha mágica e conexão direta sem bloqueios!</span>
+                                                    <span className="text-emerald-400 font-bold block border-l-2 border-emerald-500 pl-2">Por isso a família foca na Algorand: Apenas lá (no nosso Cofre Real) temos a liberdade da telinha mágica e conexão direta sem bloqueios!</span>
                                                 </p>
                                             </div>
                                         </form>
@@ -344,7 +320,7 @@ const Cofre: React.FC<CofreProps> = ({
                                     <span className="text-2xl">🏦</span>
                                     <div>
                                         <h3 className="text-xl font-bold text-emerald-300">Cofre Real (Algorand)</h3>
-                                        <p className="text-zinc-400 text-xs">Conexão direta com a Mainnet via QR Code & Pera Wallet.</p>
+                                        <p className="text-zinc-400 text-xs">Conexão direta com a Mainnet via Pera Wallet.</p>
                                     </div>
                                 </div>
                                 {accountAddress ? (
@@ -353,7 +329,7 @@ const Cofre: React.FC<CofreProps> = ({
                                     </button>
                                 ) : (
                                     <button onClick={handleConnectWallet} disabled={isConnectingWallet} className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-bold shadow-lg transition-all flex items-center gap-2">
-                                        <span>📱</span> {isConnectingWallet ? 'GERANDO QR...' : 'CONECTAR VIA QR CODE'}
+                                        {isConnectingWallet ? 'CONECTANDO...' : 'CONECTAR PERA WALLET'}
                                     </button>
                                 )}
                             </div>
@@ -403,9 +379,9 @@ const Cofre: React.FC<CofreProps> = ({
                                 </div>
                             ) : (
                                 <div className="flex flex-col items-center justify-center py-8 text-center bg-black/20 rounded-lg border border-dashed border-emerald-900/50">
-                                    <span className="text-4xl mb-3">📱</span>
-                                    <p className="text-zinc-400 text-sm font-bold">Conexão Instantânea via QR Code</p>
-                                    <p className="text-zinc-500 text-xs mt-1 max-w-md">Clique em "Conectar via QR Code", abra sua carteira no celular (Pera Wallet) e escaneie a tela para parear de forma segura e imediata.</p>
+                                    <span className="text-4xl mb-3 grayscale opacity-50">🔒</span>
+                                    <p className="text-zinc-400 text-sm font-bold">Cofre Trancado</p>
+                                    <p className="text-zinc-500 text-xs mt-1 max-w-md">Conecte sua carteira Algorand para visualizar saldos reais e assinar transações de forma soberana e não-custodial.</p>
                                 </div>
                             )}
                         </div>

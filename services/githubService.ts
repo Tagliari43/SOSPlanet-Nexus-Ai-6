@@ -4,52 +4,50 @@ const GITHUB_API_BASE = 'https://api.github.com';
 const REPO_OWNER = 'Tagliari43';
 const REPO_NAME = 'SOSPlanet-Nexus-Ai-6';
 
-function getGitHubToken(required: boolean = false): string | null {
+function getGitHubToken(): string {
     const keys = loadApiKeys();
     const githubKey = keys.github;
-    if (!githubKey && required) {
-        throw new Error("Token do GitHub não encontrado no Núcleo de Autonomia. Cadastre seu token no Arsenal para operações de commit e gravação.");
+    if (!githubKey) {
+        throw new Error("Token do GitHub não encontrado no Núcleo de Autonomia.");
     }
-    return githubKey || null;
-}
-
-function getHeaders(token: string | null): Record<string, string> {
-    const headers: Record<string, string> = {
-        'Accept': 'application/vnd.github.v3+json',
-        'User-Agent': 'SOSPlanet-Nexus-Ai'
-    };
-    if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
-    }
-    return headers;
+    return githubKey;
 }
 
 export async function listGitHubFiles(path: string = ''): Promise<any[]> {
-    const token = getGitHubToken(false);
+    const token = getGitHubToken();
     const response = await fetch(`${GITHUB_API_BASE}/repos/${REPO_OWNER}/${REPO_NAME}/contents/${path}`, {
-        headers: getHeaders(token)
+        headers: {
+            'Authorization': `Bearer ${token}`,
+            'Accept': 'application/vnd.github.v3+json'
+        }
     });
     
     if (!response.ok) {
-        throw new Error(`Erro ao listar arquivos do repositório: ${response.statusText}`);
+        throw new Error(`Erro ao listar arquivos: ${response.statusText}`);
     }
     
     return response.json();
 }
 
 export async function getRepositoryInfo() {
-    const token = getGitHubToken(false);
+    const token = getGitHubToken();
     const response = await fetch(`${GITHUB_API_BASE}/repos/${REPO_OWNER}/${REPO_NAME}`, {
-        headers: getHeaders(token)
+        headers: {
+            'Authorization': `Bearer ${token}`,
+            'Accept': 'application/vnd.github.v3+json'
+        }
     });
     if (!response.ok) throw new Error(`Erro ao buscar repositório: ${response.statusText}`);
     return response.json();
 }
 
 export async function getFileContent(path: string): Promise<{ content: string, sha: string }> {
-    const token = getGitHubToken(false);
+    const token = getGitHubToken();
     const response = await fetch(`${GITHUB_API_BASE}/repos/${REPO_OWNER}/${REPO_NAME}/contents/${path}`, {
-        headers: getHeaders(token)
+        headers: {
+            'Authorization': `Bearer ${token}`,
+            'Accept': 'application/vnd.github.v3+json'
+        }
     });
     
     if (!response.ok) {
@@ -66,7 +64,7 @@ export async function getFileContent(path: string): Promise<{ content: string, s
 }
 
 export async function updateFileContent(path: string, content: string, commitMessage: string, sha?: string): Promise<any> {
-    const token = getGitHubToken(true);
+    const token = getGitHubToken();
     
     // Se o SHA não foi fornecido, tentamos buscar o arquivo atual para pegar o SHA
     let currentSha = sha;
@@ -94,7 +92,8 @@ export async function updateFileContent(path: string, content: string, commitMes
     const response = await fetch(`${GITHUB_API_BASE}/repos/${REPO_OWNER}/${REPO_NAME}/contents/${path}`, {
         method: 'PUT',
         headers: {
-            ...getHeaders(token),
+            'Authorization': `Bearer ${token}`,
+            'Accept': 'application/vnd.github.v3+json',
             'Content-Type': 'application/json'
         },
         body: JSON.stringify(body)

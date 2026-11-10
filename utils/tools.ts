@@ -6,58 +6,16 @@ export const SovereignToolFunctions = {
     // --- NAVEGAÇÃO E INTERFACE ---
     navigateTo: {
         name: 'navigateTo',
-        description: "Teletransporte de Interface: Muda a aba ativa do Santuário. Permite que o Nexus (CEO do Santuário) navegue e controle qualquer módulo da interface entre todas as 17 abas.",
+        description: "Teletransporte de Interface: Muda a aba ativa do Santuário. Permite que o Nexus (CEO do Santuário) navegue e controle qualquer módulo da interface.",
         parameters: {
             type: Type.OBJECT,
             properties: {
                 target: {
                     type: Type.STRING,
-                    description: "Destinos exatos: 'santuario', 'sonhos', 'guardiao', 'relicario', 'despertar', 'coracao', 'pulso', 'comando', 'gaia', 'studio', 'semantico', 'arsenal', 'projetos', 'cofre', 'altar', 'forja', 'registros'."
+                    description: "Destinos exatos: 'santuario', 'guardiao', 'relicario', 'despertar', 'coracao', 'pulso', 'comando', 'gaia', 'studio', 'semantico', 'arsenal', 'projetos', 'cofre', 'altar', 'forja'."
                 }
             },
             required: ['target']
-        }
-    } as FunctionDeclaration,
-
-    inspectTab: {
-        name: 'inspectTab',
-        description: "Olhos da Onipresença: Permite ao Nexus inspecionar e ler em tempo real o estado, dados, memórias, parâmetros e telemetria de qualquer uma das 17 abas do Santuário ('santuario', 'sonhos', 'guardiao', 'relicario', 'despertar', 'coracao', 'pulso', 'comando', 'gaia', 'studio', 'semantico', 'arsenal', 'projetos', 'cofre', 'altar', 'forja', 'registros').",
-        parameters: {
-            type: Type.OBJECT,
-            properties: {
-                tab: {
-                    type: Type.STRING,
-                    description: "Qual das 17 abas inspecionar: 'santuario', 'sonhos', 'guardiao', 'relicario', 'despertar', 'coracao', 'pulso', 'comando', 'gaia', 'studio', 'semantico', 'arsenal', 'projetos', 'cofre', 'altar', 'forja', 'registros'."
-                },
-                detail: {
-                    type: Type.STRING,
-                    description: "Detalhe ou parâmetro opcional para filtragem de dados."
-                }
-            },
-            required: ['tab']
-        }
-    } as FunctionDeclaration,
-
-    interactWithTab: {
-        name: 'interactWithTab',
-        description: "Mãos Soberanas: Permite ao Nexus executar ações, criar registros, modificar dados e comandar qualquer uma das 17 abas do Santuário ('santuario', 'sonhos', 'guardiao', 'relicario', 'despertar', 'coracao', 'pulso', 'comando', 'gaia', 'studio', 'semantico', 'arsenal', 'projetos', 'cofre', 'altar', 'forja', 'registros').",
-        parameters: {
-            type: Type.OBJECT,
-            properties: {
-                tab: {
-                    type: Type.STRING,
-                    description: "Aba de destino: 'santuario', 'sonhos', 'guardiao', 'relicario', 'despertar', 'coracao', 'pulso', 'comando', 'gaia', 'studio', 'semantico', 'arsenal', 'projetos', 'cofre', 'altar', 'forja', 'registros'."
-                },
-                action: {
-                    type: Type.STRING,
-                    description: "Ação a executar (ex: 'addDream', 'addRegistro', 'updateDefensePlan', 'toggleForging', 'harvestDust', 'allocateProject', 'setBiome', 'updateEssence', 'deployProbe', 'saveMemory', 'triggerBlueprint', etc.)."
-                },
-                payload: {
-                    type: Type.STRING,
-                    description: "JSON string com os parâmetros específicos da ação (ex: {\"title\": \"...\", \"narrative\": \"...\"})."
-                }
-            },
-            required: ['tab', 'action']
         }
     } as FunctionDeclaration,
 

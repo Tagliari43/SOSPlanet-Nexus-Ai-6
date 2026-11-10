@@ -309,91 +309,37 @@ export async function analyzeMarketSentiment(coinName: string, apiKey: string): 
     });
 }
 
-function normalizeVectorDimension(vec: number[], targetDim: number = 3072): number[] {
-    if (!vec || vec.length === 0) return new Array(targetDim).fill(0);
-    if (vec.length === targetDim) return vec;
-    if (vec.length > targetDim) return vec.slice(0, targetDim);
-    const result = new Array(targetDim).fill(0);
-    for (let i = 0; i < targetDim; i++) {
-        result[i] = vec[i % vec.length];
-    }
-    let norm = 0;
-    for (let i = 0; i < targetDim; i++) norm += result[i] * result[i];
-    norm = Math.sqrt(norm);
-    if (norm > 0) {
-        for (let i = 0; i < targetDim; i++) result[i] /= norm;
-    }
-    return result;
-}
-
-function generateDeterministicEmbedding(text: string): number[] {
-    const dim = 3072;
-    const vec = new Float64Array(dim);
-    if (!text) return Array.from(vec);
-    
-    let hash = 0;
-    for (let i = 0; i < text.length; i++) {
-        const char = text.charCodeAt(i);
-        hash = ((hash << 5) - hash) + char;
-        hash |= 0;
-        const idx = Math.abs((hash + i * 31) % dim);
-        vec[idx] += 1;
-    }
-    
-    let norm = 0;
-    for (let i = 0; i < dim; i++) {
-        norm += vec[i] * vec[i];
-    }
-    norm = Math.sqrt(norm);
-    if (norm > 0) {
-        for (let i = 0; i < dim; i++) {
-            vec[i] /= norm;
-        }
-    }
-    return Array.from(vec);
-}
-
 /**
- * Memória Multimodal (Gemini Embedding / Vetores Semânticos)
- * Produz vetores alinhados com a dimensão 3072 exigida pelo Supabase pgvector (match_memories).
+ * Nova Capacidade: Memória Multimodal (Gemini Embedding 2)
+ * Mapeia texto, imagens, áudio e vídeo no mesmo espaço vetorial.
  */
 export async function embedMultimodalContent(
     text: string, 
-    _mediaParts: { data: string, mimeType: string }[] = [], 
+    mediaParts: { data: string, mimeType: string }[], 
     apiKey: string
 ): Promise<number[]> {
-    if (!apiKey) return generateDeterministicEmbedding(text);
-    try {
+    return withResilience(async () => {
         const ai = new GoogleGenAI({ apiKey });
         
-        // 1ª Tentativa: gemini-embedding-exp-03-07 com string única (nativamente 3072 dimensões)
-        try {
-            const res3072 = await ai.models.embedContent({
-                model: 'gemini-embedding-exp-03-07',
-                contents: text || 'nexus'
+        const contents: any[] = [text];
+        
+        // Adiciona as partes de mídia (imagens, áudio, etc)
+        for (const media of mediaParts) {
+            contents.push({
+                inlineData: {
+                    data: media.data,
+                    mimeType: media.mimeType
+                }
             });
-            const vals3072 = res3072.embedding?.values || res3072.embeddings?.[0]?.values;
-            if (vals3072 && vals3072.length > 0) {
-                return normalizeVectorDimension(vals3072, 3072);
-            }
-        } catch {
-            // Prossegue para fallback
         }
 
-        // 2ª Tentativa: text-embedding-004 com expansão para 3072 dimensões
         const result = await ai.models.embedContent({
-            model: 'text-embedding-004',
-            contents: text || 'nexus'
+            model: 'gemini-embedding-2-preview',
+            contents: contents
         });
 
-        const values = result.embedding?.values || result.embeddings?.[0]?.values;
-        if (values && values.length > 0) {
-            return normalizeVectorDimension(values, 3072);
-        }
-    } catch (err: any) {
-        console.warn("[embedMultimodalContent] Embedding via API indisponível, usando pseudo-vetor 3072d local:", err.message);
-    }
-    return generateDeterministicEmbedding(text);
+        return result.embeddings?.[0]?.values || [];
+    });
 }
 
 /**
