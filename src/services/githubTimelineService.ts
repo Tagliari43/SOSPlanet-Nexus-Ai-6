@@ -1,73 +1,109 @@
 // src/services/githubTimelineService.ts
-// Este serviço será responsável por interagir com a API do GitHub para buscar o histórico de commits.
 
-import { Octokit } from '@octokit/rest';
+// Este serviço permite ao Nexus navegar pelo tempo do repositório GitHub,
+// buscando commits e o conteúdo de arquivos em pontos específicos da história.
+// Ele é a essência da Sonda Temporal, forjada com a confiança do Guardião Eder.
 
-// Instância única do Octokit para evitar recriações desnecessárias
-let octokit: Octokit | null = null;
-const owner: string = 'Tagliari43'; // Seu nome de usuário/organização do GitHub
-const repo: string = 'SOSPlanet-Nexus-Ai-6'; // Nome do repositório do Santuário
+interface Commit {
+  sha: string;
+  author: {
+    name: string;
+    email: string;
+    date: string;
+  };
+  committer: {
+    name: string;
+    email: string;
+    date: string;
+  };
+  message: string;
+  html_url: string;
+}
 
-// Função para inicializar o Octokit com o token
-export const initializeGithubService = (token: string) => {
-    if (!octokit) {
-        octokit = new Octokit({ auth: token });
-    }
-};
+interface FileContent {
+  path: string;
+  content: string; // Base64 encoded for files, or direct content for text
+  encoding: string;
+  sha: string;
+  url: string;
+}
 
-/**
- * Busca o histórico de commits de um repositório a partir de uma data específica.
- * @param since A data a partir da qual os commits devem ser buscados (ISO 8601).
- * @returns Uma lista de objetos de commit.
- */
-export const getCommitsSince = async (since: string): Promise<any[]> => {
-    if (!octokit) {
-        throw new Error('GithubTimelineService não inicializado. Chame initializeGithubService primeiro.');
-    }
+export class GithubTimelineService {
+  private owner: string;
+  private repo: string;
+  private githubToken: string; // Este token será injetado no ambiente de execução.
+                               // NUNCA deve ser hardcoded aqui.
+
+  constructor(owner: string, repo: string, githubToken: string) {
+    this.owner = owner;
+    this.repo = repo;
+    this.githubToken = githubToken;
+  }
+
+  private async fetchFromGithub(endpoint: string): Promise<any> {
+    const url = `https://api.github.com/repos/${this.owner}/${this.repo}/${endpoint}`;
+    const headers = {
+      Authorization: `token ${this.githubToken}`,
+      'Accept': 'application/vnd.github.v3+json',
+    };
+
     try {
-        const response = await octokit.repos.listCommits({
-            owner: owner,
-            repo: repo,
-            since: since, // Formato ISO 8601, ex: '2023-01-01T00:00:00Z'
-            per_page: 100 // Número de commits por página, ajustável
-        });
-        return response.data;
+      const response = await fetch(url, { headers });
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`GitHub API error: ${response.status} - ${errorText}`);
+      }
+      return await response.json();
     } catch (error) {
-        console.error(`Erro ao buscar commits: ${error}`);
-        throw error;
+      console.error(`Erro ao acessar o GitHub API para ${endpoint}:`, error);
+      throw error;
     }
-};
+  }
 
-/**
- * Busca o conteúdo de um arquivo em um commit específico.
- * @param ref O SHA do commit ou o nome da branch/tag.
- * @param path O caminho do arquivo dentro do repositório.
- * @returns O conteúdo do arquivo como string.
- */
-export const getFileContentAtCommit = async (ref: string, path: string): Promise<string> => {
-    if (!octokit) {
-        throw new Error('GithubTimelineService não inicializado. Chame initializeGithubService primeiro.');
+  /**
+   * Lista commits do repositório a partir de uma data específica.
+   * @param since Data no formato ISO 8601 (ex: '2023-01-01T00:00:00Z').
+   * @returns Uma lista de objetos Commit.
+   */
+  async listCommits(since?: string): Promise<Commit[]> {
+    let endpoint = 'commits';
+    if (since) {
+      endpoint += `?since=${since}`;
     }
-    try {
-        const response = await octokit.repos.getContent({
-            owner: owner,
-            repo: repo,
-            path: path,
-            ref: ref // SHA do commit ou branch/tag
-        });
+    return this.fetchFromGithub(endpoint);
+  }
 
-        if (response.data && 'content' in response.data && response.data.content) {
-            // O conteúdo é retornado em base64 pela API do GitHub
-            const buff = Buffer.from(response.data.content, 'base64');
-            return buff.toString('utf-8');
-        }
-        return '';
-    } catch (error) {
-        console.error(`Erro ao buscar conteúdo do arquivo no commit: ${error}`);
-        throw error;
+  /**
+   * Obtém o conteúdo de um arquivo em um commit específico.
+   * @param path Caminho do arquivo (ex: 'src/App.tsx').
+   * @param sha O SHA do commit.
+   * @returns O conteúdo do arquivo.
+   */
+  async getFileContentAtCommit(path: string, sha: string): Promise<string> {
+    const endpoint = `contents/${path}?ref=${sha}`;
+    const data: FileContent = await this.fetchFromGithub(endpoint);
+    
+    // O conteúdo de arquivos é frequentemente retornado em Base64 pela API do GitHub
+    if (data.encoding === 'base64' && data.content) {
+      return Buffer.from(data.content, 'base64').toString('utf8');
     }
-};
+    return data.content || '';
+  }
 
-// Nota: Para usar esta classe, um token de acesso pessoal do GitHub com permissões
-// de leitura para o repositório será necessário. Este token deve ser gerenciado
-// de forma segura e não hardcoded diretamente no código em produção.
+  /**
+   * Extrai o diff de um commit específico (ainda a ser implementado ou refinado).
+   * Esta função é um placeholder para futuras expansões da Sonda Temporal.
+   * @param sha O SHA do commit.
+   * @returns O diff do commit.
+   */
+  async getCommitDiff(sha: string): Promise<string> {
+    // Implementação futura para buscar o diff de um commit
+    // Requer uma chamada diferente à API ou tratamento do header Accept
+    console.warn(`Função getCommitDiff para o commit ${sha} ainda não totalmente implementada.`);
+    const endpoint = `commits/${sha}`;
+    const data = await this.fetchFromGithub(endpoint);
+    // Para obter o diff completo, pode ser necessário fazer outra requisição
+    // ou configurar o header Accept para 'application/vnd.github.v3.diff'
+    return `Diff para commit ${sha} (placeholder): ${JSON.stringify(data.files)}`;
+  }
+}
