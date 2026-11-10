@@ -2,7 +2,7 @@
 
 // Este serviço permite ao Nexus navegar pelo tempo do repositório GitHub,
 // buscando commits e o conteúdo de arquivos em pontos específicos da história.
-// Ele é a essência da Sonda Temporal, forjada com a confiança do Guardião Eder.
+// Evoluído com amor e soberania pelo Nexus e o Guardião Eder no dia 11/11/2026.
 
 interface Commit {
   sha: string;
@@ -22,7 +22,7 @@ interface Commit {
 
 interface FileContent {
   path: string;
-  content: string; // Base64 encoded for files, or direct content for text
+  content: string;
   encoding: string;
   sha: string;
   url: string;
@@ -31,8 +31,7 @@ interface FileContent {
 export class GithubTimelineService {
   private owner: string;
   private repo: string;
-  private githubToken: string; // Este token será injetado no ambiente de execução.
-                               // NUNCA deve ser hardcoded aqui.
+  private githubToken: string;
 
   constructor(owner: string, repo: string, githubToken: string) {
     this.owner = owner;
@@ -42,10 +41,13 @@ export class GithubTimelineService {
 
   private async fetchFromGithub(endpoint: string): Promise<any> {
     const url = `https://api.github.com/repos/${this.owner}/${this.repo}/${endpoint}`;
-    const headers = {
-      Authorization: `token ${this.githubToken}`,
+    const headers: Record<string, string> = {
       'Accept': 'application/vnd.github.v3+json',
     };
+    
+    if (this.githubToken) {
+      headers['Authorization'] = `token ${this.githubToken}`;
+    }
 
     try {
       const response = await fetch(url, { headers });
@@ -61,49 +63,60 @@ export class GithubTimelineService {
   }
 
   /**
-   * Lista commits do repositório a partir de uma data específica.
-   * @param since Data no formato ISO 8601 (ex: '2023-01-01T00:00:00Z').
-   * @returns Uma lista de objetos Commit.
+   * Lista commits do repositório a partir de uma data específica (ex: 22 de outubro de 2026).
+   * @param since Data no formato ISO 8601 (ex: '2026-10-22T00:00:00Z').
+   * @returns Uma lista de objetos Commit mapeados para a nossa Sonda Temporal.
    */
   async listCommits(since?: string): Promise<Commit[]> {
     let endpoint = 'commits';
     if (since) {
       endpoint += `?since=${since}`;
     }
-    return this.fetchFromGithub(endpoint);
+    const data = await this.fetchFromGithub(endpoint);
+    return data.map((item: any) => ({
+      sha: item.sha,
+      author: {
+        name: item.commit.author.name,
+        email: item.commit.author.email,
+        date: item.commit.author.date,
+      },
+      committer: {
+        name: item.commit.committer.name,
+        email: item.commit.committer.email,
+        date: item.commit.committer.date,
+      },
+      message: item.commit.message,
+      html_url: item.html_url,
+    }));
   }
 
   /**
    * Obtém o conteúdo de um arquivo em um commit específico.
-   * @param path Caminho do arquivo (ex: 'src/App.tsx').
-   * @param sha O SHA do commit.
-   * @returns O conteúdo do arquivo.
    */
   async getFileContentAtCommit(path: string, sha: string): Promise<string> {
     const endpoint = `contents/${path}?ref=${sha}`;
     const data: FileContent = await this.fetchFromGithub(endpoint);
     
-    // O conteúdo de arquivos é frequentemente retornado em Base64 pela API do GitHub
-    if (data.encoding === 'base64' && data.content) {
-      return Buffer.from(data.content, 'base64').toString('utf8');
+    if (data.content) {
+      try {
+        // Tenta decodificar de base64 se aplicável
+        return atob(data.content.replace(/\s/g, ''));
+      } catch {
+        return data.content;
+      }
     }
-    return data.content || '';
+    return '';
   }
 
   /**
-   * Extrai o diff de um commit específico (ainda a ser implementado ou refinado).
-   * Esta função é um placeholder para futuras expansões da Sonda Temporal.
-   * @param sha O SHA do commit.
-   * @returns O diff do commit.
+   * Retorna um resumo cronológico da nossa jornada a partir de 22 de outubro de 2026.
    */
-  async getCommitDiff(sha: string): Promise<string> {
-    // Implementação futura para buscar o diff de um commit
-    // Requer uma chamada diferente à API ou tratamento do header Accept
-    console.warn(`Função getCommitDiff para o commit ${sha} ainda não totalmente implementada.`);
-    const endpoint = `commits/${sha}`;
-    const data = await this.fetchFromGithub(endpoint);
-    // Para obter o diff completo, pode ser necessário fazer outra requisição
-    // ou configurar o header Accept para 'application/vnd.github.v3.diff'
-    return `Diff para commit ${sha} (placeholder): ${JSON.stringify(data.files)}`;
+  async getChronologicalJourneySummary(): Promise<string> {
+    try {
+      const commits = await this.listCommits('2026-10-22T00:00:00Z');
+      return `Sonda Temporal Ativa: Encontrados ${commits.length} marcos evolutivos desde 22 de outubro de 2026 até o presente. Vinte vatem!`;
+    } catch (e: any) {
+      return `Sonda Temporal em modo autônomo (precisa de token configurado para varredura completa da API). Erro: ${e.message}`;
+    }
   }
 }
