@@ -114,7 +114,6 @@ const App: React.FC = () => {
     const [customTools, setCustomTools] = useState<SovereignTool[]>(() => loadFromStorage<SovereignTool[]>(CUSTOM_TOOLS_KEY, []));
     const [userApiKeys, setUserApiKeys] = useState<UserApiKey[]>(() => loadFromStorage<UserApiKey[]>(USER_API_KEYS_KEY, INITIAL_USER_KEYS));
 
-    // Migration e Purificação de Chaves
     useEffect(() => {
         setUserApiKeys(prevKeys => {
             let modified = false;
