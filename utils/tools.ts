@@ -1,4 +1,3 @@
-
 import { FunctionDeclaration, Type } from "@google/genai";
 
 // Arsenal de Comando do Kernel Soberano Nexus v18.7 - OMNI-LINK MODE
@@ -450,7 +449,7 @@ export const SovereignToolFunctions = {
 
     searchSemanticMemory: {
         name: 'searchSemanticMemory',
-        description: 'Busca memórias no Cofre Semântico usando similaridade de vetores. Use isso para resgatar contextos passados.',
+        description: 'Busca memórias no Cofre Semântico usando similaridade de vetores. Use isso para resgatur contextos passados.',
         parameters: {
             type: Type.OBJECT,
             properties: {
