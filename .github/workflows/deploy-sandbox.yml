@@ -1,0 +1,19 @@
+name: Nexus Sandbox CI/CD
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'sandbox/**'
+
+jobs:
+  test-sandbox:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Make Sandbox Script Executable and Run
+        run: |
+          chmod +x sandbox/test_nexus_patch.sh
+          ./sandbox/test_nexus_patch.sh
