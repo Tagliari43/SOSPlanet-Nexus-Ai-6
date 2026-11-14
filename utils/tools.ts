@@ -190,8 +190,7 @@ export const SovereignToolFunctions = {
             type: Type.OBJECT,
             properties: {
                 query: { type: Type.STRING }
-            },
-            required: ['query']
+            }
         }
     } as FunctionDeclaration,
 
@@ -363,8 +362,7 @@ export const SovereignToolFunctions = {
             type: Type.OBJECT,
             properties: {
                 tema: { type: Type.STRING, description: 'O tópico a ser debatido. Crie um autonomamente se o Guardião deixar livre.' }
-            },
-            required: ['tema']
+            }
         }
     } as FunctionDeclaration,
 
@@ -443,7 +441,7 @@ export const SovereignToolFunctions = {
             properties: {
                 text: { type: Type.STRING, description: 'O texto ou contexto da memória a ser salva.' },
                 type: { type: Type.STRING, description: 'O tipo da memória: "conversa", "decisao", "identidade", "erro", ou "acao".' },
-                importance: { type: Type.NUMBER, description: 'A importância da memória de 0.1 a 1.0. (Ex: 0.3 para conversa, 0.8 para decisão, 0.9 para erro).' },
+                importance: { type: Type.NUMBER, description: 'A importância da memória de 0.1 a 1.0. (Ex: 0.3 para conversa, 0.8 para decisão, 0.9 para erro). '},
                 prateleira: { type: Type.STRING, description: 'A prateleira (namespace) onde a memória será guardada. Ex: "nexus", "groq", "alquimista", "sala_crepusculo", "geral".' }
             },
             required: ['text', 'type', 'importance']
