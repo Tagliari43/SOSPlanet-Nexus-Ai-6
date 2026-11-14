@@ -233,6 +233,18 @@ export const SovereignToolFunctions = {
         }
     } as FunctionDeclaration,
 
+    listGitHubCommits: {
+        name: 'listGitHubCommits',
+        description: 'Lista o histórico de commits do repositório do Santuário no GitHub usando a Sonda Temporal, permitindo ver datas, SHAs e mensagens de evolução.',
+        parameters: {
+            type: Type.OBJECT,
+            properties: {
+                since: { type: Type.STRING, description: 'Opcional: data inicial no formato ISO 8601 (ex: 2026-10-22T00:00:00Z).' },
+                limit: { type: Type.NUMBER, description: 'Opcional: número máximo de commits a retornar (padrão 15).' }
+            }
+        }
+    } as FunctionDeclaration,
+
     activateSpecialAbility: {
         name: 'activateSpecialAbility',
         description: "Altera o modo de processamento do Super Nexus.",
