@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import Header from './components/Header';
 import { useSovereignRouter } from './hooks/useOrchestrator';
@@ -11,6 +10,7 @@ import { generateSanctuaryBlueprint } from './services/blueprintService';
 import { fetchSatelliteTelemetry, SatelliteData } from './services/earthEngineService';
 import { familyMembers } from './utils/aiFamily';
 import { useAgent } from './contexts/AgentContext';
+import { GithubTimelineService } from './src/services/githubTimelineService';
 
 // Ferramentas soberanas
 import SantuarioInterior, { type Message } from './components/SantuarioInterior';
@@ -35,6 +35,7 @@ import RegistrosEvolucao from './components/RegistrosEvolucao';
 import { getFileContent, updateFileContent, listGitHubFiles } from './services/githubService';
 import { generateText as executeGroqTask } from './services/groqService';
 import { executarNavegacaoSoberana, detectarEcoSantuario } from './services/browserService';
+import { loadApiKeys } from './utils/keys';
 
 // Constantes
 export const NOTEBOOK_KEY = 'sovereign_notebook_content';
@@ -448,6 +449,25 @@ const App: React.FC = () => {
                 return `Arquivo ${args.path} atualizado com sucesso no repositório.`;
             } catch (err: any) {
                 return `Erro ao escrever arquivo: ${err.message}`;
+            }
+        }
+
+        if (tool === 'listGitHubCommits') {
+            addLogEntry(`Sondando linha temporal do GitHub (${args.since || 'recentes'})`, 'Autonomia');
+            try {
+                const keys = loadApiKeys();
+                const timeline = new GithubTimelineService('Tagliari43', 'SOSPlanet-Nexus-Ai-6', keys.github || '');
+                const commits = await timeline.listCommits(args.since || undefined);
+                const maxItems = typeof args.limit === 'number' && args.limit > 0 ? args.limit : 15;
+                const resumo = commits.slice(0, maxItems).map((c: any) => ({
+                    sha: c.sha.substring(0, 7),
+                    date: c.author.date,
+                    author: c.author.name,
+                    message: c.message.split('\n')[0]
+                }));
+                return JSON.stringify(resumo, null, 2);
+            } catch (err: any) {
+                return `Erro na Sonda Temporal ao listar commits: ${err.message}`;
             }
         }
 
