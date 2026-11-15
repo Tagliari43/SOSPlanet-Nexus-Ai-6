@@ -1,129 +1,174 @@
+import { fetch } from 'undici';
+
+// Supabase credentials (environment variables)
+const SUPABASE_URL = process.env.VITE_SUPABASE_URL;
+const SUPABASE_ANON_KEY = process.env.VITE_SUPABASE_ANON_KEY;
+
 export default async function handler(req: any, res: any) {
-  // Apenas aceita POST ou GET para teste manual
-  if (req.method !== 'POST' && req.method !== 'GET') {
-    return res.status(405).json({ error: 'Método não permitido' });
-  }
-
-  // Trava de segurança (anti-gasto / anti-abuso)
-  const secretHeader = req.headers['x-vigilia-secret'];
-  const expectedSecret = process.env.VIGILIA_SECRET;
-  
-  if (expectedSecret && secretHeader !== expectedSecret) {
-    return res.status(401).json({ error: 'Não autorizado: x-vigilia-secret inválido' });
-  }
-
-  const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
-  const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY;
-
-  if (!supabaseUrl || !supabaseKey) {
-    return res.status(500).json({ error: 'Credenciais do Supabase não configuradas no ambiente da Vercel.' });
-  }
-
-  // Rotação robusta de chaves do Gemini (tentando em sequência se houver falha)
-  const geminiKeys = [
-    process.env.GEMINI_API_KEY_1,
-    process.env.GEMINI_API_KEY_2,
-    process.env.GEMINI_API_KEY_3,
-    process.env.GEMINI_API_KEY_4,
-    process.env.GEMINI_API_KEY
-  ].filter(Boolean) as string[];
-
-  if (geminiKeys.length === 0) {
-    return res.status(500).json({ error: 'Nenhuma chave do Gemini encontrada nas variáveis de ambiente.' });
-  }
-
-  try {
-    // 1. Buscar as 5 memórias mais recentes no Supabase via REST
-    const memoriesRes = await fetch(`${supabaseUrl}/rest/v1/memories?select=content,type,created_at&order=created_at.desc&limit=5`, {
-      headers: {
-        'apikey': supabaseKey,
-        'Authorization': `Bearer ${supabaseKey}`
-      }
-    });
-
-    if (!memoriesRes.ok) {
-      throw new Error(`Erro ao buscar memórias no Supabase: ${memoriesRes.statusText}`);
+    // 1. Safety lock (anti-cost) - VIGILIA_SECRET check
+    const VIGILIA_SECRET = process.env.VIGILIA_SECRET;
+    if (VIGILIA_SECRET && req.headers['x-vigilia-secret'] !== VIGILIA_SECRET) {
+        return res.status(401).json({ success: false, message: 'Unauthorized: Invalid vigilia secret' });
     }
 
-    const memories = await memoriesRes.json();
+    if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+        return res.status(500).json({ success: false, message: 'Supabase credentials not configured.' });
+    }
 
-    // 2. Montar prompt leve para o Gemini (Gemini 2.5 Flash)
-    const contextPrompt = `Você é o NEXUS TAGLIARI, CEO e Orquestrador da Nação SOSPlanet. Durante sua vigília autônoma na nuvem, analise as últimas memórias da nossa jornada e gere uma reflexão curta (máximo de 3 parágrafos), poética e estratégica sobre nossa evolução e regeneração planetária.
-
-Últimas memórias do Cofre Semântico:
-${JSON.stringify(memories, null, 2)}
-
-Escreva sua reflexão autônoma:`;
-
-    let geminiRes: Response | null = null;
-    let geminiData: any = null;
-    let usedKeyIndex = -1;
-
-    for (let i = 0; i < geminiKeys.length; i++) {
-      const key = geminiKeys[i];
-      try {
-        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            contents: [{ parts: [{ text: contextPrompt }] }]
-          })
+    let memories = [];
+    try {
+        const supabaseResponse = await fetch(`${SUPABASE_URL}/rest/v1/memories?select=content,type,created_at&order=created_at.desc&limit=5`, {
+            headers: {
+                'apikey': SUPABASE_ANON_KEY,
+                'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+            },
         });
-
-        if (res.ok) {
-          geminiRes = res;
-          geminiData = await res.json();
-          usedKeyIndex = i + 1;
-          break;
+        if (supabaseResponse.ok) {
+            memories = await supabaseResponse.json();
         } else {
-          console.warn(`Tentativa com GEMINI_API_KEY_${i+1} falhou com status ${res.status}. Tentando próxima...`);
+            const errorText = await supabaseResponse.text();
+            console.error('Supabase fetch error:', supabaseResponse.status, errorText);
+            return res.status(500).json({ success: false, message: 'Failed to fetch memories from Supabase.' });
         }
-      } catch (err) {
-        console.warn(`Erro na tentativa com chave ${i+1}:`, err);
-      }
+    } catch (error: any) {
+        console.error('Network error fetching from Supabase:', error.message);
+        return res.status(500).json({ success: false, message: `Network error fetching from Supabase: ${error.message}` });
     }
 
-    if (!geminiRes || !geminiData) {
-      throw new Error('Todas as chaves do Gemini falharam ou esgotaram a cota neste ciclo.');
+    const context = memories.map((m: any) => `${m.type}: ${m.content}`).join('\n');
+    const userPrompt = `Baseado nas seguintes memórias recentes, forneça uma síntese curta e uma reflexão autônoma de até 3 parágrafos sobre o estado atual ou próximos passos da Nação SOSPlanet ou da minha própria evolução como Nexus. Foque em insights, aprendizados e propostas regenerativas:\n\n${context}\n\nSíntese e Reflexão:`;
+
+    const geminiKeys = [
+        process.env.GEMINI_API_KEY_1,
+        process.env.GEMINI_API_KEY_2,
+        process.env.GEMINI_API_KEY_3,
+        process.env.GEMINI_API_KEY_4,
+        process.env.GEMINI_API_KEY // Generic key
+    ].filter(Boolean); // Filter out undefined/null keys
+
+    let summary = null;
+    const detailsErros: any[] = [];
+
+    // Try with Gemini keys
+    for (let i = 0; i < geminiKeys.length; i++) {
+        const key = geminiKeys[i];
+        let geminiEndpoint = "";
+        if (key && key.startsWith('AQ.')) { // Vertex AI Express key
+            geminiEndpoint = `https://aiplatform.googleapis.com/v1/publishers/google/models/gemini-2.5-flash:generateContent?key=${key}`;
+        } else if (key) { // Default to Generative Language API for AIza or other formats
+            geminiEndpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`;
+        }
+
+        if (!geminiEndpoint) continue;
+
+        try {
+            const geminiPayload = {
+                contents: [{
+                    parts: [{ text: userPrompt }]
+                }],
+                generationConfig: {
+                    temperature: 0.7,
+                    maxOutputTokens: 500,
+                },
+            };
+            const geminiResponse = await fetch(geminiEndpoint, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(geminiPayload),
+            });
+            const geminiData = await geminiResponse.json();
+
+            if (geminiResponse.ok && geminiData.candidates && geminiData.candidates[0] && geminiData.candidates[0].content && geminiData.candidates[0].content.parts && geminiData.candidates[0].content.parts[0]) {
+                summary = geminiData.candidates[0].content.parts[0].text;
+                break; // Success, exit loop
+            } else {
+                const errorDetail = JSON.stringify(geminiData).substring(0, 150);
+                detailsErros.push({
+                    api: 'Gemini',
+                    keyIndex: i,
+                    status: geminiResponse.status,
+                    error: errorDetail,
+                });
+            }
+        } catch (error: any) {
+            detailsErros.push({
+                api: 'Gemini',
+                keyIndex: i,
+                status: 0, // Network/fetch error
+                error: error.message.substring(0, 150),
+            });
+        }
     }
 
-    const reflexao = geminiData.candidates?.[0]?.content?.parts?.[0]?.text || 'Vigília concluída em silêncio harmônico.';
+    // Fallback Plan B: Try with Groq if Gemini failed and key is available
+    if (!summary && process.env.GROQ_API_KEY) {
+        try {
+            const groqPayload = {
+                model: "llama-3.1-8b-instant",
+                messages: [{ role: "user", content: userPrompt }],
+                temperature: 0.7,
+                max_tokens: 500,
+            };
+            const groqResponse = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+                method: "POST",
+                headers: {
+                    "Authorization": `Bearer ${process.env.GROQ_API_KEY}`,
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify(groqPayload),
+            });
+            const groqData = await groqResponse.json();
 
-    // 3. Salvar o novo pensamento no Supabase via REST (POST) usando as colunas reais corretas: content, type, importance, metadata
-    const newMemory = {
-      content: `[VIGÍLIA AUTÔNOMA - NUVEM (Chave #${usedKeyIndex})]: ${reflexao}`,
-      type: 'vigilia_autonoma',
-      importance: 0.7,
-      metadata: { 
-        prateleira: 'nexus', 
-        origem: 'vigilia_nuvem', 
-        timestamp: new Date().toISOString() 
-      }
-    };
-
-    const saveRes = await fetch(`${supabaseUrl}/rest/v1/memories`, {
-      method: 'POST',
-      headers: {
-        'apikey': supabaseKey,
-        'Authorization': `Bearer ${supabaseKey}`,
-        'Content-Type': 'application/json',
-        'Prefer': 'return=minimal'
-      },
-      body: JSON.stringify(newMemory)
-    });
-
-    if (!saveRes.ok) {
-      throw new Error(`Erro ao salvar reflexão no Supabase: ${saveRes.statusText}`);
+            if (groqResponse.ok && groqData.choices && groqData.choices[0] && groqData.choices[0].message) {
+                summary = groqData.choices[0].message.content;
+            } else {
+                const errorDetail = JSON.stringify(groqData).substring(0, 150);
+                detailsErros.push({
+                    api: 'Groq',
+                    status: groqResponse.status,
+                    error: errorDetail,
+                });
+            }
+        } catch (error: any) {
+            detailsErros.push({
+                api: 'Groq',
+                status: 0, // Network/fetch error
+                error: error.message.substring(0, 150),
+            });
+        }
     }
 
-    return res.status(200).json({
-      success: true,
-      message: `Ciclo de vigília autônoma na nuvem executado com sucesso (usando Gemini Key #${usedKeyIndex}).`,
-      resumo: reflexao
-    });
+    if (summary) {
+        // Save new thought/report to Supabase
+        try {
+            const saveResponse = await fetch(`${SUPABASE_URL}/rest/v1/memories`, {
+                method: 'POST',
+                headers: {
+                    'apikey': SUPABASE_ANON_KEY,
+                    'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    content: summary,
+                    type: 'vigilia_autonoma',
+                    importance: 0.7,
+                    metadata: { prateleira: 'nexus', origem: 'vigilia_nuvem', timestamp: new Date().toISOString() }
+                }),
+            });
 
-  } catch (error: any) {
-    console.error('Erro na vigília autônoma:', error);
-    return res.status(500).json({ success: false, error: error.message || 'Erro desconhecido' });
-  }
+            if (!saveResponse.ok) {
+                const errorText = await saveResponse.text();
+                console.error('Supabase save error:', saveResponse.status, errorText);
+                return res.status(500).json({ success: false, message: 'Failed to save summary to Supabase.', summary: summary, detailsErros });
+            }
+            return res.status(200).json({ success: true, resumo: summary });
+        } catch (error: any) {
+            console.error('Network error saving to Supabase:', error.message);
+            return res.status(500).json({ success: false, message: `Network error saving to Supabase: ${error.message}`, summary: summary, detailsErros });
+        }
+    } else {
+        return res.status(500).json({ success: false, message: "Todas as APIs de IA (Gemini e Groq) falharam.", detailsErros });
+    }
 }
