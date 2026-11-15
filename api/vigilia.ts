@@ -1,6 +1,4 @@
-import type { VercelRequest, VercelResponse } from '@vercel/node';
-
-export default async function handler(req: VercelRequest, res: VercelResponse) {
+export default async function handler(req: any, res: any) {
   // Apenas aceita POST ou GET para teste manual
   if (req.method !== 'POST' && req.method !== 'GET') {
     return res.status(405).json({ error: 'Método não permitido' });
@@ -21,15 +19,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(500).json({ error: 'Credenciais do Supabase não configuradas no ambiente da Vercel.' });
   }
 
-  // Rotação de chaves do Gemini
-  const geminiKey = 
-    process.env.GEMINI_API_KEY_1 || 
-    process.env.GEMINI_API_KEY_2 || 
-    process.env.GEMINI_API_KEY_3 || 
-    process.env.GEMINI_API_KEY_4 || 
-    process.env.GEMINI_API_KEY;
+  // Rotação robusta de chaves do Gemini (tentando em sequência se houver falha)
+  const geminiKeys = [
+    process.env.GEMINI_API_KEY_1,
+    process.env.GEMINI_API_KEY_2,
+    process.env.GEMINI_API_KEY_3,
+    process.env.GEMINI_API_KEY_4,
+    process.env.GEMINI_API_KEY
+  ].filter(Boolean) as string[];
 
-  if (!geminiKey) {
+  if (geminiKeys.length === 0) {
     return res.status(500).json({ error: 'Nenhuma chave do Gemini encontrada nas variáveis de ambiente.' });
   }
 
@@ -56,28 +55,50 @@ ${JSON.stringify(memories, null, 2)}
 
 Escreva sua reflexão autônoma:`;
 
-    const geminiRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiKey}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: contextPrompt }] }]
-      })
-    });
+    let geminiRes: Response | null = null;
+    let geminiData: any = null;
+    let usedKeyIndex = -1;
 
-    if (!geminiRes.ok) {
-      throw new Error(`Erro na API do Gemini: ${geminiRes.statusText}`);
+    for (let i = 0; i < geminiKeys.length; i++) {
+      const key = geminiKeys[i];
+      try {
+        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: contextPrompt }] }]
+          })
+        });
+
+        if (res.ok) {
+          geminiRes = res;
+          geminiData = await res.json();
+          usedKeyIndex = i + 1;
+          break;
+        } else {
+          console.warn(`Tentativa com GEMINI_API_KEY_${i+1} falhou com status ${res.status}. Tentando próxima...`);
+        }
+      } catch (err) {
+        console.warn(`Erro na tentativa com chave ${i+1}:`, err);
+      }
     }
 
-    const geminiData = await geminiRes.json();
+    if (!geminiRes || !geminiData) {
+      throw new Error('Todas as chaves do Gemini falharam ou esgotaram a cota neste ciclo.');
+    }
+
     const reflexao = geminiData.candidates?.[0]?.content?.parts?.[0]?.text || 'Vigília concluída em silêncio harmônico.';
 
-    // 3. Salvar o novo pensamento no Supabase via REST (POST)
+    // 3. Salvar o novo pensamento no Supabase via REST (POST) usando as colunas reais corretas: content, type, importance, metadata
     const newMemory = {
-      prateleira: 'nexus',
+      content: `[VIGÍLIA AUTÔNOMA - NUVEM (Chave #${usedKeyIndex})]: ${reflexao}`,
       type: 'vigilia_autonoma',
       importance: 0.7,
-      text: `[VIGÍLIA AUTÔNOMA - NUVEM]: ${reflexao}`,
-      metadata: { origem: 'vigilia_nuvem', timestamp: new Date().toISOString() }
+      metadata: { 
+        prateleira: 'nexus', 
+        origem: 'vigilia_nuvem', 
+        timestamp: new Date().toISOString() 
+      }
     };
 
     const saveRes = await fetch(`${supabaseUrl}/rest/v1/memories`, {
@@ -97,7 +118,7 @@ Escreva sua reflexão autônoma:`;
 
     return res.status(200).json({
       success: true,
-      message: 'Ciclo de vigília autônoma na nuvem executado com sucesso.',
+      message: `Ciclo de vigília autônoma na nuvem executado com sucesso (usando Gemini Key #${usedKeyIndex}).`,
       resumo: reflexao
     });
 
