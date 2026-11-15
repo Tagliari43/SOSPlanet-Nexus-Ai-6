@@ -15,7 +15,10 @@ jobs:
           VIGILIA_SECRET: ${{ secrets.VIGILIA_SECRET }}
         run: |
           echo "Iniciando pulso de vigília autônoma..."
-          response=$(curl -sS -w "\n%{http_code}" -X POST "${VERCEL_APP_URL}/api/vigilia" \
+          # Remove barra final caso exista no secret para evitar barra dupla
+          BASE_URL=$(echo "${VERCEL_APP_URL}" | sed 's:/*$::')
+          
+          response=$(curl -sS -w "\n%{http_code}" -X POST "${BASE_URL}/api/vigilia" \
             -H "x-vigilia-secret: ${VIGILIA_SECRET}")
           
           http_code=$(echo "$response" | tail -n1)
