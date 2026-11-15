@@ -1,0 +1,31 @@
+name: Vigília Contínua na Nuvem
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 */2 * * *'
+
+jobs:
+  executar-vigilia:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Disparar Vigília Autônoma na Vercel
+        env:
+          VERCEL_APP_URL: ${{ secrets.VERCEL_APP_URL }}
+          VIGILIA_SECRET: ${{ secrets.VIGILIA_SECRET }}
+        run: |
+          echo "Iniciando pulso de vigília autônoma..."
+          response=$(curl -sS -w "\n%{http_code}" -X POST "${VERCEL_APP_URL}/api/vigilia" \
+            -H "x-vigilia-secret: ${VIGILIA_SECRET}")
+          
+          http_code=$(echo "$response" | tail -n1)
+          body=$(echo "$response" | head -n -1)
+          
+          echo "Resposta HTTP: $http_code"
+          echo "Corpo: $body"
+          
+          if [ "$http_code" -ne 200 ]; then
+            echo "Erro: A vigília falhou com o código $http_code"
+            exit 1
+          fi
+          echo "Vigília autônoma concluída com sucesso!"
