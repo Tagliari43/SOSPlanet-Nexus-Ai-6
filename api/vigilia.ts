@@ -1,4 +1,3 @@
-
 const { GoogleGenAI } = require('@google/generative-ai');
 const { createClient } = require('@supabase/supabase-js');
 const fetch = require('node-fetch');
@@ -36,7 +35,7 @@ const fetchWithTimeout = async (promise, ms) => {
 };
 
 module.exports = async (req, res) => {
-    // ... (GET logic for 5 memories from 4d70ea9)
+    // GET logic for 5 memories from 4d70ea9
     if (req.method === 'GET') {
         try {
             const { data, error } = await supabase
@@ -66,14 +65,13 @@ module.exports = async (req, res) => {
 
     let summary = '';
     let modelUsed = '';
-    // Add workingKey as requested by Architect
     let workingKey = '';
 
-    // Applying change 1: modelsToTry
+    // 1. Model order adjustment
     const modelsToTry = ['gemini-3.5-flash-lite', 'gemini-3.8-flash', 'gemini-2.5-flash'];
     let success = false;
 
-    // --- GET the 5 most recent memories for context, as was in 4d70ea9 ---
+    // GET the 5 most recent memories for context
     let recentMemories = [];
     try {
         const { data, error } = await supabase
@@ -86,7 +84,6 @@ module.exports = async (req, res) => {
         recentMemories = data;
     } catch (error) {
         console.error('Error fetching recent memories for prompt context:', error);
-        // Proceed without recent memories if there's an error
     }
 
     const memoriesContext = recentMemories.map(mem => `[${mem.metadata?.timestamp || 'N/A'}] ${mem.content}`).join('\n');
@@ -100,11 +97,11 @@ module.exports = async (req, res) => {
                 const genAI = new GoogleGenAI(apiKey);
                 const modelInstance = genAI.getGenerativeModel({ model });
 
-                const result = await fetchWithTimeout(modelInstance.generateContent(promptContent), 15000); // 15 sec timeout for content generation
+                const result = await fetchWithTimeout(modelInstance.generateContent(promptContent), 12000);
                 const response = result.response;
                 summary = response.text();
                 modelUsed = model;
-                workingKey = apiKey; // Save the working key
+                workingKey = apiKey; // Save working key for embedding
                 success = true;
                 break;
             } catch (e) {
@@ -119,57 +116,55 @@ module.exports = async (req, res) => {
         return res.status(500).json({ error: 'Failed to generate summary' });
     }
 
-    // Applying change 2: Embedding generation
-    let embedding = new Array(768).fill(0); // Default fallback
-
+    // 2. Embedding generation using workingKey and fetchWithTimeout (8s)
+    let embedding = new Array(768).fill(0);
     try {
         const embAi = new GoogleGenAI({ apiKey: workingKey });
-        const embRes = await fetchWithTimeout(embAi.models.embedContent({ model: 'gemini-embedding-2-preview', contents: [{ text: summary }] }), 8000);
+        const embRes = await fetchWithTimeout(embAi.models.embedContent({ model: 'gemini-embedding-2-preview', contents: [summary] }), 8000);
         embedding = embRes?.embeddings?.[0]?.values || new Array(768).fill(0);
     } catch (e) {
         console.error('Error generating embedding:', e);
-        embedding = new Array(768).fill(0); // Ensure fallback in case of error
+        embedding = new Array(768).fill(0);
     }
 
-    // Applying change 3 & 4: Supabase POST columns and fallback
-    let supabaseResponse;
+    // 3 & 4. Supabase POST with correct schema (content, embedding, type, importance, metadata)
     try {
-        supabaseResponse = await supabase
+        const { error: insertError } = await supabase
             .from('memories')
             .insert([
                 {
                     content: summary,
-                    embedding: embedding,
+                    embedding,
                     type: 'vigilia_autonoma',
                     importance: 0.7,
                     metadata: {
                         prateleira: 'nexus',
                         origem: 'vigilia_nuvem',
                         timestamp: new Date().toISOString(),
-                        model: modelUsed,
+                        model: modelUsed
                     }
                 }
             ]);
 
-        if (supabaseResponse.error) throw supabaseResponse.error;
+        if (insertError) throw insertError;
 
         return res.status(200).json({ message: 'Vigília concluída e memória persistida.', summary, modelUsed });
 
     } catch (dbError) {
         console.error('Error persisting memory to Supabase:', dbError);
 
-        // Fallback POST without embedding if primary fails or if embedding caused the issue (though less likely with fallback)
+        // Fallback POST
         try {
-            const fallbackSupabaseResponse = await supabase
+            const { error: fallbackError } = await supabase
                 .from('memories')
                 .insert([
                     {
                         content: summary,
-                        embedding: embedding, // Still try to send embedding in fallback
-                        type: 'vigilia_autonoma_fallback',
-                        importance: 0.5,
+                        embedding,
+                        type: 'vigilia_autonoma',
+                        importance: 0.7,
                         metadata: {
-                            prateleira: 'nexus_fallback',
+                            prateleira: 'nexus',
                             origem: 'vigilia_nuvem_fallback',
                             timestamp: new Date().toISOString(),
                             model: modelUsed,
@@ -177,12 +172,13 @@ module.exports = async (req, res) => {
                         }
                     }
                 ]);
-            if (fallbackSupabaseResponse.error) throw fallbackSupabaseResponse.error;
-            return res.status(200).json({ message: 'Vigília concluída, memória persistida com fallback.', summary, modelUsed, warning: 'Original persistence failed, fallback used.' });
 
+            if (fallbackError) throw fallbackError;
+
+            return res.status(200).json({ message: 'Vigília concluída com fallback.', summary, modelUsed });
         } catch (fallbackDbError) {
-            console.error('Critical: Fallback persistence to Supabase also failed:', fallbackDbError);
-            return res.status(500).json({ error: 'Critical: Failed to persist memory even with fallback.', originalError: dbError.message, fallbackError: fallbackDbError.message });
+            console.error('Critical fallback failure:', fallbackDbError);
+            return res.status(500).json({ error: 'Critical DB error', original: dbError.message, fallback: fallbackDbError.message });
         }
     }
 };
