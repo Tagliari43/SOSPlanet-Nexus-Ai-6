@@ -75,13 +75,13 @@ export default async function handler(req: any, res: any) {
             } catch (error: any) {
                 detailsErros.push({
                     api: 'Gemini',
-                    keyIndex: i,\
+                    keyIndex: i,
                     model: modelName,
                     status: error.status || 'network_error',
                     error: error.message?.substring(0, 180) || 'Unknown error',
                 });
             }
-        }\
+        }
 
         if (summary) {
             break; // Success, exit key loop
@@ -159,10 +159,10 @@ export default async function handler(req: any, res: any) {
             return res.status(200).json({ success: true, resumo: summary });
         } else {
             // Return detailed error if all save attempts failed
-            return res.status(500).json({ 
-                success: false, 
-                message: 'Failed to save summary to Supabase after multiple attempts.', 
-                summary: summary, 
+            return res.status(500).json({
+                success: false,
+                message: 'Failed to save summary to Supabase after multiple attempts.',
+                summary: summary,
                 detailsErros,
                 supabaseStatus: supabaseStatusCode, // ADDED: Supabase status
                 supabaseError: supabaseErrorText // ADDED: Supabase error
