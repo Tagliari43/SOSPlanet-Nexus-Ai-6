@@ -114,7 +114,7 @@ export default async function handler(req: any, res: any) {
             return res.status(200).json({ success: true, resumo: summary });
         } catch (error: any) {
             console.error('Network error saving to Supabase:', error.message);
-            return res.status(500).json({ success: false, message: `Network error saving to Supabase: ${error.message}`, summary: summary, detailsErrosja: summary, detailsErros });
+            return res.status(500).json({ success: false, message: `Network error saving to Supabase: ${error.message}`, summary: summary, detailsErros });
         }
     } else {
         return res.status(500).json({ success: false, message: "Todas as APIs Gemini falharam.", detailsErros });
