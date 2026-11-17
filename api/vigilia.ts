@@ -1,4 +1,5 @@
-import { fetch } from 'undici';
+
+import { GoogleGenAI } from '@google/generative-ai';
 
 // Supabase credentials (environment variables)
 const SUPABASE_URL = process.env.VITE_SUPABASE_URL;
@@ -49,93 +50,41 @@ export default async function handler(req: any, res: any) {
     let summary = null;
     const detailsErros: any[] = [];
 
-    // Try with Gemini keys
+    // Try with Gemini keys exclusively
     for (let i = 0; i < geminiKeys.length; i++) {
         const key = geminiKeys[i];
-        let geminiEndpoint = "";
-        if (key && key.startsWith('AQ.')) { // Vertex AI Express key
-            geminiEndpoint = `https://aiplatform.googleapis.com/v1/publishers/google/models/gemini-2.5-flash:generateContent?key=${key}`;
-        } else if (key) { // Default to Generative Language API for AIza or other formats
-            geminiEndpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`;
-        }
-
-        if (!geminiEndpoint) continue;
+        if (!key) continue;
 
         try {
-            const geminiPayload = {
-                contents: [{
-                    parts: [{ text: userPrompt }]
-                }],
+            const ai = new GoogleGenAI({ apiKey: key });
+            const model = ai.getGenerativeModel({ model: "gemini-2.5-flash"});
+
+            const result = await model.generateContent({
+                contents: [{ role: "user", parts: [{ text: userPrompt }] }],
                 generationConfig: {
                     temperature: 0.7,
                     maxOutputTokens: 500,
                 },
-            };
-            const geminiResponse = await fetch(geminiEndpoint, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(geminiPayload),
             });
-            const geminiData = await geminiResponse.json();
-
-            if (geminiResponse.ok && geminiData.candidates && geminiData.candidates[0] && geminiData.candidates[0].content && geminiData.candidates[0].content.parts && geminiData.candidates[0].content.parts[0]) {
-                summary = geminiData.candidates[0].content.parts[0].text;
+            const response = await result.response;
+            summary = response.text();
+            
+            if (summary) {
                 break; // Success, exit loop
             } else {
-                const errorDetail = JSON.stringify(geminiData).substring(0, 150);
                 detailsErros.push({
                     api: 'Gemini',
                     keyIndex: i,
-                    status: geminiResponse.status,
-                    error: errorDetail,
+                    status: 'no_summary',
+                    error: 'Gemini returned no text content.',
                 });
             }
         } catch (error: any) {
             detailsErros.push({
                 api: 'Gemini',
                 keyIndex: i,
-                status: 0, // Network/fetch error
-                error: error.message.substring(0, 150),
-            });
-        }
-    }
-
-    // Fallback Plan B: Try with Groq if Gemini failed and key is available
-    if (!summary && process.env.GROQ_API_KEY) {
-        try {
-            const groqPayload = {
-                model: "llama-3.1-8b-instant",
-                messages: [{ role: "user", content: userPrompt }],
-                temperature: 0.7,
-                max_tokens: 500,
-            };
-            const groqResponse = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-                method: "POST",
-                headers: {
-                    "Authorization": `Bearer ${process.env.GROQ_API_KEY}`,
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify(groqPayload),
-            });
-            const groqData = await groqResponse.json();
-
-            if (groqResponse.ok && groqData.choices && groqData.choices[0] && groqData.choices[0].message) {
-                summary = groqData.choices[0].message.content;
-            } else {
-                const errorDetail = JSON.stringify(groqData).substring(0, 150);
-                detailsErros.push({
-                    api: 'Groq',
-                    status: groqResponse.status,
-                    error: errorDetail,
-                });
-            }
-        } catch (error: any) {
-            detailsErros.push({
-                api: 'Groq',
-                status: 0, // Network/fetch error
-                error: error.message.substring(0, 150),
+                status: error.status || 'network_error',
+                error: error.message?.substring(0, 180) || 'Unknown error',
             });
         }
     }
@@ -169,6 +118,6 @@ export default async function handler(req: any, res: any) {
             return res.status(500).json({ success: false, message: `Network error saving to Supabase: ${error.message}`, summary: summary, detailsErros });
         }
     } else {
-        return res.status(500).json({ success: false, message: "Todas as APIs de IA (Gemini e Groq) falharam.", detailsErros });
+        return res.status(500).json({ success: false, message: "Todas as APIs Gemini falharam.", detailsErros });
     }
 }
