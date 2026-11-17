@@ -1,5 +1,4 @@
-
-import { GoogleGenAI } from '@google/generative-ai';
+import { GoogleGenAI } from '@google/genai';
 
 // Supabase credentials (environment variables)
 const SUPABASE_URL = process.env.VITE_SUPABASE_URL;
@@ -49,43 +48,43 @@ export default async function handler(req: any, res: any) {
 
     let summary = null;
     const detailsErros: any[] = [];
+    const modelsToTry = ['gemini-2.5-flash', 'gemini-3.5-flash-lite', 'gemini-2.0-flash'];
 
-    // Try with Gemini keys exclusively
+    // Try with Gemini keys and models exclusively
     for (let i = 0; i < geminiKeys.length; i++) {
         const key = geminiKeys[i];
         if (!key) continue;
 
-        try {
-            const ai = new GoogleGenAI({ apiKey: key });
-            const model = ai.getGenerativeModel({ model: "gemini-2.5-flash"});
-
-            const result = await model.generateContent({
-                contents: [{ role: "user", parts: [{ text: userPrompt }] }],
-                generationConfig: {
-                    temperature: 0.7,
-                    maxOutputTokens: 500,
-                },
-            });
-            const response = await result.response;
-            summary = response.text();
-            
-            if (summary) {
-                break; // Success, exit loop
-            } else {
+        for (const modelName of modelsToTry) {
+            try {
+                const ai = new GoogleGenAI({ apiKey: key });
+                const response = await ai.models.generateContent({
+                    model: modelName,
+                    contents: userPrompt,
+                    config: {
+                        temperature: 0.7,
+                        maxOutputTokens: 500,
+                    },
+                });
+                
+                summary = response.text;
+                
+                if (summary) {
+                    break; // Success, exit model loop
+                }
+            } catch (error: any) {
                 detailsErros.push({
                     api: 'Gemini',
                     keyIndex: i,
-                    status: 'no_summary',
-                    error: 'Gemini returned no text content.',
+                    model: modelName,
+                    status: error.status || 'network_error',
+                    error: error.message?.substring(0, 180) || 'Unknown error',
                 });
             }
-        } catch (error: any) {
-            detailsErros.push({
-                api: 'Gemini',
-                keyIndex: i,
-                status: error.status || 'network_error',
-                error: error.message?.substring(0, 180) || 'Unknown error',
-            });
+        }
+
+        if (summary) {
+            break; // Success, exit key loop
         }
     }
 
@@ -115,7 +114,7 @@ export default async function handler(req: any, res: any) {
             return res.status(200).json({ success: true, resumo: summary });
         } catch (error: any) {
             console.error('Network error saving to Supabase:', error.message);
-            return res.status(500).json({ success: false, message: `Network error saving to Supabase: ${error.message}`, summary: summary, detailsErros });
+            return res.status(500).json({ success: false, message: `Network error saving to Supabase: ${error.message}`, summary: summary, detailsErrosja: summary, detailsErros });
         }
     } else {
         return res.status(500).json({ success: false, message: "Todas as APIs Gemini falharam.", detailsErros });
