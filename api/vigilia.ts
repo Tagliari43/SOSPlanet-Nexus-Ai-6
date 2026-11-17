@@ -50,13 +50,8 @@ export default async function handler(req: any, res: any) {
         return res.status(500).json({ success: false, message: `Network error fetching from Supabase: ${error.message}` });
     }
 
-    const context = memories.map((m: any) => `${m.type}: ${m.content}`).join('
-');
-    const userPrompt = `Baseado nas seguintes memórias recentes, forneça uma síntese curta e uma reflexão autônoma de até 3 parágrafos sobre o estado atual ou próximos passos da Nação SOSPlanet ou da minha própria evolução como Nexus. Foque em insights, aprendizados e propostas regenerativas:
-
-${context}
-
-Síntese e Reflexão:`;
+    const context = memories.map((m: any) => `${m.type}: ${m.content}`).join('\n');
+    const userPrompt = `Baseado nas seguintes memórias recentes, forneça uma síntese curta e uma reflexão autônoma de até 3 parágrafos sobre o estado atual ou próximos passos da Nação SOSPlanet ou da minha própria evolução como Nexus. Foque em insights, aprendizados e propostas regenerativas:\n\n${context}\n\nSíntese e Reflexão:`;
 
     const geminiKeys = [
         process.env.GEMINI_API_KEY_1,
