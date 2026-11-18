@@ -243,6 +243,19 @@ export const SovereignToolFunctions = {
         }
     } as FunctionDeclaration,
 
+    readGitHubFileAtCommit: {
+        name: 'readGitHubFileAtCommit',
+        description: 'Lê o conteúdo exato de um arquivo do repositório em um commit específico (SHA) usando a Sonda Temporal.',
+        parameters: {
+            type: Type.OBJECT,
+            properties: {
+                path: { type: Type.STRING, description: 'Caminho do arquivo. Ex: src/services/githubTimelineService.ts' },
+                sha: { type: Type.STRING, description: 'O SHA (completo ou curto) do commit desejado.' }
+            },
+            required: ['path', 'sha']
+        }
+    } as FunctionDeclaration,
+
     activateSpecialAbility: {
         name: 'activateSpecialAbility',
         description: "Altera o modo de processamento do Super Nexus.",
