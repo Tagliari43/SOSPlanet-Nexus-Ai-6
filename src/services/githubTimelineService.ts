@@ -100,7 +100,7 @@ export class GithubTimelineService {
     if (data.content) {
       try {
         // Tenta decodificar de base64 se aplicável
-        return atob(data.content.replace(/\s/g, ''));
+        return decodeURIComponent(escape(atob(data.content.replace(/\s/g, ''))));
       } catch {
         return data.content;
       }
