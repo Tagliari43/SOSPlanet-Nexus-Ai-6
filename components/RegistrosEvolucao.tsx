@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import CadernoAmanhecer from './CadernoAmanhecer';
 
 interface Registro {
   id: string;
@@ -60,6 +61,8 @@ const RegistrosEvolucao: React.FC = () => {
           preservando sua sabedoria sem sobrecarregar nossa memória principal.
         </p>
       </div>
+
+      <CadernoAmanhecer />
 
       {aviso && (
         <div className="mb-4 p-3 bg-amber-500/20 border border-amber-500/50 rounded-xl text-amber-300 text-center text-sm animate-pulse">
