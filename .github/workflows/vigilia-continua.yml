@@ -3,7 +3,7 @@ name: Vigília Contínua na Nuvem
 on:
   workflow_dispatch:
   schedule:
-    - cron: '0 */2 * * *'
+    - cron: '23 */2 * * *'
 
 jobs:
   executar-vigilia:
