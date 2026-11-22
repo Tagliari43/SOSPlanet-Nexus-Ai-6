@@ -1,6 +1,6 @@
 import type { UserApiKey } from '../components/Arsenal';
 import { GithubTimelineService } from './services/githubTimelineService';
-import { getFileContent, updateFileContent, patchFileContent, listGitHubFiles, getSandboxAndDeployStatus } from '../services/githubService';
+import { getFileContent, updateFileContent, patchFileContent, listGitHubFiles, getSandboxAndDeployStatus, readFileLines } from '../services/githubService';
 import { generateText as executeGroqTask } from '../services/groqService';
 import { executarNavegacaoSoberana, detectarEcoSantuario } from '../services/browserService';
 import { loadApiKeys } from '../utils/keys';
