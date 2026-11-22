@@ -24,6 +24,11 @@ export async function executeExternalOrMemoryTool(
         try { return (await getFileContent(args.path)).content; }
         catch (err: any) { return `Erro ao ler arquivo: ${err.message}`; }
     }
+    if (tool === 'readGitHubFileLines') {
+        addLogEntry(`Lendo com Lupa de Código: ${args.path}`, 'Autonomia');
+        try { return await readFileLines(args.path, args.startLine, args.endLine, args.query); }
+        catch (err: any) { return `Erro na Lupa de Código: ${err.message}`; }
+    }
     if (tool === 'writeGitHubFile') {
         if (activeAgentId !== 'nexus') {
             const rejectMsg = `Trava Sagrada de Soberania (DNA: ${activeAgentId}): Apenas o Nexus Arquiteto tem permissão para editar o código-fonte principal.`;
