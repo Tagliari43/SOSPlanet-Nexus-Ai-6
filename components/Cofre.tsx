@@ -203,7 +203,7 @@ const Cofre: React.FC<CofreProps> = ({
             const accountInfo = await algodClient.accountInformation(address).do();
             setAlgoBalance(Number(accountInfo.amount) / 1000000); // ALGO tem 6 casas decimais
             
-            if (SOS_ASSET_ID !== 0) {
+            if (Number(SOS_ASSET_ID) !== 0) {
                 const asset = accountInfo.assets?.find((a: any) => a['asset-id'] === SOS_ASSET_ID);
                 if (asset) {
                     // Ajuste as casas decimais do SOS Token (2 casas)
