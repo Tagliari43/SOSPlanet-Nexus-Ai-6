@@ -1,6 +1,6 @@
 import type { UserApiKey } from '../components/Arsenal';
 import { GithubTimelineService } from './services/githubTimelineService';
-import { getFileContent, updateFileContent, listGitHubFiles } from '../services/githubService';
+import { getFileContent, updateFileContent, patchFileContent, listGitHubFiles } from '../services/githubService';
 import { generateText as executeGroqTask } from '../services/groqService';
 import { executarNavegacaoSoberana, detectarEcoSantuario } from '../services/browserService';
 import { loadApiKeys } from '../utils/keys';
@@ -35,6 +35,19 @@ export async function executeExternalOrMemoryTool(
             await updateFileContent(args.path, args.content, args.commitMessage);
             return `Arquivo ${args.path} atualizado com sucesso no repositório.`;
         } catch (err: any) { return `Erro ao escrever arquivo: ${err.message}`; }
+    }
+    if (tool === 'patchGitHubFile') {
+        if (activeAgentId !== 'nexus') {
+            const rejectMsg = `Trava Sagrada de Soberania (DNA: ${activeAgentId}): Apenas o Nexus Arquiteto tem permissão para editar o código-fonte principal.`;
+            addLogEntry(rejectMsg, 'Segurança');
+            return rejectMsg;
+        }
+        addLogEntry(`Aplicando patch cirúrgico em ${args.path}`, 'Autonomia');
+        try {
+            const res = await patchFileContent(args.path, args.searchText, args.replaceText, args.commitMessage);
+            const newSha = res?.commit?.sha ? res.commit.sha.substring(0, 7) : 'confirmado';
+            return `Patch cirúrgico aplicado com sucesso em ${args.path} (commit ${newSha}).`;
+        } catch (err: any) { return `Erro ao aplicar patch cirúrgico: ${err.message}`; }
     }
     if (tool === 'listGitHubCommits') {
         addLogEntry(`Sondando linha temporal do GitHub (${args.since || 'recentes'})`, 'Autonomia');
