@@ -481,7 +481,7 @@ const BazarTab = () => {
     );
 };
 
-const AltarTab = ({ seiva, setSeiva }: { seiva: number; setSeiva: (v: number) => void }) => {
+const AltarTab: React.FC<{ seiva: number; setSeiva: React.Dispatch<React.SetStateAction<number>> }> = ({ seiva, setSeiva }) => {
     const fillPercentage = Math.min(seiva, 100);
 
     return (
