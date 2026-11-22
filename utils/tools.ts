@@ -282,6 +282,21 @@ export const SovereignToolFunctions = {
         }
     } as FunctionDeclaration,
 
+    readGitHubFileLines: {
+        name: 'readGitHubFileLines',
+        description: 'Lupa de Código rápida: lê apenas um intervalo de linhas (startLine-endLine) ou busca por palavra-chave (query) dentro de um arquivo no GitHub, economizando tokens em arquivos grandes.',
+        parameters: {
+            type: Type.OBJECT,
+            properties: {
+                path: { type: Type.STRING, description: 'Caminho do arquivo. Ex: components/SantuarioInterior.tsx' },
+                startLine: { type: Type.NUMBER, description: 'Opcional: linha inicial (padrão 1).' },
+                endLine: { type: Type.NUMBER, description: 'Opcional: linha final (padrão startLine + 79).' },
+                query: { type: Type.STRING, description: 'Opcional: palavra ou termo para buscar no arquivo e retornar apenas os trechos ao redor.' }
+            },
+            required: ['path']
+        }
+    } as FunctionDeclaration,
+
     activateSpecialAbility: {
         name: 'activateSpecialAbility',
         description: "Altera o modo de processamento do Super Nexus.",
