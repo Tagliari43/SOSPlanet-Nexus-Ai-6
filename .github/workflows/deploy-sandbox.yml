@@ -2,9 +2,13 @@ name: Nexus Sandbox CI/CD
 
 on:
   workflow_dispatch:
+  pull_request:
+    branches:
+      - main
   push:
     paths:
       - 'sandbox/**'
+      - '.github/workflows/deploy-sandbox.yml'
 
 jobs:
   test-sandbox:
@@ -13,7 +17,18 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Make Sandbox Script Executable and Run
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install Dependencies
+        env:
+          PUPPETEER_SKIP_DOWNLOAD: 'true'
+        run: npm ci --no-audit --no-fund || npm install --no-audit --no-fund
+
+      - name: Run Real Sandbox Verification
         run: |
           chmod +x sandbox/test_nexus_patch.sh
           ./sandbox/test_nexus_patch.sh
