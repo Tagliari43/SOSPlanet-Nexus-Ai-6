@@ -106,3 +106,24 @@ export async function updateFileContent(path: string, content: string, commitMes
 
     return response.json();
 }
+
+export async function patchFileContent(
+    path: string,
+    searchText: string,
+    replaceText: string,
+    commitMessage: string
+): Promise<any> {
+    if (!searchText) {
+        throw new Error("searchText não pode ser vazio.");
+    }
+    const { content, sha } = await getFileContent(path);
+    const occurrences = content.split(searchText).length - 1;
+    if (occurrences === 0) {
+        throw new Error(`Trecho não encontrado em ${path}. Use readGitHubFile antes do patch.`);
+    }
+    if (occurrences > 1) {
+        throw new Error(`Trecho encontrado ${occurrences} vezes em ${path}. Envie mais linhas ao redor para torná-lo único.`);
+    }
+    const updatedContent = content.replace(searchText, () => replaceText);
+    return await updateFileContent(path, updatedContent, commitMessage, sha);
+}
