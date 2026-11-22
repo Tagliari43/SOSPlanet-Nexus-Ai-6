@@ -9,7 +9,6 @@ import { Ponte } from '../services/sovereignRouterService';
 import { ReconProbe } from '../hooks/useOrchestrator';
 import { useSpeechRecognition } from '../hooks/useSpeechRecognition';
 import { functionTools } from '../utils/tools';
-import { executeCloudflareTask } from '../services/cloudflareService';
 import { generateText as executeGroqTask, callGroqWithTools } from '../services/groqService';
 import { callCerebrasWithTools } from '../services/cerebrasService';
 import { callOpenRouterWithTools } from '../services/openrouterService';
