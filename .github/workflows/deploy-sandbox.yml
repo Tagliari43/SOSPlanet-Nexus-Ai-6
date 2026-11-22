@@ -6,9 +6,20 @@ on:
     branches:
       - main
   push:
+    branches:
+      - main
     paths:
       - 'sandbox/**'
       - '.github/workflows/deploy-sandbox.yml'
+      - 'App.tsx'
+      - 'src/**'
+      - 'components/**'
+      - 'api/**'
+      - 'utils/**'
+      - 'services/**'
+      - 'hooks/**'
+      - 'package.json'
+      - 'tsconfig.json'
 
 jobs:
   test-sandbox:
@@ -16,18 +27,15 @@ jobs:
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
-
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '22'
           cache: 'npm'
-
       - name: Install Dependencies
         env:
           PUPPETEER_SKIP_DOWNLOAD: 'true'
         run: npm ci --no-audit --no-fund || npm install --no-audit --no-fund
-
       - name: Run Real Sandbox Verification
         run: |
           chmod +x sandbox/test_nexus_patch.sh
