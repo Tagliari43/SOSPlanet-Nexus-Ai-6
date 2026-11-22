@@ -173,3 +173,40 @@ export async function getSandboxAndDeployStatus(limit: number = 5): Promise<any>
 
     return { workflowRuns, deployments };
 }
+
+export async function readFileLines(
+    path: string,
+    startLine?: number,
+    endLine?: number,
+    query?: string
+): Promise<string> {
+    const { content } = await getFileContent(path);
+    const lines = content.split('\n');
+    const total = lines.length;
+
+    if (query && query.trim()) {
+        const q = query.trim().toLowerCase();
+        const matches: string[] = [];
+        lines.forEach((line, idx) => {
+            if (line.toLowerCase().includes(q) && matches.length < 30) {
+                const from = Math.max(0, idx - 2);
+                const to = Math.min(total - 1, idx + 2);
+                const snippet = lines.slice(from, to + 1)
+                    .map((l, offset) => `${from + offset + 1}: ${l}`)
+                    .join('\n');
+                matches.push(`--- Linha ${idx + 1} ---\n${snippet}`);
+            }
+        });
+        if (matches.length === 0) {
+            return `Nenhuma ocorrência de "${query}" encontrada em ${path} (${total} linhas no total).`;
+        }
+        return `Arquivo: ${path} (${total} linhas)\nOcorrências para "${query}":\n\n${matches.join('\n\n')}`;
+    }
+
+    const s = Math.max(1, Number(startLine) || 1);
+    const e = Math.min(total, Math.max(s, Number(endLine) || Math.min(total, s + 79)));
+    const slice = lines.slice(s - 1, e)
+        .map((l, idx) => `${s + idx}: ${l}`)
+        .join('\n');
+    return `Arquivo: ${path} (linhas ${s}-${e} de ${total})\n\n${slice}`;
+}
