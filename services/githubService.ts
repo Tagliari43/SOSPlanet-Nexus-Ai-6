@@ -127,3 +127,49 @@ export async function patchFileContent(
     const updatedContent = content.replace(searchText, () => replaceText);
     return await updateFileContent(path, updatedContent, commitMessage, sha);
 }
+
+export async function getSandboxAndDeployStatus(limit: number = 5): Promise<any> {
+    const keys = loadApiKeys();
+    const headers: Record<string, string> = {
+        'Accept': 'application/vnd.github.v3+json'
+    };
+    if (keys.github) {
+        headers['Authorization'] = `Bearer ${keys.github}`;
+    }
+
+    const safeLimit = Math.min(Math.max(Number(limit) || 5, 1), 10);
+    const [runsRes, depsRes] = await Promise.all([
+        fetch(`${GITHUB_API_BASE}/repos/${REPO_OWNER}/${REPO_NAME}/actions/runs?per_page=${safeLimit}`, { headers }),
+        fetch(`${GITHUB_API_BASE}/repos/${REPO_OWNER}/${REPO_NAME}/deployments?per_page=2`, { headers })
+    ]);
+
+    const runsData = runsRes.ok ? await runsRes.json() : { workflow_runs: [] };
+    const workflowRuns = (runsData.workflow_runs || []).map((r: any) => ({
+        name: r.name,
+        sha: r.head_sha?.substring(0, 7),
+        status: r.status,
+        conclusion: r.conclusion || 'em_andamento',
+        created_at: r.created_at,
+        url: r.html_url
+    }));
+
+    const depsData = depsRes.ok ? await depsRes.json() : [];
+    const deployments = await Promise.all((Array.isArray(depsData) ? depsData : []).map(async (d: any) => {
+        let state = 'desconhecido';
+        try {
+            const stRes = await fetch(d.statuses_url, { headers });
+            if (stRes.ok) {
+                const stJson = await stRes.json();
+                state = stJson?.[0]?.state || 'pending';
+            }
+        } catch {}
+        return {
+            sha: d.sha?.substring(0, 7),
+            environment: d.environment,
+            state,
+            created_at: d.created_at
+        };
+    }));
+
+    return { workflowRuns, deployments };
+}
