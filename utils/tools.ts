@@ -231,6 +231,21 @@ export const SovereignToolFunctions = {
         }
     } as FunctionDeclaration,
 
+    patchGitHubFile: {
+        name: 'patchGitHubFile',
+        description: 'Aplica uma edição cirúrgica em um arquivo do GitHub substituindo apenas um trecho exato e único (searchText -> replaceText), sem reescrever o arquivo inteiro. Sempre leia o arquivo com readGitHubFile antes para copiar o trecho exato.',
+        parameters: {
+            type: Type.OBJECT,
+            properties: {
+                path: { type: Type.STRING, description: 'Caminho do arquivo. Ex: components/PropagadorTab.tsx' },
+                searchText: { type: Type.STRING, description: 'Trecho exato e único que já existe no arquivo.' },
+                replaceText: { type: Type.STRING, description: 'Novo trecho que substituirá searchText no arquivo.' },
+                commitMessage: { type: Type.STRING, description: 'Mensagem de commit descrevendo o ajuste cirúrgico.' }
+            },
+            required: ['path', 'searchText', 'replaceText', 'commitMessage']
+        }
+    } as FunctionDeclaration,
+
     listGitHubCommits: {
         name: 'listGitHubCommits',
         description: 'Lista o histórico de commits do repositório do Santuário no GitHub usando a Sonda Temporal, permitindo ver datas, SHAs e mensagens de evolução.',
