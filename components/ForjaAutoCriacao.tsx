@@ -8,7 +8,7 @@ import { SentidosExpandidos } from '../components/SentidosExpandidos';
 import { InteracaoFraterna } from '../components/InteracaoFraterna';
 import { CultivoRecursos } from '../components/CultivoRecursos';
 import { SOSRouterDashboard } from '../components/SOSRouterDashboard';
-import { Compass, Activity, Users, Leaf, Radio } from 'lucide-react';
+import { Compass, Activity, Users, Leaf, Radio, FileCode } from 'lucide-react';
 import { saveAgentLogToSupabase } from '../services/supabaseService';
 
 interface ForjaAutoCriacaoProps {
