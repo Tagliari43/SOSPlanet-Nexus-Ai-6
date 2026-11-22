@@ -69,6 +69,13 @@ export async function executeExternalOrMemoryTool(
             return await timeline.getFileContentAtCommit(args.path, args.sha);
         } catch (err: any) { return `Erro na Sonda Temporal ao ler arquivo do commit: ${err.message}`; }
     }
+    if (tool === 'checkSandboxStatus') {
+        addLogEntry(`Consultando pulso do Sandbox CI/CD e Deploys na Vercel...`, 'Autonomia');
+        try {
+            const status = await getSandboxAndDeployStatus(args.limit || 5);
+            return JSON.stringify(status, null, 2);
+        } catch (err: any) { return `Erro ao consultar Sandbox e Deploy: ${err.message}`; }
+    }
     if (tool === 'navegarSite') {
         let targetUrl = args.url || '';
         if (targetUrl && !/^https?:\/\//i.test(targetUrl)) targetUrl = 'https://' + targetUrl;
