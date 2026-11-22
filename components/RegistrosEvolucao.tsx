@@ -24,7 +24,7 @@ const RegistrosEvolucao: React.FC = () => {
   const handleFileDrop = (event: React.DragEvent<HTMLDivElement>) => {
     event.preventDefault();
     setAviso('');
-    const files = Array.from(event.dataTransfer.files);
+    const files = Array.from(event.dataTransfer.files) as File[];
     files.forEach(file => {
       if (file.type === 'text/plain' || file.name.endsWith('.txt')) {
         const reader = new FileReader();
