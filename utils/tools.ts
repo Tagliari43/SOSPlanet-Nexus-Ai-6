@@ -271,6 +271,17 @@ export const SovereignToolFunctions = {
         }
     } as FunctionDeclaration,
 
+    checkSandboxStatus: {
+        name: 'checkSandboxStatus',
+        description: 'Consulta em tempo real os últimos resultados do GitHub Actions (Nexus Sandbox CI/CD e Vigília Contínua) e o status dos deploys na Vercel.',
+        parameters: {
+            type: Type.OBJECT,
+            properties: {
+                limit: { type: Type.NUMBER, description: 'Opcional: quantidade de execuções recentes a consultar (padrão 5, máximo 10).' }
+            }
+        }
+    } as FunctionDeclaration,
+
     activateSpecialAbility: {
         name: 'activateSpecialAbility',
         description: "Altera o modo de processamento do Super Nexus.",
