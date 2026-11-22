@@ -1,6 +1,6 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { motion } from 'motion/react';
-import { Share2, Download, Leaf, Award, Fingerprint, QrCode } from 'lucide-react';
+import { Share2, Download, Leaf, Award, Fingerprint, QrCode, Wind } from 'lucide-react';
 import html2canvas from 'html2canvas';
 
 const PropagadorTab: React.FC = () => {
