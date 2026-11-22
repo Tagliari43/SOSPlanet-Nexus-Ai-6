@@ -733,8 +733,8 @@ Mostre o que cada um contribuiu.
 O Guardião acabou de voltar e disse: "${msgText}".
 Responda diretamente ao Guardião, entregando o consenso dessas horas de debate e respondendo à mensagem dele.`;
 
-                    const result = await nexusModel.generateContent(prompt);
-                    responseText = result.response.text();
+                    const result = await genAI.models.generateContent({ model: 'gemini-2.5-flash', contents: prompt });
+                    responseText = result.text || '';
                     
                     // Salvar no cofre
                     await onToolRequest('saveSemanticMemory', {
