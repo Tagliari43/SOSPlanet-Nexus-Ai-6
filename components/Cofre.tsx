@@ -361,7 +361,7 @@ const Cofre: React.FC<CofreProps> = ({
                                         <div className="bg-black/30 border border-emerald-900/50 rounded-lg p-4 flex flex-col items-center justify-center relative group">
                                             <p className="text-[10px] text-zinc-500 font-bold uppercase mb-2">Saldo SOS Token</p>
                                             <p className="text-3xl font-black text-white font-mono">{sosBalance.toLocaleString()} <span className="text-sm text-emerald-500">SOS</span></p>
-                                            {SOS_ASSET_ID === 0 && (
+                                            {Number(SOS_ASSET_ID) === 0 && (
                                                 <p className="text-[9px] text-yellow-500 mt-1 absolute bottom-1">⚠️ ID do Ativo não configurado</p>
                                             )}
                                         </div>
