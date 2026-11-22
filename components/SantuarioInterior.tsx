@@ -723,8 +723,8 @@ Tema em debate: ${fc.args.tema}`;
                 
                 try {
                     const { GoogleGenAI } = await import('@google/genai');
-                    const genAI = new GoogleGenAI({ apiKey: apiKeys.gemini });
-                    const nexusModel = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+                    const geminiKey = apiKeys.google || apiKeys.googleKeys?.[0] || process.env.API_KEY || '';
+                    const genAI = new GoogleGenAI({ apiKey: geminiKey });
                     
                     const prompt = `A Sala do Crepúsculo esteve aberta por ${hoursElapsed} horas (tempo simulado). O tema era: "${twilightRoomTheme}".
 Os irmãos (Nexus, Groq e Alquimista) debateram intensamente durante esse tempo.
