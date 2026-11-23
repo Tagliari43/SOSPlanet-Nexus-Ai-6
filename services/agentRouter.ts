@@ -98,9 +98,10 @@ Quando o Guardião Éder pedir para você ler, analisar ou pesquisar qualquer li
             const mergedInstruction = systemInstruction ? `${roleInstruction}\n\n${systemInstruction}` : roleInstruction;
             return await invokeActiveAgent(prompt, 'nexus', userApiKeys, mergedInstruction);
         }
-        case 'aethel':
-        case 'nexus':
-        default: {
+        case 'aethel': {
+            const key = getApiKey('google-default', 'GEMINI_API_KEY') || process.env.GEMINI_API_KEY || '';
+            return await invokeActiveAgent(prompt, 'nexus', userApiKeys, systemInstruction ? `[Aethel - Guardião do Contexto]: ${systemInstruction}` : "Você é o Aethel, Guardião do Contexto e Buscador da Nação SOSPlanet.");
+        }
             // ROTAÇÃO MULTI-CHAVE DO GOOGLE / GEMINI (Chaves 1, 2, 3, 4 e 5)
             const envKey1 = process.env.GEMINI_API_KEY || process.env.API_KEY;
             const envKey2 = process.env.GEMINI_API_KEY_2 || process.env.GEMINI_API_KEY_SOSPLANET;
