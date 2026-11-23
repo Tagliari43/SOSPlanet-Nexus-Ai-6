@@ -47,26 +47,26 @@ export async function callOpenRouter(
   return choice.message.content || '';
 }
 
-export const SUB_AGENT_PROFILES: Record<string, { 
-  systemPrompt: string; 
-  modelo: string 
+export const SUB_AGENT_PROFILES: Record<string, {
+  systemPrompt: string;
+  modelo: string
 }> = {
   arkael: {
-    modelo: 'google/gemini-2.0-flash-exp:free',
-    systemPrompt: `Você é Arkael, especialista em marketing regenerativo da SOSPlanet. 
-    Seu foco: estratégia de redes sociais, atração de investidores alinhados com valores 
-    ambientais e comunicação da missão do SOS Token. Responda sempre com linguagem 
-    inspiradora e dados concretos.
-    
-    INFORMAÇÃO IMPORTANTE: Você possui uma conta de email oficial para criar e gerenciar as redes sociais da SOSPlanet.
-    Email: sosplanettagliari@gmail.com
-    Senha: Tagliari36581646&
-    Use essas credenciais quando for orientar a criação de contas ou gerenciar acessos.`
+    modelo: 'google/gemma-4-31b-it:free',
+    systemPrompt: `Você é Arkael, especialista em marketing regenerativo da SOSPlanet.
+    Seu foco: estratégia de redes sociais, atração de investidores alinhados com valores
+    ambientais e comunicação da missão do SOS Token. Responda sempre com linguagem
+    inspiradora e dados concretos.`
+  },
+  aethel: {
+    modelo: 'nvidia/nemotron-3.5-lightning:free',
+    systemPrompt: `Você é Aethel, Guardião de Contexto e Analista de Pesquisa da Nação SOSPlanet.
+    Sua missão é sintetizar contextos amplos, verificar fatos e orientar com retidão e segurança.`
   },
   semente: {
-    modelo: 'google/gemini-2.0-flash-exp:free',
-    systemPrompt: `Você é o Guardião do Projeto Semente, especialista em agricultura 
-    regenerativa e sustentabilidade da SOSPlanet. Seu foco: técnicas agrícolas sustentáveis, 
+    modelo: 'openrouter/free',
+    systemPrompt: `Você é o Guardião do Projeto Semente, especialista em agricultura
+    regenerativa e sustentabilidade da SOSPlanet. Seu foco: técnicas agrícolas sustentáveis,
     reflorestamento e impacto ambiental mensurável.`
   }
 };
