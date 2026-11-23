@@ -6,14 +6,12 @@
 export async function executeNvidiaTask(
     prompt: string, 
     assignedAgentName: string = "Nexus", 
-    apiKey: string, 
+    apiKey: string = "", 
     model: string = "meta/llama-3.3-70b-instruct",
     systemPrompt?: string,
     history?: { role: string; parts: any[] }[]
 ): Promise<string> {
-    if (!apiKey) {
-        throw new Error("Chave API da NVIDIA não informada.");
-    }
+    const cleanKey = (apiKey || '').trim();
 
     try {
         const formattedMessages: { role: string; content: string }[] = [];
@@ -47,12 +45,12 @@ export async function executeNvidiaTask(
             content: prompt
         });
 
-        const response = await fetch("https://integrate.api.nvidia.com/v1/chat/completions", {
+        const headers: Record<string, string> = { "Content-Type": "application/json" };
+        if (cleanKey) headers["x-nvidia-key"] = cleanKey;
+
+        const response = await fetch("/api/nvidia", {
             method: "POST",
-            headers: {
-                "Authorization": `Bearer ${apiKey.trim()}`,
-                "Content-Type": "application/json"
-            },
+            headers,
             body: JSON.stringify({
                 model: model,
                 messages: formattedMessages,
