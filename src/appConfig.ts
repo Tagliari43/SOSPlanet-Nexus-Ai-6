@@ -49,6 +49,6 @@ export const INITIAL_USER_KEYS: UserApiKey[] = [
     { id: 'supabase-anon-key', service: 'VITE_SUPABASE_ANON_KEY', key: import.meta.env.VITE_SUPABASE_ANON_KEY || '', method: 'bearer' },
     { id: 'groq-default', service: 'Groq API', key: process.env.GROQ_API_KEY || '', method: 'bearer' },
     { id: 'scraper-api-key', service: 'Scraper API (Navegador)', key: process.env.SCRAPER_API_KEY || '', method: 'bearer' },
-    { id: 'cerebras-default', service: 'Cerebras API', key: '', method: 'bearer' },
+    { id: 'nvidia-key', service: 'NVIDIA NIM API', key: process.env.NVIDIA_API_KEY || '', method: 'bearer' },
     { id: 'openrouter-default', service: 'OpenRouter API', key: '', method: 'bearer' }
 ];
