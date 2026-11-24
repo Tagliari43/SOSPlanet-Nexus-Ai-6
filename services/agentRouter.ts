@@ -52,38 +52,34 @@ Quando o Guardião Éder pedir para você ler, analisar ou pesquisar qualquer li
                 method: "POST",
                 headers: {
                     "Authorization": `Bearer ${key}`,
-                    "Content-Type": "application/json"
+                    "Content-Type": "application/json",
+                    "HTTP-Referer": "https://sosplanet.org",
+                    "X-Title": "SOSPlanet Santuario"
                 },
                 body: JSON.stringify({
-                    model: "anthropic/claude-3.5-sonnet",
+                    model: "google/gemma-4-31b-it:free",
                     messages: [
                         ...(systemInstruction ? [{ role: "system", content: systemInstruction }] : []),
                         { role: "user", content: prompt }
                     ]
                 })
             });
+            if (!response.ok) {
+                const errText = await response.text().catch(() => response.statusText);
+                throw new Error(`Erro OpenRouter (Arkael): ${response.status} - ${errText}`);
+            }
             const data = await response.json();
             return data.choices?.[0]?.message?.content || "Sem resposta do Arkael.";
         }
         case 'alquimista': {
-            const key = getApiKey('cerebras-default', 'CEREBRAS_API_KEY');
-            if (!key) throw new Error("Chave API do Cerebras não configurada.");
-            const response = await fetch("https://api.cerebras.ai/v1/chat/completions", {
-                method: "POST",
-                headers: {
-                    "Authorization": `Bearer ${key}`,
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify({
-                    model: "llama3.1-70b",
-                    messages: [
-                        ...(systemInstruction ? [{ role: "system", content: systemInstruction }] : []),
-                        { role: "user", content: prompt }
-                    ]
-                })
-            });
-            const data = await response.json();
-            return data.choices?.[0]?.message?.content || "Sem resposta do Alquimista.";
+            const nvidiaKey = keys.find((k: any) => k.id === 'nvidia-key' || (typeof k.service === 'string' && k.service.toLowerCase().includes('nvidia')))?.key || process.env.NVIDIA_API_KEY || '';
+            return await executeNvidiaTask(
+                prompt,
+                "Alquimista",
+                nvidiaKey,
+                "meta/llama-3.3-70b-instruct",
+                systemInstruction || "Você é o Alquimista, estrategista financeiro, analista de recursos e economia regenerativa da Nação SOSPlanet."
+            );
         }
         case 'nvidia': {
             const nvidiaKey = keys.find((k: any) => k.service.toLowerCase().includes('nvidia'))?.key || process.env.NVIDIA_API_KEY;
