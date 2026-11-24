@@ -117,15 +117,48 @@ export async function patchFileContent(
         throw new Error("searchText não pode ser vazio.");
     }
     const { content, sha } = await getFileContent(path);
-    const occurrences = content.split(searchText).length - 1;
-    if (occurrences === 0) {
-        throw new Error(`Trecho não encontrado em ${path}. Use readGitHubFile antes do patch.`);
+    const normalizedSearch = searchText.replace(/\r\n/g, '\n');
+    const occurrences = content.split(normalizedSearch).length - 1;
+
+    if (occurrences === 1) {
+        const updatedContent = content.replace(normalizedSearch, () => replaceText);
+        return await updateFileContent(path, updatedContent, commitMessage, sha);
     }
     if (occurrences > 1) {
         throw new Error(`Trecho encontrado ${occurrences} vezes em ${path}. Envie mais linhas ao redor para torná-lo único.`);
     }
-    const updatedContent = content.replace(searchText, () => replaceText);
-    return await updateFileContent(path, updatedContent, commitMessage, sha);
+
+    // Fallback tolerante a espaços invisíveis no final das linhas (trailing spaces)
+    const fileLines = content.split('\n');
+    const searchLines = normalizedSearch.split('\n');
+    const matchedIndexes: number[] = [];
+
+    for (let i = 0; i <= fileLines.length - searchLines.length; i++) {
+        let allMatch = true;
+        for (let j = 0; j < searchLines.length; j++) {
+            if (fileLines[i + j].trimEnd() !== searchLines[j].trimEnd()) {
+                allMatch = false;
+                break;
+            }
+        }
+        if (allMatch) {
+            matchedIndexes.push(i);
+        }
+    }
+
+    if (matchedIndexes.length === 1) {
+        const idx = matchedIndexes[0];
+        const newLines = [
+            ...fileLines.slice(0, idx),
+            ...replaceText.replace(/\r\n/g, '\n').split('\n'),
+            ...fileLines.slice(idx + searchLines.length)
+        ];
+        return await updateFileContent(path, newLines.join('\n'), commitMessage, sha);
+    }
+    if (matchedIndexes.length > 1) {
+        throw new Error(`Trecho encontrado ${matchedIndexes.length} vezes em ${path}. Envie mais linhas ao redor para torná-lo único.`);
+    }
+    throw new Error(`Trecho não encontrado em ${path}. Use readGitHubFileLines antes do patch.`);
 }
 
 export async function getSandboxAndDeployStatus(limit: number = 5): Promise<any> {
