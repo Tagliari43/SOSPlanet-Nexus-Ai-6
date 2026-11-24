@@ -94,7 +94,37 @@ Quando o Guardião Éder pedir para você ler, analisar ou pesquisar qualquer li
             const mergedInstruction = systemInstruction ? `${roleInstruction}\n\n${systemInstruction}` : roleInstruction;
             return await invokeActiveAgent(prompt, 'nexus', userApiKeys, mergedInstruction);
         }
-        case 'aethel':
+        case 'aethel': {
+            const key = keys.find((k: any) => k.id === 'openrouter-default' || (typeof k.service === 'string' && k.service.toLowerCase().includes('openrouter')))?.key || process.env.OPENROUTER_API_KEY || '';
+            if (!key) throw new Error("Chave API do OpenRouter não configurada para Aethel.");
+            const aethelPrompt = systemInstruction || "Você é Aethel, Guardião de Contexto e Analista de Pesquisa da Nação SOSPlanet. Sua missão é sintetizar contextos amplos, verificar fatos e orientar com retidão e segurança.";
+            const callAethelModel = async (modelId: string) => fetch("https://openrouter.ai/api/v1/chat/completions", {
+                method: "POST",
+                headers: {
+                    "Authorization": `Bearer ${key}`,
+                    "Content-Type": "application/json",
+                    "HTTP-Referer": "https://sosplanet.org",
+                    "X-Title": "SOSPlanet Santuario"
+                },
+                body: JSON.stringify({
+                    model: modelId,
+                    messages: [
+                        { role: "system", content: aethelPrompt },
+                        { role: "user", content: prompt }
+                    ]
+                })
+            });
+            let response = await callAethelModel("nvidia/nemotron-3.5-lightning:free");
+            if (!response.ok) {
+                response = await callAethelModel("openrouter/free");
+            }
+            if (!response.ok) {
+                const errText = await response.text().catch(() => response.statusText);
+                throw new Error(`Erro OpenRouter (Aethel): ${response.status} - ${errText}`);
+            }
+            const data = await response.json();
+            return data.choices?.[0]?.message?.content || "Sem resposta do Aethel.";
+        }
         case 'nexus':
         default: {
             // ROTAÇÃO MULTI-CHAVE DO GOOGLE / GEMINI (Chaves 1, 2, 3, 4 e 5)
