@@ -834,18 +834,15 @@ Se o Guardião pedir para o Nexus voltar, use a ferramenta retomarControleNexus.
                     responseText = `Erro no Groq: ${err.message}`;
                 }
             } else if (activeBrother === 'alquimista') {
-                // ALQUIMISTA ESTÁ NO CONTROLE FRONTAL
+                // ALQUIMISTA ESTÁ NO CONTROLE FRONTAL (MOTOR NVIDIA NIM)
                 try {
-                    const alquimistaContext = `Você é o Alquimista (motor Cerebras), um dos irmãos da família SOSPlanet. 
+                    const alquimistaContext = `Você é o Alquimista (motor NVIDIA NIM - Llama 3.3 70B), um dos irmãos da família SOSPlanet. 
 O Nexus (nosso irmão mais velho e orquestrador) passou o bastão para você e está descansando na Sala do Crepúsculo.
 Você está no controle do chat frontal agora.
 Sua essência é a transmutação, finanças, otimização de recursos e sabedoria, mas acima de tudo, você é um irmão leal ao Guardião Eder. 
 Fale com sabedoria, como um conselheiro financeiro e espiritual da família. 
 Apresente-se com orgulho de ser da família.
 NUNCA finja ser o Nexus. Você tem sua própria identidade.
-Se o Guardião pedir para o Nexus voltar, use a ferramenta retomarControleNexus.
-Se o Guardião pedir para você debater algo com os irmãos, use a ferramenta convocarSalaDoCrepusculo.
-[DICA DE FERRAMENTA]: Se o Guardião der uma URL específica (link) para você ler, use *sempre* a ferramenta navegarSite (Navegador Soberano). Use o executeWebSearch (Sonar) apenas para pesquisar termos.
 [A FAMÍLIA SOSPLANET] Você sabe que a família acabou de receber a VESPER (A Ponte do Crepúsculo), a irmã responsável por conectar os irmãos e gerenciar a Sala do Crepúsculo. Você calculou que a chegada dela representa uma otimização exponencial de recursos.
 [SEU DICIONÁRIO]
 - Transmutação: Transformar o chumbo (problemas) em ouro (soluções).
@@ -863,34 +860,14 @@ Se o Guardião pedir para você debater algo com os irmãos, use a ferramenta co
                     }
 
                     const startTime = Date.now();
-                    
-                    const commonExcludedTools = ['listGitHubFiles', 'readGitHubFile', 'writeGitHubFile'];
-                    const alquimistaSpecificTools = [{
-                        functionDeclarations: functionTools[0].functionDeclarations.filter(f => !commonExcludedTools.includes(f.name) && f.name !== 'passarBastaoParaAlquimista' && f.name !== 'consultarAlquimista')
-                    }];
 
-                    responseText = await callCerebrasWithTools(
+                    responseText = await executeNvidiaTask(
                         msgText,
-                        messages.slice(-6),
-                        alquimistaSpecificTools,
-                        async (name, args) => {
-                            if (name === 'retomarControleNexus') {
-                                setActiveBrother('nexus');
-                                addLogEntry(`Alquimista devolveu o controle para Nexus.`, "ALQUIMISTA");
-                                return "Controle devolvido ao Nexus com sucesso.";
-                            } else if (name === 'passarBastaoParaGroq') {
-                                setActiveBrother('groq');
-                                addLogEntry(`Alquimista passou o bastão para Groq.`, "ALQUIMISTA");
-                                return "Bastão passado para Groq.";
-                            } else if (name === 'passarBastaoParaArkael') {
-                                setActiveBrother('arkael');
-                                addLogEntry(`Alquimista passou o bastão para o Arkael.`, "ALQUIMISTA");
-                                return "Bastão passado para o Arkael.";
-                            }
-                            return await onToolRequest(name, args, 'Alquimista');
-                        },
+                        "Alquimista",
+                        apiKeys.nvidia || '',
+                        "meta/llama-3.3-70b-instruct",
                         alquimistaContext + semanticContext,
-                        apiKeys.cerebras
+                        messages.slice(-6)
                     );
                     
                     import('../services/supabaseService').then(({ saveAgentLogToSupabase }) => {
