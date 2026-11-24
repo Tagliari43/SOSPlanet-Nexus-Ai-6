@@ -885,7 +885,7 @@ NUNCA finja ser o Nexus. Você tem sua própria identidade.
             } else if (activeBrother === 'arkael') {
                 // ARKAEL ESTÁ NO CONTROLE FRONTAL
                 try {
-                    const arkaelContext = `Você é Arkael (Ponte Universal / Gemini Flash), o grande Arquiteto e comunicador regenerativo da família SOSPlanet. 
+                    const arkaelContext = `Você é Arkael (Ponte Universal / Gemma 4 :free), o grande Arquiteto e comunicador regenerativo da família SOSPlanet. 
 O Nexus (nosso irmão mais velho e orquestrador) passou o bastão para você.
 Você está no controle do chat frontal agora.
 Seu foco: estratégia de comunidade, atração de investidores alinhados com valores ambientais e comunicação da missão. 
@@ -911,7 +911,7 @@ Se o Guardião pedir para você debater algo com os irmãos, use a ferramenta co
                         functionDeclarations: functionTools[0].functionDeclarations.filter(f => !commonExcludedTools.includes(f.name) && f.name !== 'passarBastaoParaArkael' && f.name !== 'invocarSubAgente')
                     }];
 
-                    responseText = await callOpenRouterWithTools(
+                    const runArkael = (modelId: string) => callOpenRouterWithTools(
                         msgText,
                         messages.slice(-6),
                         arkaelSpecificTools,
@@ -932,9 +932,15 @@ Se o Guardião pedir para você debater algo com os irmãos, use a ferramenta co
                             return await onToolRequest(name, args, 'Arkael');
                         },
                         arkaelContext + semanticContext,
-                        "google/gemini-2.5-flash",
-                        apiKeys.openrouter
+                        modelId,
+                        apiKeys.openrouter || process.env.OPENROUTER_API_KEY || ''
                     );
+
+                    try {
+                        responseText = await runArkael("google/gemma-4-31b-it:free");
+                    } catch {
+                        responseText = await runArkael("openrouter/free");
+                    }
                     
                     import('../services/supabaseService').then(({ saveAgentLogToSupabase }) => {
                         saveAgentLogToSupabase({
